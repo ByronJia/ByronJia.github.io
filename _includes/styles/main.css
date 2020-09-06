@@ -67,13 +67,13 @@ margin: 0 30px;
     transform-origin: 50% 0;
 }
 
-.ih-item.circle.effect.bottom_to_top a:hover .img {
+/* .ih-item.circle.effect.bottom_to_top a:hover .img {
     -webkit-transform: rotate3d(1, 0, 0, 180deg);
     -moz-transform: rotate3d(1, 0, 0, 180deg);
     -ms-transform: rotate3d(1, 0, 0, 180deg);
     -o-transform: rotate3d(1, 0, 0, 180deg);
 transform: rotate3d(1, 0, 0, 180deg);
-}
+} */
 
 .ih-item.circle.effect.top_to_bottom .img {
     -webkit-transform-origin: 50% 100%;
@@ -83,23 +83,23 @@ transform: rotate3d(1, 0, 0, 180deg);
     transform-origin: 50% 100%;
 }
 
-.ih-item.circle.effect.top_to_bottom a:hover .img {
+/* .ih-item.circle.effect.top_to_bottom a:hover .img {
     -webkit-transform: rotate3d(1, 0, 0, -180deg);
     -moz-transform: rotate3d(1, 0, 0, -180deg);
     -ms-transform: rotate3d(1, 0, 0, -180deg);
     -o-transform: rotate3d(1, 0, 0, -180deg);
 transform: rotate3d(1, 0, 0, -180deg);
-}
+} */
 
-.ih-item.circle.effect.left_to_right .img {
+/* .ih-item.circle.effect.left_to_right .img {
     -webkit-transform-origin: 100% 50%;
     -moz-transform-origin: 100% 50%;
     -ms-transform-origin: 100% 50%;
     -o-transform-origin: 100% 50%;
     transform-origin: 100% 50%;
-}
+} */
 
-.ih-item.circle.effect.left_to_right a:hover .img {
+/* .ih-item.circle.effect.left_to_right a:hover .img {
     -webkit-transform: rotate3d(0, 1, 0, 180deg);
     -moz-transform: rotate3d(0, 1, 0, 180deg);
     -ms-transform: rotate3d(0, 1, 0, 180deg);
@@ -121,7 +121,7 @@ transform: rotate3d(0, 1, 0, 180deg);
     -ms-transform: rotate3d(0, 1, 0, -180deg);
     -o-transform: rotate3d(0, 1, 0, -180deg);
 transform: rotate3d(0, 1, 0, -180deg);
-}
+} */
 
 .ih-item a {
     color: #333;

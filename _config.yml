@@ -6,6 +6,7 @@ description: 欢迎来到我的个人站~
 #avatarTitle: SHIT
 # 头像里面的描述
 #avatarDesc: iOS
+#welcome_message: 一起浪起来
 url: ''
 
 # 博客是否自动生成目录，false为不生成
@@ -18,14 +19,10 @@ enableToc: true
 #    # uyan: 2143225  # 有言id,登录有言官网申请
 
 # Social
-#social:
-#    weibo: 5366874726
-#    github: leopardpan
-#    # zhihu: panpanleopard
-#    # juejin: xxx
-#    jianshu: 2ada30d8d0f7
-#    # twitter:
-#    mail: leopardpan@icloud.com
+social:
+    github: ByronJia
+    zhihu: byronjia
+    mail: jiachaoning@163.com
 
 
 # 百度统计 
@@ -58,7 +55,7 @@ blog_button:
 nav:
     - {title: 所有文章, description: archive, url: '/archive'}   
     - {title: 标签, description: tags, url: '/tags'}      
-    - {title: 技术支持, description: support, url: '/support'}      
+#    - {title: 技术支持, description: support, url: '/support'}
     - {title: 关于我, description: about, url: '/about'}   
     
 
