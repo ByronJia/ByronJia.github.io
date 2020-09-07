@@ -6,7 +6,7 @@ description: 这里有关于iOS,机器学习的笔记心得,欢迎交流
 #avatarTitle: SHIT
 # 头像里面的描述
 #avatarDesc: iOS
-welcome_message:
+#welcome_message:
 url: ''
 
 # 博客是否自动生成目录，false为不生成
@@ -45,7 +45,7 @@ textColor: #FF0000
 
 # supported colors: blue, green, purple, red, orange or slate. If you need clear, leave it empty.
 # 背景蒙版颜色
-cover_color: clean
+cover_color: gray
 
 # The blog button should not be removed.
 blog_button:
