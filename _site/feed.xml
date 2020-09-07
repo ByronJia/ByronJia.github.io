@@ -5,8 +5,8 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎指正</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 07 Sep 2020 01:31:51 +0800</pubDate>
-    <lastBuildDate>Mon, 07 Sep 2020 01:31:51 +0800</lastBuildDate>
+    <pubDate>Mon, 07 Sep 2020 18:53:18 +0800</pubDate>
+    <lastBuildDate>Mon, 07 Sep 2020 18:53:18 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -14,6 +14,7 @@
         <description>&lt;h1 id=&quot;ffmpeg&quot;&gt;FFmpeg&lt;/h1&gt;
 &lt;p&gt;支持视画互转，音频编解码AAC FDK，视频编解码h264,h265, VP8,VP9，转码，解复用(表示从一路输入中分离出多路流(视频、音频、字幕等))&lt;/p&gt;
 
+&lt;p&gt;&lt;img src=&quot;../sources/11.jpg&quot; alt=&quot;image&quot; /&gt;&lt;/p&gt;
 </description>
         <pubDate>Mon, 10 Aug 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/08/first1/</link>
