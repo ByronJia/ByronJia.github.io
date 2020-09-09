@@ -13,10 +13,13 @@ url: ''
 enableToc: true
 
 # Comment
-#comment:
-#    # livere: MTAyMC81MDk5NC8yNzQ3Ng  # https://www.livere.com
+comment:
+#    评论系统有点问题,暂时关闭
+#    githubQAID: 8558fefa514ef95c78ad
+#    githubQASecret: f4dd20b7252016a91695632d60278dd2cf82ec64
+
 #    disqus: leopard
-#    # uyan: 2143225  # 有言id,登录有言官网申请
+
 
 # Social
 social:

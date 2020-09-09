@@ -35,7 +35,21 @@
         })();
     </script>
     <noscript>要查看<a href="http://disqus.com/?ref_noscript"> Disqus </a>评论，请启用 JavaScript</noscript>
-    
+  {% elsif site.comment.githubQAID %}
+    <div id="container"></div>
+    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+    <script>
+    var gitment = new Gitment({
+        owner: 'byronjia',  //改你自己的名字
+        repo: 'Comments',  //专门储存评论一个GitHub仓库
+        oauth: {
+          client_id: '{{ site.comment.githubQAID }}', //改为你自己的，下同
+          client_secret: '{{ site.comment.githubQASecret }}', 
+        },
+    })
+    gitment.render('container')
+    </script>
   {% endif %}
-
+  
 </section>
