@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <title>Flutter渲染机制—UI线程(二)</title>
+  <meta name="description" content="二、 VSYNC注册流程2.1 Engine::ScheduleFrame[-&gt; flutter/shell/common/engine.cc]void Engine::ScheduleFrame(bool regenerate_layer_tree) {    //[见小节2.2]    animator...">
+  <meta name="author" content="leopardpan">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Flutter渲染机制—UI线程(二)">
+  <meta name="twitter:description" content="二、 VSYNC注册流程2.1 Engine::ScheduleFrame[-&gt; flutter/shell/common/engine.cc]void Engine::ScheduleFrame(bool regenerate_layer_tree) {    //[见小节2.2]    animator...">
+  
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Flutter渲染机制—UI线程(二)">
+  <meta property="og:description" content="二、 VSYNC注册流程2.1 Engine::ScheduleFrame[-&gt; flutter/shell/common/engine.cc]void Engine::ScheduleFrame(bool regenerate_layer_tree) {    //[见小节2.2]    animator...">
+  
+  <link rel="icon" type="image/png" href="/images/favicon.png" />
+  <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link rel="canonical" href="http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%BA%8C)/">
+  <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
+  
+  <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
+
+  <!-- google 广告代码 -->
+  <script data-ad-client="ca-pub-1488511477321962" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  
+<!-- 站点统计 不蒜子 -->
+  <!-- <script 
+  async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>   -->
+
+<!-- 百度统计 -->
+  
+  <script>
+      var _hmt = _hmt || [];
+      (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?04766feadab5e00060a50dc5959c98e2";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+      })();
+  </script>
+  
+
+<!-- google 统计 -->
+  
+  <!-- <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-177644508-1', 'auto');
+      ga('send', 'pageview');
+  </script> -->
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-177644508-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-177644508-1');
+  </script>
+
+  
+
+  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-9005224472374751",
+    enable_page_level_ads: true
+  });
+</script>
+
+</head>
+
+
+  <body>
+
+    <span class="mobile btn-mobile-menu">        
+      <div class="nav_container">
+         <nav class="nav-menu-item" style = "float:right">
+            <i class="nav-menu-item">
+              <a href="/#blog" title="" class="blog-button">  博客主页
+              </a>
+            </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/archive" title="archive" class="btn-mobile-menu__icon">
+                      所有文章
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/tags" title="tags" class="btn-mobile-menu__icon">
+                      标签
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/about" title="about" class="btn-mobile-menu__icon">
+                      关于我
+                  </a>
+                </i>
+            
+          </nav>
+      </div>
+    </span>
+    
+    <header class="panel-cover panel-cover--collapsed" style="background-image: url('/images/background-cover.jpg')">
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+        <!-- 头像效果-start -->
+        <div class="ih-item circle effect">            
+            <a href="/#blog" title="前往 拜伦的博客 的主页" class="blog-button">
+                <div class="img"><img src="/images/avatar.jpg" alt="img"></div>
+            </a>
+        </div>
+        <!-- 头像效果-end -->
+        <h1 class="panel-cover__title panel-title"><a href="/#blog" title="link to homepage for 拜伦的博客" class="blog-button">拜伦的博客</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">Coder Byron</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">这里有关于iOS,机器学习的笔记心得,欢迎交流</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        
+        
+
+        <div class="navigation-wrapper">
+          <div>
+            <nav class="cover-navigation cover-navigation--primary">
+              <ul class="navigation">
+                <li class="navigation__item"><a href="/#blog" title="" class="blog-button">博客主页</a></li>
+                
+                  <li class="navigation__item"><a href="/archive" title="archive">所有文章</a></li>
+                
+                  <li class="navigation__item"><a href="/tags" title="tags">标签</a></li>
+                
+                  <li class="navigation__item"><a href="/about" title="about">关于我</a></li>
+                
+              </ul>
+            </nav>
+          </div>          
+        </div>
+
+
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class="panel-cover--overlay cover-gray"></div>
+    
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <head>
+  <link rel="stylesheet" href="/css/post.css">
+  
+</head>
+
+<article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
+  <header class="post-header">
+    <h1 class="post-title">Flutter渲染机制—UI线程(二)</h1>
+    <div class="post-meta">
+      <img src="/images/calendar.png" width="20px"/> 
+      <time datetime="2020-03-12 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-03-12</time>  
+
+      <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
+    </p>
+    </div>
+  </header>
+
+  
+    <h2 class="post-title">目录</h2>
+    <ul>
+  <li><a href="#二-vsync注册流程">二、 VSYNC注册流程</a>
+    <ul>
+      <li><a href="#21-enginescheduleframe">2.1 Engine::ScheduleFrame</a></li>
+      <li><a href="#22-animatorrequestframe">2.2 Animator::RequestFrame</a></li>
+      <li><a href="#23-animatorawaitvsync">2.3 Animator::AwaitVSync</a></li>
+      <li><a href="#24-vsyncwaiterasyncwaitforvsync">2.4 VsyncWaiter::AsyncWaitForVsync</a></li>
+      <li><a href="#25-vsyncwaiterandroidawaitvsync">2.5 VsyncWaiterAndroid::AwaitVSync</a>
+        <ul>
+          <li><a href="#251-jni_onload">2.5.1 JNI_OnLoad</a></li>
+          <li><a href="#252-register">2.5.2 Register</a></li>
+          <li><a href="#253-register">2.5.3 Register</a></li>
+        </ul>
+      </li>
+      <li><a href="#26-asyncwaitforvsync">2.6 asyncWaitForVsync</a>
+        <ul>
+          <li><a href="#261-choreographergetinstance">2.6.1 Choreographer.getInstance</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+  
+
+  <section class="post">
+    <h2 id="二-vsync注册流程">二、 VSYNC注册流程</h2>
+<h3 id="21-enginescheduleframe">2.1 Engine::ScheduleFrame</h3>
+<p>[-&gt; flutter/shell/common/engine.cc]</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>void Engine::ScheduleFrame(bool regenerate_layer_tree) {
+    //[见小节2.2]
+    animator_-&gt;RequestFrame(regenerate_layer_tree);
+}
+</code></pre></div></div>
+<p>该方法说明：</p>
+<ul>
+  <li>animator_的赋值过程是在Engine对象初始化过程完成，而Engine初始化过程在Shell创建过程，此处animator_便是Animator对象；</li>
+  <li>ScheduleFrame的参数regenerate_layer_tree决定是否需要重新生成layer tree，还是直接复用上一次生成的layer tree；</li>
+  <li>绝大多数情况下，调用RequestFrame()时将regenerate_layer_tree_设置为true或者用默认值true，执行完Animator::BeginFrame()则设置该变量为false；
+    <ul>
+      <li>当无参数调用该方法时，regenerate_layer_tree为默认值为true。</li>
+      <li>特别的例子就是Shell::OnPlatformViewMarkTextureFrameAvailable()过程，设置参数为false，那么计划绘制一帧的时候就不需要重绘layer tree；</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="22-animatorrequestframe">2.2 Animator::RequestFrame</h3>
+<p>[-&gt; flutter/shell/common/animator.cc]</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>void Animator::RequestFrame(bool regenerate_layer_tree) {
+  if (regenerate_layer_tree) {
+    // regenerate_layer_tree_决定Vsync信号到来时，是否执行BeginFrame
+    regenerate_layer_tree_ = true;
+  }
+
+  //当调用Animator::Stop()则会停止动画绘制
+  if (paused_ &amp;&amp; !dimension_change_pending_) {
+    return;
+  }
+
+  //调用sem_trywait来保证不会同时有多个vsync请求
+  if (!pending_frame_semaphore_.TryWait()) {
+    return;
+  }
+
+  task_runners_.GetUITaskRunner()-&gt;PostTask([self = weak_factory_.GetWeakPtr(),
+                                             frame_number = frame_number_]() {
+    if (!self.get()) {
+      return;
+    }
+    TRACE_EVENT_ASYNC_BEGIN0("flutter", "Frame Request Pending", frame_number);
+    self-&gt;AwaitVSync();  // [见小节2.3]
+  });
+  frame_scheduled_ = true;  //标注已经schedule绘画帧
+}
+</code></pre></div></div>
+<p>过程说明：</p>
+
+<ul>
+  <li>pending_frame_semaphore_：非负信号量，初始值为1，第一次调用TryWait减1，而后再次调用则会失败直接返回。当消费了这次vsync回调，也就是调用了Animator的BeginFrame()或者DrawLastLayerTree()方法后，改信号量会加1[见小节3.6]，可以再次执行vysnc的注册；</li>
+  <li>通过Animator的Start()或者BeginFrame调用到的RequestFrame方法，则肯定需要重新生成layer tree；通过Engine的ScheduleFrame方法是否重建layer tree看小节2.1；</li>
+  <li>此处通过post把Animator::AwaitVSync任务放入到UI Task Runner来执行。</li>
+</ul>
+
+<h3 id="23-animatorawaitvsync">2.3 Animator::AwaitVSync</h3>
+<p>[-&gt; flutter/shell/common/animator.cc]</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>void Animator::AwaitVSync() {
+  // [见小节2.4]
+  waiter_-&gt;AsyncWaitForVsync(
+      [self = weak_factory_.GetWeakPtr()](fml::TimePoint frame_start_time,
+                                          fml::TimePoint frame_target_time) {
+        if (self) {
+          //是否能复用上次layer树，取决于regenerate_layer_tree_
+          if (self-&gt;CanReuseLastLayerTree()) {
+            //复用上次layer树，直接把任务post到gpu线程做栅格化操作
+            self-&gt;DrawLastLayerTree();
+          } else {
+            self-&gt;BeginFrame(frame_start_time, frame_target_time);
+          }
+        }
+      });
+
+  delegate_.OnAnimatorNotifyIdle(dart_frame_deadline_);
+}
+</code></pre></div></div>
+<p>waiter_的赋值是在Animator初始化过程，取值为VsyncWaiterAndroid对象，当调用了RequestFrame()，默认参数regenerate_layer_tree_为true，意味着需要重新生成layer树，故不能重复使用上一次的layer树，接着来看一下AsyncWaitForVsync()方法的实现。</p>
+
+<h3 id="24-vsyncwaiterasyncwaitforvsync">2.4 VsyncWaiter::AsyncWaitForVsync</h3>
+<p>[-&gt; flutter/shell/common/vsync_waiter.cc]</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>void VsyncWaiter::AsyncWaitForVsync(Callback callback) {
+  {
+    std::lock_guard&lt;std::mutex&gt; lock(callback_mutex_);
+    //赋值callback_
+    callback_ = std::move(callback);
+  }
+  TRACE_EVENT0("flutter", "AsyncWaitForVsync");
+  AwaitVSync(); // [见小节2.5]
+}
+</code></pre></div></div>
+<p>此次的callback_便是[小节2.3]方法中的参数，该方法根据regenerate_layer_tree_来决定执行流。</p>
+<ul>
+  <li>当regenerate_layer_tree_=false，则执行DrawLastLayerTree();</li>
+  <li>当regenerate_layer_tree_=false，则执行BeginFrame();</li>
+</ul>
+
+<h3 id="25-vsyncwaiterandroidawaitvsync">2.5 VsyncWaiterAndroid::AwaitVSync</h3>
+<p>[-&gt; flutter/shell/platform/android/vsync_waiter_android.cc]</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>void VsyncWaiterAndroid::AwaitVSync() {
+  std::weak_ptr&lt;VsyncWaiter&gt;* weak_this =
+      new std::weak_ptr&lt;VsyncWaiter&gt;(shared_from_this());
+  //获取VsyncWaiter的弱引用
+  jlong java_baton = reinterpret_cast&lt;jlong&gt;(weak_this);
+
+  JNIEnv* env = fml::jni::AttachCurrentThread();
+  // 此次调用到Java层的asyncWaitForVsync方法，java_baton指向VsyncWaiter
+  env-&gt;CallStaticVoidMethod(g_vsync_waiter_class-&gt;obj(),     //
+                            g_async_wait_for_vsync_method_,  //
+                            java_baton                       //
+  );
+}
+</code></pre></div></div>
+<p>此处g_vsync_waiter_class，g_async_wait_for_vsync_method_的赋值过程是由JNI_OnLoad完成，如下所示。</p>
+
+<h4 id="251-jni_onload">2.5.1 JNI_OnLoad</h4>
+<p>[-&gt; flutter/shell/platform/android/library_loader.cc]</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+  // 初始化Java虚拟机
+  fml::jni::InitJavaVM(vm);
+
+  JNIEnv* env = fml::jni::AttachCurrentThread();
+  bool result = false;
+
+  // 注册FlutterMain.
+  result = shell::FlutterMain::Register(env);
+
+  // 注册PlatformView [见小节2.5.2]
+  result = shell::PlatformViewAndroid::Register(env);
+
+  // 注册VSyncWaiter [见小节2.5.3]
+  result = shell::VsyncWaiterAndroid::Register(env);
+
+  return JNI_VERSION_1_4;
+}
+</code></pre></div></div>
+<p>首次加载共享库时虚拟机会调用此方法。</p>
+
+<h4 id="252-register">2.5.2 Register</h4>
+<p>[-&gt; flutter/shell/platform/android/platform_view_android_jni.cc]</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bool PlatformViewAndroid::Register(JNIEnv* env) {
+  //记录FlutterCallbackInformation类的全局引用
+  g_flutter_callback_info_class = new fml::jni::ScopedJavaGlobalRef&lt;jclass&gt;(
+      env, env-&gt;FindClass("io/flutter/view/FlutterCallbackInformation"));
+  //记录FlutterCallbackInformation构造函数
+  g_flutter_callback_info_constructor = env-&gt;GetMethodID(
+      g_flutter_callback_info_class-&gt;obj(), "&lt;init&gt;",
+      "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+  //记录FlutterJNI类的全局引用
+  g_flutter_jni_class = new fml::jni::ScopedJavaGlobalRef&lt;jclass&gt;(
+      env, env-&gt;FindClass("io/flutter/embedding/engine/FlutterJNI"));
+  //记录SurfaceTexture类的全局引用
+  g_surface_texture_class = new fml::jni::ScopedJavaGlobalRef&lt;jclass&gt;(
+      env, env-&gt;FindClass("android/graphics/SurfaceTexture"));
+
+  static const JNINativeMethod callback_info_methods[] = {
+      {
+          .name = "nativeLookupCallbackInformation",
+          .signature = "(J)Lio/flutter/view/FlutterCallbackInformation;",
+          .fnPtr = reinterpret_cast&lt;void*&gt;(&amp;shell::LookupCallbackInformation),
+      },
+  };
+  //注册FlutterCallbackInformation的nativeLookupCallbackInformation()方法
+  env-&gt;RegisterNatives(g_flutter_callback_info_class-&gt;obj(),
+                           callback_info_methods,
+                           arraysize(callback_info_methods)) != 0);
+
+  g_is_released_method =
+      env-&gt;GetMethodID(g_surface_texture_class-&gt;obj(), "isReleased", "()Z");
+
+  fml::jni::ClearException(env);
+
+  g_attach_to_gl_context_method = env-&gt;GetMethodID(
+      g_surface_texture_class-&gt;obj(), "attachToGLContext", "(I)V");
+
+  g_update_tex_image_method =
+      env-&gt;GetMethodID(g_surface_texture_class-&gt;obj(), "updateTexImage", "()V");
+
+  g_get_transform_matrix_method = env-&gt;GetMethodID(
+      g_surface_texture_class-&gt;obj(), "getTransformMatrix", "([F)V");
+
+  g_detach_from_gl_context_method = env-&gt;GetMethodID(
+      g_surface_texture_class-&gt;obj(), "detachFromGLContext", "()V");
+
+  return RegisterApi(env);
+}
+</code></pre></div></div>
+
+<p>该方法的主要工作：</p>
+
+<p>记录和注册类FlutterCallbackInformation、FlutterJNI以及SurfaceTexture类的相关方法，用于Java和C++层方法的相互调用。</p>
+<h4 id="253-register">2.5.3 Register</h4>
+<p>[-&gt; flutter/shell/platform/android/vsync_waiter_android.cc]</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bool VsyncWaiterAndroid::Register(JNIEnv* env) {
+  static const JNINativeMethod methods[] = ;
+
+  jclass clazz = env-&gt;FindClass("io/flutter/view/VsyncWaiter");
+
+  g_vsync_waiter_class = new fml::jni::ScopedJavaGlobalRef&lt;jclass&gt;(env, clazz);
+
+  g_async_wait_for_vsync_method_ = env-&gt;GetStaticMethodID(
+      g_vsync_waiter_class-&gt;obj(), "asyncWaitForVsync", "(J)V");
+
+  return env-&gt;RegisterNatives(clazz, methods, arraysize(methods)) == 0;
+}
+</code></pre></div></div>
+
+<p>该注册过程主要工作：</p>
+
+<ul>
+  <li>将Java层的VsyncWaiter类的nativeOnVsync()方法，映射到C++层的OnNativeVsync()方法，用于该方法的Java调用C++的过程；</li>
+  <li>将Java层的VsyncWaiter类的asyncWaitForVsync()方法，保存到C++层的g_async_wait_for_vsync_method_变量，用于该方法C++调用Java的过程。</li>
+</ul>
+
+<p>可见，将调用VsyncWaiter类的asyncWaitForVsync()方法</p>
+
+<h3 id="26-asyncwaitforvsync">2.6 asyncWaitForVsync</h3>
+<p>[Java]
+[-&gt; flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java]</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>public class VsyncWaiter {
+    // FlutterView的刷新时间周期（16.7ms）
+    public static long refreshPeriodNanos = 1000000000 / 60;
+
+    private static HandlerThread handlerThread;
+    private static Handler handler;
+
+    static {
+        handlerThread = new HandlerThread("FlutterVsyncThread");
+        handlerThread.start();
+    }
+
+    public static void asyncWaitForVsync(final long cookie) {
+        if (handler == null) {
+            handler = new Handler(handlerThread.getLooper());
+        }
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                //注册帧回调方法，见小节[2.6.1]/[2.6.2]
+                Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
+                    @Override
+                    public void doFrame(long frameTimeNanos) {
+                        //frameTimeNanos是VYSNC触发的时间点，也就是计划绘制的时间点
+                        nativeOnVsync(frameTimeNanos, frameTimeNanos + refreshPeriodNanos, cookie);
+                    }
+                });
+            }
+        });
+    }
+}
+</code></pre></div></div>
+<p>通过Handler将工作post到FlutterVsyncThread线程，具体的工作是通过Choreographer来注册回调方法doFrame()以监听系统VSYNC信号。</p>
+
+<h4 id="261-choreographergetinstance">2.6.1 Choreographer.getInstance</h4>
+<p>[-&gt; Choreographer.java]</p>
+
+<p>```public static Choreographer getInstance() {
+    return sThreadInstance.get(); //单例模式
+}</p>
+
+<p>private static final ThreadLocal<Choreographer> sThreadInstance =
+    new ThreadLocal<Choreographer>() {</Choreographer></Choreographer></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>protected Choreographer initialValue() {
+    //获取当前线程FlutterVsyncThread的Looper
+    Looper looper = Looper.myLooper();
+    // 初始化Choreographer对象
+    return new Choreographer(looper);
+} };
+</code></pre></div></div>
+
+<p>private Choreographer(Looper looper) {
+    mLooper = looper;
+    //创建Handler对象
+    mHandler = new FrameHandler(looper);
+    //创建用于接收VSync信号的对象
+    mDisplayEventReceiver = USE_VSYNC ? new FrameDisplayEventReceiver(looper) : null;
+    mLastFrameTimeNanos = Long.MIN_VALUE;  //上一次帧绘制时间点
+    mFrameIntervalNanos = (long)(1000000000 / getRefreshRate());
+    mCallbackQueues = new CallbackQueue[CALLBACK_LAST + 1];<br />
+    for (int i = 0; i &lt;= CALLBACK_LAST; i++) {
+        mCallbackQueues[i] = new CallbackQueue();
+    }
+}</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>此处Choreographer的mLooper和mHandler都运行在FlutterVsyncThread线程。
+
+#### 2.6.2 postFrameCallback
+[-&gt; Choreographer.java]
+
+```public void postFrameCallback(FrameCallback callback) {
+    postFrameCallbackDelayed(callback, 0);
+}
+
+public void postFrameCallbackDelayed(FrameCallback callback, long delayMillis) {
+    postCallbackDelayedInternal(CALLBACK_ANIMATION,
+            callback, FRAME_CALLBACK_TOKEN, delayMillis);
+}
+
+private void postCallbackDelayedInternal(int callbackType, Object action, Object token, long delayMillis) {
+    synchronized (mLock) {
+        final long now = SystemClock.uptimeMillis();
+        final long dueTime = now + delayMillis;
+        //添加到mCallbackQueues队列
+        mCallbackQueues[callbackType].addCallbackLocked(dueTime, action, token);
+        if (dueTime &lt;= now) {
+          scheduleFrameLocked(now);
+        } else {
+          ...
+        }
+    }
+}
+</code></pre></div></div>
+<p>将FrameCallback方法加入到mCallbackQueues[CALLBACK_ANIMATION]回调队列中。</p>
+
+
+  </section>
+
+</article>
+
+<section>
+
+            <div class="content-play">
+              <!-- <p><a href="javascript:void(0)" onclick="dashangToggle()" class="dashang" title="打赏，支持一下">打赏一个呗</a></p> -->
+              <div class="hide_box-play"></div>
+              <div class="shang_box-play">
+                <a class="shang_close-play" href="javascript:void(0)" onclick="dashangToggle()" title="关闭"><img src="/images/payimg/close.jpg" alt="取消" /></a>
+                <div class="shang_tit-play">
+                  <p>感谢您的支持，我会继续努力的!</p>
+                </div>
+                <div class="shang_payimg">
+                    <img src="/images/payimg/alipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+              <div class="shang_payimg">    
+                    <img src="/images/payimg/weipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+                <div class="pay_explain">扫码打赏，你说多少就多少</div>
+                <div class="shang_payselect">
+                  <div class="pay_item checked" data-id="alipay">
+                    <span class="pay_logo"><img src="/images/payimg/alipay.jpg" alt="支付宝" /></span>
+                  </div>
+                  <div class="pay_item" data-id="weipay">
+                    <span class="pay_logo"><img src="/images/payimg/wechat.jpg" alt="微信" /></span>
+                  </div>
+                </div>
+                <div class="shang_info-play">
+                  <p>打开<span id="shang_pay_txt">支付宝</span>扫一扫，即可进行扫码打赏哦</p>
+                </div>
+              </div>
+            </div>
+            <script type="text/javascript">
+            function dashangToggle(){
+              $(".hide_box-play").fadeToggle();
+              $(".shang_box-play").fadeToggle();
+            }
+            </script>
+
+            <div style="text-align:center;margin:50px 0; font:normal 14px/24px 'MicroSoft YaHei';"></div>
+
+            <style type="text/css">
+              .content-play{width:80%;margin-top: 20px;margin-bottom: 10px;height:40px;}
+              .hide_box-play{z-index:999;filter:alpha(opacity=50);background:#666;opacity: 0.5;-moz-opacity: 0.5;left:0;top:0;height:99%;width:100%;position:fixed;display:none;}
+              .shang_box-play{width:540px;height:540px;padding:10px;background-color:#fff;border-radius:10px;position:fixed;z-index:1000;left:50%;top:50%;margin-left:-280px;margin-top:-280px;border:1px dotted #dedede;display:none;}
+              .shang_box-play img{border:none;border-width:0;}
+              .dashang{display:block;width:100px;margin:5px auto;height:25px;line-height:25px;padding:10px;background-color:#E74851;color:#fff;text-align:center;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;transition: all 0.3s;}
+              .dashang:hover{opacity:0.8;padding:15px;font-size:18px;}
+              .shang_close-play{float:right;display:inline-block;
+                margin-right: 10px;margin-top: 20px;
+              }
+              .shang_logo{display:block;text-align:center;margin:20px auto;}
+              .shang_tit-play{width: 100%;height: 75px;text-align: center;line-height: 66px;color: #a3a3a3;font-size: 16px;background: url('/images/payimg/cy-reward-title-bg.jpg');font-family: 'Microsoft YaHei';margin-top: 7px;margin-right:2px;}
+              .shang_tit-play p{color:#a3a3a3;text-align:center;font-size:16px;}
+              .shang_payimg{width:140px;padding:10px;padding-left: 80px; /*border:6px solid #EA5F00;**/margin:0 auto;border-radius:3px;height:140px;display:inline-block;}
+              .shang_payimg img{display:inline-block;margin-right:10px;float:left;text-align:center;width:140px;height:140px; }
+              .pay_explain{text-align:center;margin:10px auto;font-size:12px;color:#545454;}
+              .shang_payselect{text-align:center;margin:0 auto;margin-top:40px;cursor:pointer;height:60px;width:500px;margin-left:110px;}
+              .shang_payselect .pay_item{display:inline-block;margin-right:140px;float:left;}
+              .shang_info-play{clear:both;}
+              .shang_info-play p,.shang_info-play a{color:#C3C3C3;text-align:center;font-size:12px;text-decoration:none;line-height:2em;}
+            </style>
+
+       <ul class="pager">
+        
+        <li class="previous">
+            <a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%80)/" data-toggle="tooltip" data-placement="top" title="Flutter渲染机制—UI线程(一)">上一篇：  <span>Flutter渲染机制—UI线程(一)</span>
+            </a>
+        </li>
+        
+        
+        <li class="next">
+            <a href="/2020/09/%E4%BC%98%E7%A7%80%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E4%B9%9D%E7%A7%8D%E7%B4%A0%E8%B4%A8/" data-toggle="tooltip" data-placement="top" title="优秀程序员的九种素质">下一篇：  <span>优秀程序员的九种素质</span>
+            </a>
+        </li>
+        
+    </ul>
+</section>
+
+<section class="post-comments">
+
+  
+  
+</section>
+
+
+            <section class="footer">
+    <footer>
+        <div class = "footer_div">  
+        <nav class="cover-navigation navigation--social">
+          <ul class="navigation">
+
+          
+          <!-- Github -->
+          <li class="navigation__item_social">
+            <a href="https://github.com/ByronJia" title="@ByronJia 的 Github" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/github.png);"></div>
+            </a>
+          </li>
+          
+
+          
+          <!-- Zhihu -->
+          <li class="navigation__item_social">
+            <a href="https://www.zhihu.com/people/byronjia" title="@byronjia" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/zhihu.png);"></div>
+            </a>
+          </li>
+
+          
+
+          
+
+          
+
+          
+
+          
+          
+
+
+          
+          <!-- Email -->
+          <li class="navigation__item_social">
+            <a href="mailto:jiachaoning@163.com" title="Contact me">
+              <div class="footer-social-icon" style="background:url(/images/email.png);"></div>
+            </a>
+          </li>
+          
+          
+          <!-- RSS -->
+          <!-- <li class="navigation__item_social">
+            <a href="/feed.xml" rel="author" title="RSS" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/rss.png);"></div>
+              <span class="label">RSS</span>
+            </a>
+          </li> -->
+
+          </ul>
+        </nav>
+
+        </div>
+
+        <div class = "footer_div">  
+           <p class="copyright text-muted">
+            Copyright &copy; 拜伦的博客 2020 Theme by <a href="https://github.com/ByronJia/ByronJia.github.io">Byron</a> |
+            <iframe
+                style="margin-left: 2px; margin-bottom:-5px;"
+                frameborder="0" scrolling="0" width="91px" height="20px"
+                src="https://ghbtns.com/github-btn.html?user=ByronJia&repo=ByronJia.github.io&type=star&count=true" >
+            </iframe>
+            </p>
+        	<!-- <div align="right">
+    			<link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.3.0/css/font-awesome.min.css"> -->
+
+          <!-- 访问统计 -->
+          <!-- <span id="busuanzi_container_site_pv">
+            本站总访问量
+            <span id="busuanzi_value_site_pv"></span>次
+          </span> -->
+
+        </div>
+        <div>
+    </footer>
+</section>
+
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="/js/main.js"></script>
+
+<script type="text/javascript" src="/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+  </body>
+
+</html>

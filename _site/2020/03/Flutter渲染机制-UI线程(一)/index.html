@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>优秀程序员的九种素质</title>
-  <meta name="description" content="一">
+  <title>Flutter渲染机制—UI线程(一)</title>
+  <meta name="description" content="一、UI线程渲染Flutter是谷歌开源的移动UI框架，可以快速在Android和iOS上构建出高质量的原生用户界面，目前全世界越来越多的开发者加入到Flutter的队伍。 Flutter相比RN性能更好，由于Flutter自己实现了一套UI框架，丢弃了原生的UI框架，非常接近原生的体验。">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="优秀程序员的九种素质">
-  <meta name="twitter:description" content="一">
+  <meta name="twitter:title" content="Flutter渲染机制—UI线程(一)">
+  <meta name="twitter:description" content="一、UI线程渲染Flutter是谷歌开源的移动UI框架，可以快速在Android和iOS上构建出高质量的原生用户界面，目前全世界越来越多的开发者加入到Flutter的队伍。 Flutter相比RN性能更好，由于Flutter自己实现了一套UI框架，丢弃了原生的UI框架，非常接近原生的体验。">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="优秀程序员的九种素质">
-  <meta property="og:description" content="一">
+  <meta property="og:title" content="Flutter渲染机制—UI线程(一)">
+  <meta property="og:description" content="一、UI线程渲染Flutter是谷歌开源的移动UI框架，可以快速在Android和iOS上构建出高质量的原生用户界面，目前全世界越来越多的开发者加入到Flutter的队伍。 Flutter相比RN性能更好，由于Flutter自己实现了一套UI框架，丢弃了原生的UI框架，非常接近原生的体验。">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/09/%E4%BC%98%E7%A7%80%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E4%B9%9D%E7%A7%8D%E7%B4%A0%E8%B4%A8/">
+  <link rel="canonical" href="http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%80)/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -179,10 +179,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">优秀程序员的九种素质</h1>
+    <h1 class="post-title">Flutter渲染机制—UI线程(一)</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-09-10 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-09-10</time>  
+      <time datetime="2020-03-02 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-03-02</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -192,95 +192,110 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#一">一</a></li>
-  <li><a href="#二">二</a></li>
-  <li><a href="#三">三</a></li>
+  <li><a href="#一ui线程渲染">一、UI线程渲染</a>
+    <ul>
+      <li><a href="#11-ui渲染原理">1.1 UI渲染原理</a>
+        <ul>
+          <li><a href="#111-ui渲染概览">1.1.1 UI渲染概览</a></li>
+          <li><a href="#112-ui绘制核心工作">1.1.2 UI绘制核心工作</a></li>
+          <li><a href="#113-timeline说明">1.1.3 Timeline说明</a></li>
+        </ul>
+      </li>
+      <li><a href="#12-ui线程渲染流程图">1.2 UI线程渲染流程图</a>
+        <ul>
+          <li><a href="#121-vsync注册流程">1.2.1 VSYNC注册流程</a></li>
+          <li><a href="#122-engine层绘制">1.2.2 Engine层绘制</a></li>
+          <li><a href="#123-framework层绘制">1.2.3 Framework层绘制</a></li>
+        </ul>
+      </li>
+      <li><a href="#13-核心类图">1.3 核心类图</a></li>
+    </ul>
+  </li>
 </ul>
 
   
 
   <section class="post">
-    <h3 id="一">一</h3>
+    <h2 id="一ui线程渲染">一、UI线程渲染</h2>
+<p>Flutter是谷歌开源的移动UI框架，可以快速在Android和iOS上构建出高质量的原生用户界面，目前全世界越来越多的开发者加入到Flutter的队伍。 Flutter相比RN性能更好，由于Flutter自己实现了一套UI框架，丢弃了原生的UI框架，非常接近原生的体验。</p>
 
-<p>上周看到一篇文章，大意是阿里云源代码泄露，涉及多少家企业云云，看起来耸人听闻，点进去发现是有企业在使用阿里云做代码托管的时候，private internal 和 public 傻傻分不清，创建仓库用了 internal，结果只要是登录用户都可以看到并 clone 这些代码。事实上，这三个设置不仅是惯例，internel 的注释也写的清清楚楚，但是挡不住程序员不看。你永远不知道一个人的水准会低到什么地步，也许这些人从来没用过 GitHub 和 GitLab 呢？</p>
+<p>为了揭秘Flutter高性能，本文从源码角度来看看Flutter的渲染绘制机制，跟渲染直接相关的两个线程是UI线程和GPU线程：</p>
 
-<p>阿里云其实可以采用安全最小化原则，也就是常说的多一事不如少一事。最小化可用原则，对于操作系统来说，就是装最小化的包，没用的服务不启动，操作命令最小化，权限最小化等等。对于阿里云上的托管用户来说，internal 应该是个可有可无的功能，去掉是不是更好呢，也许值得平台方思考。</p>
+<ul>
+  <li>UI线程：运行着UI Task Runner，是Flutter Engine用于执行Dart root isolate代码，将其转换为layer tree视图结构；</li>
+  <li>GPU线程：该线程依然是在CPU上执行，运行着GPU Task Runner，处理layer tree，将其转换成为GPU命令并发送到GPU。</li>
+</ul>
 
-<p>永远不要高估用户的聪明程度。</p>
+<p>通过VSYNC信号使UI线程和GPU线程有条不紊的周期性的渲染界面，本文介绍VSYNC的产生过程、UI线程在引擎和框架的绘制工作，下一篇文章会介绍GPU线程的绘制工作。</p>
 
-<h3 id="二">二</h3>
+<h3 id="11-ui渲染原理">1.1 UI渲染原理</h3>
+<h4 id="111-ui渲染概览">1.1.1 UI渲染概览</h4>
+<p>通过VSYNC信号使UI线程和GPU线程有条不紊的周期性的渲染界面，如下图所示：
+<img src="http://gityuan.com/img/flutter_ui/flutter_draw.png" alt="" /></p>
 
-<p>本周我们上线了一款基础课专栏《软件工程之美》，最新的文章中阐述了软件过程和软件危机：</p>
+<ul>
+  <li>当需要渲染则会调用到Engine的ScheduleFrame()来注册VSYNC信号回调，一旦触发回调doFrame()执行完成后，便会移除回调方法，也就是说一次注册一次回调；</li>
+  <li>当需要再次绘制则需要重新调用到ScheduleFrame()方法，该方法的唯一重要参数regenerate_layer_tree决定在帧绘制过程是否需要重新生成layer tree，还是直接复用上一次的layer tree；</li>
+  <li>UI线程的绘制过程，最核心的是执行WidgetsBinding的drawFrame()方法，然后会创建layer tree视图树</li>
+  <li>再交由GPU Task Runner将layer tree提供的信息转化为平台可执行的GPU指令。</li>
+</ul>
 
-<p>软件是怎么被创造出来的？</p>
+<h4 id="112-ui绘制核心工作">1.1.2 UI绘制核心工作</h4>
+<p>1）Vsync单注册模式：保证在一帧的时间窗口里UI线程只会生成一个layer tree发送给GPU线程，原理如下：</p>
 
-<p>首先，它们的诞生都是有人想要造一个东西。这其中的很多故事你都耳熟能详：张小龙创造微信、乔布斯创造 iOS、暴雪想做一款不一样的射击游戏……他们首先有着这样的意图，然后，他们立项做这样的产品。</p>
+<p>Animator中的信号量pending_frame_semaphore_用于控制不能连续频繁地调用Vsync请求，一次只能存在Vsync注册。 pending_frame_semaphore_初始值为1，在Animator::RequestFrame()消费信号会减1，当而后再次调用则会失败直接返回； Animator的BeginFrame()或者DrawLastLayerTree()方法会执行信号加1操作。</p>
 
-<p>每一款软件项目背后，都有很多人在参与。你无法想象微信这样复杂的 App 靠张小龙自己可以开发出来；你也不会相信 iOS 是乔布斯一个人设计出来的；像守望先锋这种游戏的背后，有成百上千的游戏策划、美术设计、程序开发人员。</p>
+<p>2）UI绘制最核心的方法是drawFrame()，包含以下几个过程：</p>
 
-<p>从立项到第一个版本的发布，每个成功的软件都需要有计划、有步骤地进行，什么时候发布第一个版本、第一个版本有什么样的功能、什么时候发布第二个版本、第二个版本有哪些地方要改进，这些都是研发过程中需要考虑的问题。</p>
+<ul>
+  <li>Animate: 遍历_transientCallbacks，执行动画回调方法；</li>
+  <li>Build: 对于dirty的元素会执行build构造，没有dirty元素则不会执行，对应于buildScope()</li>
+  <li>Layout: 计算渲染对象的大小和位置，对应于flushLayout()，这个过程可能会嵌套再调用build操作；</li>
+  <li>Compositing bits: 更新具有脏合成位的任何渲染对象， 对应于flushCompositingBits()；</li>
+  <li>Paint: 将绘制命令记录到Layer， 对应于flushPaint()；</li>
+  <li>Compositing: 将Compositing bits发送给GPU， 对应于compositeFrame()；</li>
+  <li>Semantics: 编译渲染对象的语义，并将语义发送给操作系统， 对应于flushSemantics()。</li>
+</ul>
 
-<p>比如，守望先锋是在 2013 年立项，他们计划做一个基于职业的 MMO 游戏，他们先花了几个月的时间做了第一个 Demo 演示，只有四个英雄和一个张地图。</p>
+<p>UI线程的耗时从doFrame(frameTimeNanos)中的frameTimeNanos为起点，以小节[4.10.6]Animator::Render()方法结束为终点， 并将结果保存到LayerTree的成员变量construction_time_，这便是UI线程的耗时时长。</p>
 
-<p>然后，他们要在 2014 年的“暴雪嘉年华”发布这个游戏的试玩版，包含 12 个英雄和 4 张地图。</p>
+<h4 id="113-timeline说明">1.1.3 Timeline说明</h4>
+<p>3）以上几个过程在Timeline中ui线程中都有体现，如下图所示：
+<img src="http://gityuan.com/img/flutter_ui/timeline_ui_draw.png" alt="" />
+另外Timeline中还有两个比较常见的标签项</p>
 
-<p>最终这个游戏在 2016 年 5 月正式发布了。这样从立项一步步到最终发布，历时三年，中间经过了诸多环节。</p>
+<ul>
+  <li>“Frame Request Pending”：从Animator::RequestFrame 到Animator::BeginFrame()结束；</li>
+  <li>”PipelineProduce“： 从Animator::BeginFrame()到Animator::Render()结束。</li>
+</ul>
 
-<p>类似的例子还有微信，2010 年 11 月 20 日立项，2011 年 1 月 21 日第一版上线，当时的功能还非常简陋，只能发送文本消息和照片。之后才是一个个版本的迭代，直到你现在看到的微信。</p>
+<h3 id="12-ui线程渲染流程图">1.2 UI线程渲染流程图</h3>
+<h4 id="121-vsync注册流程">1.2.1 VSYNC注册流程</h4>
+<p><img src="http://gityuan.com/img/flutter_ui/Vsync.jpg" alt="" />
+当调用到引擎Engine的ScheduleFrame()方法过程则会注册VSYNC信号回调，一旦Vsync信号达到，则会调用到doFrame()方法。 对于调用ScheduleFrame()的场景有多种，比如动画的执行AnimationController.forward()，再比如比如surface创建的时候shell::SurfaceCreated()。</p>
+<h4 id="122-engine层绘制">1.2.2 Engine层绘制</h4>
+<p><img src="http://gityuan.com/img/flutter_ui/UIDraw_engine.jpg" alt="" /></p>
 
-<p>像这种有人参与、有计划、有步骤地造一件产品，我们通常称为「工程」。</p>
+<p>doFrame()经过多层调用后通过PostTask将任务异步post到UI TaskRunner线程来执行，最后调用到Window的BeginFrame()方法。</p>
 
-<p>那什么是软件危机呢？有兴趣可以订阅专栏阅读。软件工程是你通向程序之巅的必经之路。</p>
+<h4 id="123-framework层绘制">1.2.3 Framework层绘制</h4>
+<p><img src="http://gityuan.com/img/flutter_ui/UIDraw_fwk.jpg" alt="" /></p>
 
-<h3 id="三">三</h3>
+<p>其中window.cc中的一个BeginFrame()方法，会调用到window.dart中的onBeginFrame()和onDrawFrame()两个方法。</p>
 
-<p>周末读村上的书，他说自己能够持续写作和跑步，就是因为具备两个特质，一个是集中力，一个是耐力。村上写长篇的时候每天早晨集中写作四小时，他一个人坐在书桌前，没有任何打扰，将意识集中倾斜在书稿中，其他什么都不考虑。另外，没有耐力也不行。你集中写了一星期然后伸伸懒腰说，我累了，然后就休息一个月，这样是写不成长篇的。你必须每天集中写作，坚持半年，一年，甚至更长才行。</p>
+<h3 id="13-核心类图">1.3 核心类图</h3>
+<p><img src="http://gityuan.com/img/flutter_ui/ClassEngine.jpg" alt="" /></p>
 
-<p>一个优秀的程序员需要什么特质呢？由此我想到之前读过的一篇文章，是 Redis 之父萨尔瓦托·桑菲利普（Salvatore Sanfilippo）写的 9 种高能程序员的特质，重新意译一下，推荐给读者：</p>
+<p>为了让大家更容易理解源码，先看一张关于Shell、Engine、Animator等Flutter等Flutter引擎中核心类的类图。</p>
 
-<p><strong>1、高效完成子任务</strong></p>
+<ul>
+  <li>Window类：是连接Flutter框架层(Dart)与引擎层(C++)的关键类，在框架层中window.dart文件里的一些方法在引擎层的window.cc文件有相对应的方法，比如scheduleFrame()方法。 在window.cc里面通过Window::RegisterNatives()注册了一些框架层与引擎层的方法对应关系；</li>
+  <li>RuntimeController类：可通过其成员root_isolate_找到Window类；</li>
+  <li>Shell类：同时继承了PlatformView::Delegate，Animator::Delegate，Engine::Delegate，所以在Engine，Animator，PlatformView中的成员变量delegate_都是指Shell对象， 从图中也能看出其中心地位，代理多项业务，该类是由AndroidShellHolder过程中初始化创建的；另外Shell类还继承了ServiceProtocol::Handler，图中省略而已。</li>
+  <li>PlatformViewAndroid类：在Android平台上PlatformView的实例采用的便是PlatformViewAndroid类。</li>
+  <li>Dart层与C层之间可以相互调用，从Window一路能调用到Shell类，也能从Shell类一路调用回Window。</li>
+</ul>
 
-<p>从处理编程子任务上，可以看出一个程序员的短板和长处，比如实现一个函数或者一个算法。事实上，擅于使用基本的编程技能来高效完成任务的程序员，并没有人们想象的那么多。有时候，团队里有些不称职的程序员，他们甚至不知道该怎么写一个简单的排序算法。</p>
-
-<p><strong>2、合理使用自己的经验</strong></p>
-
-<p>桑菲利普认为，经验就是一系列解决方案，它们已经被证实可以用于处理一些重复性的任务。经验老道的程序员知道该如何处理各种子任务，这样不但省掉了很多设计工作，而且避免了很多设计错误，而设计错误是简洁性最大的敌人。</p>
-
-<p><strong>3、准确预测工期</strong></p>
-
-<p>花在编码上的时间不仅要看数量，也要看质量。造成注意力不集中的因素既有内部的，也有外部的。集中注意力和避免被打扰，对于提高编程效率来说是至关重要的。</p>
-
-<p><strong>4、设计权衡：用 5% 换取 90%</strong></p>
-
-<p>项目的「非根本性」目标在很大程度上导致了设计的复杂性，或者导致无法达成其他更重要的目标，因为根本性功能和非根本性功能在设计上存在竞争关系。如果意识不到这点，复杂性就会随之而来。对于设计者来说，如果项目要最大化产出，就要把精力集中在重要的事情上，并在合理的时间内完成。</p>
-
-<p><strong>5、简洁性</strong></p>
-
-<p>简洁性是成败之间最为明显的分界点，理解复杂性的产生过程有助于理解什么是简洁性。不愿意做出设计权衡和设计错误的累积是导致复杂性的两个主要因素。我在第一点里讲的 Internal 其实是提高了复杂度导致用户选择错误。</p>
-
-<p><strong>6、拒绝完美主义（为了偏袒设计而放弃生产力）</strong></p>
-
-<p>完美主义可以分为两种：一种是追求程序极致性能的工程文化，另一种是个人特质。不管是哪一种完美主义，它们都会对程序员实现快速交付造成阻碍。完美主义和对外部评判的恐惧会导致设计上的偏袒，程序员根据主观的心理因素和无关紧要的衡量参数做出设计决策，却忽略了健壮性、简洁性和及时交付。</p>
-
-<p>我曾经服务过的一家公司就犯了这种错误。当然，错误不止于此。</p>
-
-<p><strong>7、理解知识理论的价值</strong></p>
-
-<p>在处理复杂任务时，具备一些理论方面的知识会对设计产生重要影响，比如数据结构方面的知识、了解计算能力的局限性和一些重要的算法。虽然程序员没有必要成为无所不知的超级专家，但是至少要知道一些问题的潜在解决方案，避免设计出复杂、缓慢、低内存效能的解决方案。</p>
-
-<p><strong>8、理解机器原理</strong></p>
-
-<p>程序的很多问题都是源于对计算机工作原理的误解，即使是使用高级语言开发的程序也不外乎如此。这种情况可能导致一个项目需要重新设计和实现，因为项目所使用的工具和算法出现了根本性的错误。</p>
-
-<p>7 和 8 说的道理差不多，这也是极客时间会连续推出数学、算法、数据结构、网络协议、软件工程等课程的原因，后面还有架构设计、操作系统、编译原理等等。</p>
-
-<p><strong>9、调试技能</strong></p>
-
-<p>查找和解决 bug 经常会占用程序员大量的时间。查找引起 bug 的问题根源，在合理的步骤内修复 bug，以简单的方式编写包含较少 bug 的代码，对于程序员来说，做到这几点就可以显著提升效率。</p>
-
-<p>能否运用调试技能快速解决问题是衡量一个程序员水平的重要标准。</p>
-
-<p>你具备这些特质嘛？我觉得村上说的没错，程序员同时还需要集中力和耐力。</p>
 
   </section>
 
@@ -349,11 +364,11 @@
 
        <ul class="pager">
         
-        <li class="previous">
-            <a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%BA%8C)/" data-toggle="tooltip" data-placement="top" title="Flutter渲染机制—UI线程(二)">上一篇：  <span>Flutter渲染机制—UI线程(二)</span>
+        
+        <li class="next">
+            <a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%BA%8C)/" data-toggle="tooltip" data-placement="top" title="Flutter渲染机制—UI线程(二)">下一篇：  <span>Flutter渲染机制—UI线程(二)</span>
             </a>
         </li>
-        
         
     </ul>
 </section>

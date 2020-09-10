@@ -5,8 +5,8 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 10 Sep 2020 15:21:56 +0800</pubDate>
-    <lastBuildDate>Thu, 10 Sep 2020 15:21:56 +0800</lastBuildDate>
+    <pubDate>Thu, 10 Sep 2020 18:18:32 +0800</pubDate>
+    <lastBuildDate>Thu, 10 Sep 2020 18:18:32 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -98,6 +98,433 @@
         <guid isPermaLink="true">http://localhost:4000/2020/09/%E4%BC%98%E7%A7%80%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E4%B9%9D%E7%A7%8D%E7%B4%A0%E8%B4%A8/</guid>
         
         <category>闲谈</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Flutter渲染机制—UI线程(二)</title>
+        <description>&lt;h2 id=&quot;二-vsync注册流程&quot;&gt;二、 VSYNC注册流程&lt;/h2&gt;
+&lt;h3 id=&quot;21-enginescheduleframe&quot;&gt;2.1 Engine::ScheduleFrame&lt;/h3&gt;
+&lt;p&gt;[-&amp;gt; flutter/shell/common/engine.cc]&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Engine::ScheduleFrame(bool regenerate_layer_tree) {
+    //[见小节2.2]
+    animator_-&amp;gt;RequestFrame(regenerate_layer_tree);
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;该方法说明：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;animator_的赋值过程是在Engine对象初始化过程完成，而Engine初始化过程在Shell创建过程，此处animator_便是Animator对象；&lt;/li&gt;
+  &lt;li&gt;ScheduleFrame的参数regenerate_layer_tree决定是否需要重新生成layer tree，还是直接复用上一次生成的layer tree；&lt;/li&gt;
+  &lt;li&gt;绝大多数情况下，调用RequestFrame()时将regenerate_layer_tree_设置为true或者用默认值true，执行完Animator::BeginFrame()则设置该变量为false；
+    &lt;ul&gt;
+      &lt;li&gt;当无参数调用该方法时，regenerate_layer_tree为默认值为true。&lt;/li&gt;
+      &lt;li&gt;特别的例子就是Shell::OnPlatformViewMarkTextureFrameAvailable()过程，设置参数为false，那么计划绘制一帧的时候就不需要重绘layer tree；&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;22-animatorrequestframe&quot;&gt;2.2 Animator::RequestFrame&lt;/h3&gt;
+&lt;p&gt;[-&amp;gt; flutter/shell/common/animator.cc]&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Animator::RequestFrame(bool regenerate_layer_tree) {
+  if (regenerate_layer_tree) {
+    // regenerate_layer_tree_决定Vsync信号到来时，是否执行BeginFrame
+    regenerate_layer_tree_ = true;
+  }
+
+  //当调用Animator::Stop()则会停止动画绘制
+  if (paused_ &amp;amp;&amp;amp; !dimension_change_pending_) {
+    return;
+  }
+
+  //调用sem_trywait来保证不会同时有多个vsync请求
+  if (!pending_frame_semaphore_.TryWait()) {
+    return;
+  }
+
+  task_runners_.GetUITaskRunner()-&amp;gt;PostTask([self = weak_factory_.GetWeakPtr(),
+                                             frame_number = frame_number_]() {
+    if (!self.get()) {
+      return;
+    }
+    TRACE_EVENT_ASYNC_BEGIN0(&quot;flutter&quot;, &quot;Frame Request Pending&quot;, frame_number);
+    self-&amp;gt;AwaitVSync();  // [见小节2.3]
+  });
+  frame_scheduled_ = true;  //标注已经schedule绘画帧
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;过程说明：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;pending_frame_semaphore_：非负信号量，初始值为1，第一次调用TryWait减1，而后再次调用则会失败直接返回。当消费了这次vsync回调，也就是调用了Animator的BeginFrame()或者DrawLastLayerTree()方法后，改信号量会加1[见小节3.6]，可以再次执行vysnc的注册；&lt;/li&gt;
+  &lt;li&gt;通过Animator的Start()或者BeginFrame调用到的RequestFrame方法，则肯定需要重新生成layer tree；通过Engine的ScheduleFrame方法是否重建layer tree看小节2.1；&lt;/li&gt;
+  &lt;li&gt;此处通过post把Animator::AwaitVSync任务放入到UI Task Runner来执行。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;23-animatorawaitvsync&quot;&gt;2.3 Animator::AwaitVSync&lt;/h3&gt;
+&lt;p&gt;[-&amp;gt; flutter/shell/common/animator.cc]&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Animator::AwaitVSync() {
+  // [见小节2.4]
+  waiter_-&amp;gt;AsyncWaitForVsync(
+      [self = weak_factory_.GetWeakPtr()](fml::TimePoint frame_start_time,
+                                          fml::TimePoint frame_target_time) {
+        if (self) {
+          //是否能复用上次layer树，取决于regenerate_layer_tree_
+          if (self-&amp;gt;CanReuseLastLayerTree()) {
+            //复用上次layer树，直接把任务post到gpu线程做栅格化操作
+            self-&amp;gt;DrawLastLayerTree();
+          } else {
+            self-&amp;gt;BeginFrame(frame_start_time, frame_target_time);
+          }
+        }
+      });
+
+  delegate_.OnAnimatorNotifyIdle(dart_frame_deadline_);
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;waiter_的赋值是在Animator初始化过程，取值为VsyncWaiterAndroid对象，当调用了RequestFrame()，默认参数regenerate_layer_tree_为true，意味着需要重新生成layer树，故不能重复使用上一次的layer树，接着来看一下AsyncWaitForVsync()方法的实现。&lt;/p&gt;
+
+&lt;h3 id=&quot;24-vsyncwaiterasyncwaitforvsync&quot;&gt;2.4 VsyncWaiter::AsyncWaitForVsync&lt;/h3&gt;
+&lt;p&gt;[-&amp;gt; flutter/shell/common/vsync_waiter.cc]&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void VsyncWaiter::AsyncWaitForVsync(Callback callback) {
+  {
+    std::lock_guard&amp;lt;std::mutex&amp;gt; lock(callback_mutex_);
+    //赋值callback_
+    callback_ = std::move(callback);
+  }
+  TRACE_EVENT0(&quot;flutter&quot;, &quot;AsyncWaitForVsync&quot;);
+  AwaitVSync(); // [见小节2.5]
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;此次的callback_便是[小节2.3]方法中的参数，该方法根据regenerate_layer_tree_来决定执行流。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;当regenerate_layer_tree_=false，则执行DrawLastLayerTree();&lt;/li&gt;
+  &lt;li&gt;当regenerate_layer_tree_=false，则执行BeginFrame();&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;25-vsyncwaiterandroidawaitvsync&quot;&gt;2.5 VsyncWaiterAndroid::AwaitVSync&lt;/h3&gt;
+&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/vsync_waiter_android.cc]&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void VsyncWaiterAndroid::AwaitVSync() {
+  std::weak_ptr&amp;lt;VsyncWaiter&amp;gt;* weak_this =
+      new std::weak_ptr&amp;lt;VsyncWaiter&amp;gt;(shared_from_this());
+  //获取VsyncWaiter的弱引用
+  jlong java_baton = reinterpret_cast&amp;lt;jlong&amp;gt;(weak_this);
+
+  JNIEnv* env = fml::jni::AttachCurrentThread();
+  // 此次调用到Java层的asyncWaitForVsync方法，java_baton指向VsyncWaiter
+  env-&amp;gt;CallStaticVoidMethod(g_vsync_waiter_class-&amp;gt;obj(),     //
+                            g_async_wait_for_vsync_method_,  //
+                            java_baton                       //
+  );
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;此处g_vsync_waiter_class，g_async_wait_for_vsync_method_的赋值过程是由JNI_OnLoad完成，如下所示。&lt;/p&gt;
+
+&lt;h4 id=&quot;251-jni_onload&quot;&gt;2.5.1 JNI_OnLoad&lt;/h4&gt;
+&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/library_loader.cc]&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+  // 初始化Java虚拟机
+  fml::jni::InitJavaVM(vm);
+
+  JNIEnv* env = fml::jni::AttachCurrentThread();
+  bool result = false;
+
+  // 注册FlutterMain.
+  result = shell::FlutterMain::Register(env);
+
+  // 注册PlatformView [见小节2.5.2]
+  result = shell::PlatformViewAndroid::Register(env);
+
+  // 注册VSyncWaiter [见小节2.5.3]
+  result = shell::VsyncWaiterAndroid::Register(env);
+
+  return JNI_VERSION_1_4;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;首次加载共享库时虚拟机会调用此方法。&lt;/p&gt;
+
+&lt;h4 id=&quot;252-register&quot;&gt;2.5.2 Register&lt;/h4&gt;
+&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/platform_view_android_jni.cc]&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bool PlatformViewAndroid::Register(JNIEnv* env) {
+  //记录FlutterCallbackInformation类的全局引用
+  g_flutter_callback_info_class = new fml::jni::ScopedJavaGlobalRef&amp;lt;jclass&amp;gt;(
+      env, env-&amp;gt;FindClass(&quot;io/flutter/view/FlutterCallbackInformation&quot;));
+  //记录FlutterCallbackInformation构造函数
+  g_flutter_callback_info_constructor = env-&amp;gt;GetMethodID(
+      g_flutter_callback_info_class-&amp;gt;obj(), &quot;&amp;lt;init&amp;gt;&quot;,
+      &quot;(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V&quot;);
+  //记录FlutterJNI类的全局引用
+  g_flutter_jni_class = new fml::jni::ScopedJavaGlobalRef&amp;lt;jclass&amp;gt;(
+      env, env-&amp;gt;FindClass(&quot;io/flutter/embedding/engine/FlutterJNI&quot;));
+  //记录SurfaceTexture类的全局引用
+  g_surface_texture_class = new fml::jni::ScopedJavaGlobalRef&amp;lt;jclass&amp;gt;(
+      env, env-&amp;gt;FindClass(&quot;android/graphics/SurfaceTexture&quot;));
+
+  static const JNINativeMethod callback_info_methods[] = {
+      {
+          .name = &quot;nativeLookupCallbackInformation&quot;,
+          .signature = &quot;(J)Lio/flutter/view/FlutterCallbackInformation;&quot;,
+          .fnPtr = reinterpret_cast&amp;lt;void*&amp;gt;(&amp;amp;shell::LookupCallbackInformation),
+      },
+  };
+  //注册FlutterCallbackInformation的nativeLookupCallbackInformation()方法
+  env-&amp;gt;RegisterNatives(g_flutter_callback_info_class-&amp;gt;obj(),
+                           callback_info_methods,
+                           arraysize(callback_info_methods)) != 0);
+
+  g_is_released_method =
+      env-&amp;gt;GetMethodID(g_surface_texture_class-&amp;gt;obj(), &quot;isReleased&quot;, &quot;()Z&quot;);
+
+  fml::jni::ClearException(env);
+
+  g_attach_to_gl_context_method = env-&amp;gt;GetMethodID(
+      g_surface_texture_class-&amp;gt;obj(), &quot;attachToGLContext&quot;, &quot;(I)V&quot;);
+
+  g_update_tex_image_method =
+      env-&amp;gt;GetMethodID(g_surface_texture_class-&amp;gt;obj(), &quot;updateTexImage&quot;, &quot;()V&quot;);
+
+  g_get_transform_matrix_method = env-&amp;gt;GetMethodID(
+      g_surface_texture_class-&amp;gt;obj(), &quot;getTransformMatrix&quot;, &quot;([F)V&quot;);
+
+  g_detach_from_gl_context_method = env-&amp;gt;GetMethodID(
+      g_surface_texture_class-&amp;gt;obj(), &quot;detachFromGLContext&quot;, &quot;()V&quot;);
+
+  return RegisterApi(env);
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;该方法的主要工作：&lt;/p&gt;
+
+&lt;p&gt;记录和注册类FlutterCallbackInformation、FlutterJNI以及SurfaceTexture类的相关方法，用于Java和C++层方法的相互调用。&lt;/p&gt;
+&lt;h4 id=&quot;253-register&quot;&gt;2.5.3 Register&lt;/h4&gt;
+&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/vsync_waiter_android.cc]&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bool VsyncWaiterAndroid::Register(JNIEnv* env) {
+  static const JNINativeMethod methods[] = ;
+
+  jclass clazz = env-&amp;gt;FindClass(&quot;io/flutter/view/VsyncWaiter&quot;);
+
+  g_vsync_waiter_class = new fml::jni::ScopedJavaGlobalRef&amp;lt;jclass&amp;gt;(env, clazz);
+
+  g_async_wait_for_vsync_method_ = env-&amp;gt;GetStaticMethodID(
+      g_vsync_waiter_class-&amp;gt;obj(), &quot;asyncWaitForVsync&quot;, &quot;(J)V&quot;);
+
+  return env-&amp;gt;RegisterNatives(clazz, methods, arraysize(methods)) == 0;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;该注册过程主要工作：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;将Java层的VsyncWaiter类的nativeOnVsync()方法，映射到C++层的OnNativeVsync()方法，用于该方法的Java调用C++的过程；&lt;/li&gt;
+  &lt;li&gt;将Java层的VsyncWaiter类的asyncWaitForVsync()方法，保存到C++层的g_async_wait_for_vsync_method_变量，用于该方法C++调用Java的过程。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;可见，将调用VsyncWaiter类的asyncWaitForVsync()方法&lt;/p&gt;
+
+&lt;h3 id=&quot;26-asyncwaitforvsync&quot;&gt;2.6 asyncWaitForVsync&lt;/h3&gt;
+&lt;p&gt;[Java]
+[-&amp;gt; flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java]&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;public class VsyncWaiter {
+    // FlutterView的刷新时间周期（16.7ms）
+    public static long refreshPeriodNanos = 1000000000 / 60;
+
+    private static HandlerThread handlerThread;
+    private static Handler handler;
+
+    static {
+        handlerThread = new HandlerThread(&quot;FlutterVsyncThread&quot;);
+        handlerThread.start();
+    }
+
+    public static void asyncWaitForVsync(final long cookie) {
+        if (handler == null) {
+            handler = new Handler(handlerThread.getLooper());
+        }
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                //注册帧回调方法，见小节[2.6.1]/[2.6.2]
+                Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
+                    @Override
+                    public void doFrame(long frameTimeNanos) {
+                        //frameTimeNanos是VYSNC触发的时间点，也就是计划绘制的时间点
+                        nativeOnVsync(frameTimeNanos, frameTimeNanos + refreshPeriodNanos, cookie);
+                    }
+                });
+            }
+        });
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;通过Handler将工作post到FlutterVsyncThread线程，具体的工作是通过Choreographer来注册回调方法doFrame()以监听系统VSYNC信号。&lt;/p&gt;
+
+&lt;h4 id=&quot;261-choreographergetinstance&quot;&gt;2.6.1 Choreographer.getInstance&lt;/h4&gt;
+&lt;p&gt;[-&amp;gt; Choreographer.java]&lt;/p&gt;
+
+&lt;p&gt;```public static Choreographer getInstance() {
+    return sThreadInstance.get(); //单例模式
+}&lt;/p&gt;
+
+&lt;p&gt;private static final ThreadLocal&lt;Choreographer&gt; sThreadInstance =
+    new ThreadLocal&lt;Choreographer&gt;() {&lt;/Choreographer&gt;&lt;/Choreographer&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;protected Choreographer initialValue() {
+    //获取当前线程FlutterVsyncThread的Looper
+    Looper looper = Looper.myLooper();
+    // 初始化Choreographer对象
+    return new Choreographer(looper);
+} };
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;private Choreographer(Looper looper) {
+    mLooper = looper;
+    //创建Handler对象
+    mHandler = new FrameHandler(looper);
+    //创建用于接收VSync信号的对象
+    mDisplayEventReceiver = USE_VSYNC ? new FrameDisplayEventReceiver(looper) : null;
+    mLastFrameTimeNanos = Long.MIN_VALUE;  //上一次帧绘制时间点
+    mFrameIntervalNanos = (long)(1000000000 / getRefreshRate());
+    mCallbackQueues = new CallbackQueue[CALLBACK_LAST + 1];&lt;br /&gt;
+    for (int i = 0; i &amp;lt;= CALLBACK_LAST; i++) {
+        mCallbackQueues[i] = new CallbackQueue();
+    }
+}&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;此处Choreographer的mLooper和mHandler都运行在FlutterVsyncThread线程。
+
+#### 2.6.2 postFrameCallback
+[-&amp;gt; Choreographer.java]
+
+```public void postFrameCallback(FrameCallback callback) {
+    postFrameCallbackDelayed(callback, 0);
+}
+
+public void postFrameCallbackDelayed(FrameCallback callback, long delayMillis) {
+    postCallbackDelayedInternal(CALLBACK_ANIMATION,
+            callback, FRAME_CALLBACK_TOKEN, delayMillis);
+}
+
+private void postCallbackDelayedInternal(int callbackType, Object action, Object token, long delayMillis) {
+    synchronized (mLock) {
+        final long now = SystemClock.uptimeMillis();
+        final long dueTime = now + delayMillis;
+        //添加到mCallbackQueues队列
+        mCallbackQueues[callbackType].addCallbackLocked(dueTime, action, token);
+        if (dueTime &amp;lt;= now) {
+          scheduleFrameLocked(now);
+        } else {
+          ...
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;将FrameCallback方法加入到mCallbackQueues[CALLBACK_ANIMATION]回调队列中。&lt;/p&gt;
+
+</description>
+        <pubDate>Thu, 12 Mar 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%BA%8C)/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%BA%8C)/</guid>
+        
+        <category>Flutter</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Flutter渲染机制—UI线程(一)</title>
+        <description>&lt;h2 id=&quot;一ui线程渲染&quot;&gt;一、UI线程渲染&lt;/h2&gt;
+&lt;p&gt;Flutter是谷歌开源的移动UI框架，可以快速在Android和iOS上构建出高质量的原生用户界面，目前全世界越来越多的开发者加入到Flutter的队伍。 Flutter相比RN性能更好，由于Flutter自己实现了一套UI框架，丢弃了原生的UI框架，非常接近原生的体验。&lt;/p&gt;
+
+&lt;p&gt;为了揭秘Flutter高性能，本文从源码角度来看看Flutter的渲染绘制机制，跟渲染直接相关的两个线程是UI线程和GPU线程：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;UI线程：运行着UI Task Runner，是Flutter Engine用于执行Dart root isolate代码，将其转换为layer tree视图结构；&lt;/li&gt;
+  &lt;li&gt;GPU线程：该线程依然是在CPU上执行，运行着GPU Task Runner，处理layer tree，将其转换成为GPU命令并发送到GPU。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;通过VSYNC信号使UI线程和GPU线程有条不紊的周期性的渲染界面，本文介绍VSYNC的产生过程、UI线程在引擎和框架的绘制工作，下一篇文章会介绍GPU线程的绘制工作。&lt;/p&gt;
+
+&lt;h3 id=&quot;11-ui渲染原理&quot;&gt;1.1 UI渲染原理&lt;/h3&gt;
+&lt;h4 id=&quot;111-ui渲染概览&quot;&gt;1.1.1 UI渲染概览&lt;/h4&gt;
+&lt;p&gt;通过VSYNC信号使UI线程和GPU线程有条不紊的周期性的渲染界面，如下图所示：
+&lt;img src=&quot;http://gityuan.com/img/flutter_ui/flutter_draw.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;当需要渲染则会调用到Engine的ScheduleFrame()来注册VSYNC信号回调，一旦触发回调doFrame()执行完成后，便会移除回调方法，也就是说一次注册一次回调；&lt;/li&gt;
+  &lt;li&gt;当需要再次绘制则需要重新调用到ScheduleFrame()方法，该方法的唯一重要参数regenerate_layer_tree决定在帧绘制过程是否需要重新生成layer tree，还是直接复用上一次的layer tree；&lt;/li&gt;
+  &lt;li&gt;UI线程的绘制过程，最核心的是执行WidgetsBinding的drawFrame()方法，然后会创建layer tree视图树&lt;/li&gt;
+  &lt;li&gt;再交由GPU Task Runner将layer tree提供的信息转化为平台可执行的GPU指令。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;112-ui绘制核心工作&quot;&gt;1.1.2 UI绘制核心工作&lt;/h4&gt;
+&lt;p&gt;1）Vsync单注册模式：保证在一帧的时间窗口里UI线程只会生成一个layer tree发送给GPU线程，原理如下：&lt;/p&gt;
+
+&lt;p&gt;Animator中的信号量pending_frame_semaphore_用于控制不能连续频繁地调用Vsync请求，一次只能存在Vsync注册。 pending_frame_semaphore_初始值为1，在Animator::RequestFrame()消费信号会减1，当而后再次调用则会失败直接返回； Animator的BeginFrame()或者DrawLastLayerTree()方法会执行信号加1操作。&lt;/p&gt;
+
+&lt;p&gt;2）UI绘制最核心的方法是drawFrame()，包含以下几个过程：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Animate: 遍历_transientCallbacks，执行动画回调方法；&lt;/li&gt;
+  &lt;li&gt;Build: 对于dirty的元素会执行build构造，没有dirty元素则不会执行，对应于buildScope()&lt;/li&gt;
+  &lt;li&gt;Layout: 计算渲染对象的大小和位置，对应于flushLayout()，这个过程可能会嵌套再调用build操作；&lt;/li&gt;
+  &lt;li&gt;Compositing bits: 更新具有脏合成位的任何渲染对象， 对应于flushCompositingBits()；&lt;/li&gt;
+  &lt;li&gt;Paint: 将绘制命令记录到Layer， 对应于flushPaint()；&lt;/li&gt;
+  &lt;li&gt;Compositing: 将Compositing bits发送给GPU， 对应于compositeFrame()；&lt;/li&gt;
+  &lt;li&gt;Semantics: 编译渲染对象的语义，并将语义发送给操作系统， 对应于flushSemantics()。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;UI线程的耗时从doFrame(frameTimeNanos)中的frameTimeNanos为起点，以小节[4.10.6]Animator::Render()方法结束为终点， 并将结果保存到LayerTree的成员变量construction_time_，这便是UI线程的耗时时长。&lt;/p&gt;
+
+&lt;h4 id=&quot;113-timeline说明&quot;&gt;1.1.3 Timeline说明&lt;/h4&gt;
+&lt;p&gt;3）以上几个过程在Timeline中ui线程中都有体现，如下图所示：
+&lt;img src=&quot;http://gityuan.com/img/flutter_ui/timeline_ui_draw.png&quot; alt=&quot;&quot; /&gt;
+另外Timeline中还有两个比较常见的标签项&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;“Frame Request Pending”：从Animator::RequestFrame 到Animator::BeginFrame()结束；&lt;/li&gt;
+  &lt;li&gt;”PipelineProduce“： 从Animator::BeginFrame()到Animator::Render()结束。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;12-ui线程渲染流程图&quot;&gt;1.2 UI线程渲染流程图&lt;/h3&gt;
+&lt;h4 id=&quot;121-vsync注册流程&quot;&gt;1.2.1 VSYNC注册流程&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;http://gityuan.com/img/flutter_ui/Vsync.jpg&quot; alt=&quot;&quot; /&gt;
+当调用到引擎Engine的ScheduleFrame()方法过程则会注册VSYNC信号回调，一旦Vsync信号达到，则会调用到doFrame()方法。 对于调用ScheduleFrame()的场景有多种，比如动画的执行AnimationController.forward()，再比如比如surface创建的时候shell::SurfaceCreated()。&lt;/p&gt;
+&lt;h4 id=&quot;122-engine层绘制&quot;&gt;1.2.2 Engine层绘制&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;http://gityuan.com/img/flutter_ui/UIDraw_engine.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;doFrame()经过多层调用后通过PostTask将任务异步post到UI TaskRunner线程来执行，最后调用到Window的BeginFrame()方法。&lt;/p&gt;
+
+&lt;h4 id=&quot;123-framework层绘制&quot;&gt;1.2.3 Framework层绘制&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;http://gityuan.com/img/flutter_ui/UIDraw_fwk.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;其中window.cc中的一个BeginFrame()方法，会调用到window.dart中的onBeginFrame()和onDrawFrame()两个方法。&lt;/p&gt;
+
+&lt;h3 id=&quot;13-核心类图&quot;&gt;1.3 核心类图&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;http://gityuan.com/img/flutter_ui/ClassEngine.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;为了让大家更容易理解源码，先看一张关于Shell、Engine、Animator等Flutter等Flutter引擎中核心类的类图。&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Window类：是连接Flutter框架层(Dart)与引擎层(C++)的关键类，在框架层中window.dart文件里的一些方法在引擎层的window.cc文件有相对应的方法，比如scheduleFrame()方法。 在window.cc里面通过Window::RegisterNatives()注册了一些框架层与引擎层的方法对应关系；&lt;/li&gt;
+  &lt;li&gt;RuntimeController类：可通过其成员root_isolate_找到Window类；&lt;/li&gt;
+  &lt;li&gt;Shell类：同时继承了PlatformView::Delegate，Animator::Delegate，Engine::Delegate，所以在Engine，Animator，PlatformView中的成员变量delegate_都是指Shell对象， 从图中也能看出其中心地位，代理多项业务，该类是由AndroidShellHolder过程中初始化创建的；另外Shell类还继承了ServiceProtocol::Handler，图中省略而已。&lt;/li&gt;
+  &lt;li&gt;PlatformViewAndroid类：在Android平台上PlatformView的实例采用的便是PlatformViewAndroid类。&lt;/li&gt;
+  &lt;li&gt;Dart层与C层之间可以相互调用，从Window一路能调用到Shell类，也能从Shell类一路调用回Window。&lt;/li&gt;
+&lt;/ul&gt;
+
+</description>
+        <pubDate>Mon, 02 Mar 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%80)/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%80)/</guid>
+        
+        <category>Flutter</category>
         
         
       </item>
