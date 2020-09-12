@@ -5,9 +5,107 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 10 Sep 2020 18:48:19 +0800</pubDate>
-    <lastBuildDate>Thu, 10 Sep 2020 18:48:19 +0800</lastBuildDate>
+    <pubDate>Sat, 12 Sep 2020 23:13:42 +0800</pubDate>
+    <lastBuildDate>Sat, 12 Sep 2020 23:13:42 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>在腾讯云上搭建jekyll静态博客</title>
+        <description>&lt;p&gt;本文旨在帮助小伙伴在腾讯云或阿里云上搭建jekyll环境，有错误还请指正。
+对于一个全新服务器，需要从新开始配置相关依赖环境。&lt;/p&gt;
+
+&lt;h3 id=&quot;安装-nodejs-环境&quot;&gt;安装 Nodejs 环境&lt;/h3&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ wget https://nodejs.org/dist/v8.12.0/node-v8.12.0-linux-x64.tar.xz
+$ xz -d node-v8.12.0-linux-x64.tar.xz
+$ tar -xf node-v8.12.0-linux-x64.tar 
+$ ln -s ~/node-v8.12.0-linux-x64/bin/node /usr/bin/node
+$ ln -s ~/node-v8.12.0-linux-x64/bin/npm /usr/bin/npm
+$ node -v 
+$ npm
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;其中nodejs下载地址可以在 (官网)(https://nodejs.org/zh-cn/download/) 根据系统选择。&lt;/p&gt;
+
+&lt;h3 id=&quot;安装ruby环境&quot;&gt;安装ruby环境&lt;/h3&gt;
+&lt;p&gt;这里有3种常用安装方式，个人推荐第一种。&lt;/p&gt;
+&lt;h4 id=&quot;1-通过rvm安装ruby&quot;&gt;1. 通过RVM安装ruby&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;安装GPG 秘钥
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ gpg2 --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;安装稳定版RVM
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ \curl -sSL https://get.rvm.io | bash -s stable
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;安装完毕后执行查看rvm版本是否安装成功
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ rvm -v 
+rvm 1.29.10 (latest) by Michal Papis, Piotr Kuczynski, Wayne E. Seguin [https://rvm.io]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;查看rvm当前可选ruby版本
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ rvm list known
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;选择一个想要的版本,例如2.7
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ rvm install 2.7
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;如果下载很慢，可切换rvm 的安装源
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ echo &quot;ruby_url=https://cache.ruby-china.com/pub/ruby&quot; &amp;gt; ~/.rvm/user/db
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;安装完成，查看ruby版本
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ ruby -v
+ruby 2.0.0p648 (2015-12-16) [x86_64-linux]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;2通过ruby源码安装&quot;&gt;2.通过ruby源码安装&lt;/h4&gt;
+&lt;ul&gt;
+  &lt;li&gt;下载源码，解压编译安装, 下载地址在(官网)(https://www.ruby-lang.org/zh_cn/downloads/)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ wget https://cache.ruby-lang.org/pub/ruby/2.4/ruby-2.4.4.tar.gz
+$ mkdir  -p /usr/local/ruby
+$ tar -zxvf ruby-2.4.4.tar.gz 
+$ cd ruby-2.4.4
+$ ./configure --prefix=/usr/local/ruby
+$ make &amp;amp;&amp;amp; make install
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;环境变量配置&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ PATH=/usr/local/ruby/bin:$PATH:$HOME/bin
+$ export PATH
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;3通过yum安装&quot;&gt;3.通过yum安装&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$  sudo yum install ruby
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;安装gcc&quot;&gt;安装gcc&lt;/h3&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ yum -y update gcc
+$ yum -y install gcc+ gcc-c++
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;安装jekyll&quot;&gt;安装jekyll&lt;/h3&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ gem update --system
+$ gem install jekyll
+$ jekyll --version
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+</description>
+        <pubDate>Thu, 10 Sep 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/09/%E5%9C%A8%E8%85%BE%E8%AE%AF%E4%BA%91%E4%B8%8A%E6%90%AD%E5%BB%BAjekyll%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/%E5%9C%A8%E8%85%BE%E8%AE%AF%E4%BA%91%E4%B8%8A%E6%90%AD%E5%BB%BAjekyll%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/</guid>
+        
+        
+      </item>
     
       <item>
         <title>优秀程序员的九种素质</title>
