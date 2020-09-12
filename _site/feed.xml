@@ -5,8 +5,8 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 12 Sep 2020 23:18:00 +0800</pubDate>
-    <lastBuildDate>Sat, 12 Sep 2020 23:18:00 +0800</lastBuildDate>
+    <pubDate>Sat, 12 Sep 2020 23:20:38 +0800</pubDate>
+    <lastBuildDate>Sat, 12 Sep 2020 23:20:38 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -116,7 +116,7 @@ $ ln -s ~/node-v8.12.0-linux-x64/bin/npm /usr/bin/npm
 $ node -v 
 $ npm
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;其中nodejs下载地址可以在 (官网)(https://nodejs.org/zh-cn/download/) 根据系统选择。&lt;/p&gt;
+&lt;p&gt;其中nodejs下载地址可以在 &lt;a href=&quot;https://nodejs.org/zh-cn/download/&quot;&gt;这里&lt;/a&gt; 根据系统选择。&lt;/p&gt;
 
 &lt;h3 id=&quot;安装ruby环境&quot;&gt;安装ruby环境&lt;/h3&gt;
 &lt;p&gt;这里有3种常用安装方式，个人推荐第一种。&lt;/p&gt;
@@ -157,7 +157,7 @@ ruby 2.0.0p648 (2015-12-16) [x86_64-linux]
 
 &lt;h4 id=&quot;2通过ruby源码安装&quot;&gt;2.通过ruby源码安装&lt;/h4&gt;
 &lt;ul&gt;
-  &lt;li&gt;下载源码，解压编译安装, 下载地址在(官网)(https://www.ruby-lang.org/zh_cn/downloads/)&lt;/li&gt;
+  &lt;li&gt;下载源码，解压编译安装, 下载地址在&lt;a href=&quot;https://www.ruby-lang.org/zh_cn/downloads/&quot;&gt;这里&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ wget https://cache.ruby-lang.org/pub/ruby/2.4/ruby-2.4.4.tar.gz
