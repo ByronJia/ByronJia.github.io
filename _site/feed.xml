@@ -5,9 +5,78 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 13 Sep 2020 17:46:56 +0800</pubDate>
-    <lastBuildDate>Sun, 13 Sep 2020 17:46:56 +0800</lastBuildDate>
+    <pubDate>Sun, 13 Sep 2020 20:01:41 +0800</pubDate>
+    <lastBuildDate>Sun, 13 Sep 2020 20:01:41 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>HTTPS加密过程</title>
+        <description>&lt;p&gt;HTTPS在传统的HTTP和TCP之间加了一层用于&lt;code class=&quot;highlighter-rouge&quot;&gt;加密解密的SSL/TLS层&lt;/code&gt;（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。&lt;/p&gt;
+
+&lt;p&gt;HTTPS解决的问题&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;信息加密传输：第三方无法窃听；&lt;/li&gt;
+  &lt;li&gt;校验机制：一旦被篡改，通信双方会立刻发现；&lt;/li&gt;
+  &lt;li&gt;身份证书：防止身份被冒充。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;HTTPS加密过程：&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;客户端请求服务器获取&lt;code class=&quot;highlighter-rouge&quot;&gt;证书公钥&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;客户端(SSL/TLS)解析证书（无效会弹出警告）&lt;/li&gt;
+  &lt;li&gt;生成随机值&lt;/li&gt;
+  &lt;li&gt;用&lt;code class=&quot;highlighter-rouge&quot;&gt;公钥加密&lt;/code&gt;随机值生成&lt;code class=&quot;highlighter-rouge&quot;&gt;密钥&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;客户端将&lt;code class=&quot;highlighter-rouge&quot;&gt;秘钥&lt;/code&gt;发送给服务器&lt;/li&gt;
+  &lt;li&gt;服务端用&lt;code class=&quot;highlighter-rouge&quot;&gt;私钥&lt;/code&gt;解密&lt;code class=&quot;highlighter-rouge&quot;&gt;秘钥&lt;/code&gt;得到随机值&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;将信息和随机值混合在一起&lt;/code&gt;进行对称加密&lt;/li&gt;
+  &lt;li&gt;将加密的内容发送给客户端&lt;/li&gt;
+  &lt;li&gt;客户端用&lt;code class=&quot;highlighter-rouge&quot;&gt;秘钥&lt;/code&gt;解密信息&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/server/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;加密过程使用了对称加密和非对称加密。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;对称加密: 客户端和服务端采用相同的密钥经行加密&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    encrypt(明文，秘钥) = 密文
+    decrypt(密文，秘钥) = 明文
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;-非对称加密：客户端通过公钥加密。服务端通过私钥解密&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    encrypt(明文，公钥) = 密文
+    decrypt(密文，私钥) = 明文
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;因为TLS握手的过程中采用了非对称加密，客户端本身不知道服务器的秘钥，这样通信就不会被中间人劫持。此外这一步服务端还提供了证书，并且可能要求客户端提供证书。关于证书下文会提到，只要有了证书，就能保证和你通信的对方是真实的，而不是别人伪造的。
+那然后验证证书呢？&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;客户端获取到了站点证书，拿到了站点的公钥&lt;/li&gt;
+  &lt;li&gt;客户端找到其站点证书颁发者的信息&lt;/li&gt;
+  &lt;li&gt;站点证书的颁发者验证服务端站点是否可信&lt;/li&gt;
+  &lt;li&gt;往上回溯，找到根证书颁发者&lt;/li&gt;
+  &lt;li&gt;通过根证书颁发者一步步验证站点证书颁布者是否可信&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;附：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;HTTPS默认使用443端口，而HTTP默认使用80端口。&lt;/li&gt;
+  &lt;li&gt;TLS就是从SSL发展而来的，只是SSL发展到3.0版本后改成了TLS&lt;/li&gt;
+  &lt;li&gt;第一次请求中TLS握手的代价很大&lt;/li&gt;
+  &lt;li&gt;后续的请求会共用第一次请求的协商结果&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Sun, 13 Sep 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/09/HTTPS%E5%8A%A0%E5%AF%86%E8%BF%87%E7%A8%8B/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/HTTPS%E5%8A%A0%E5%AF%86%E8%BF%87%E7%A8%8B/</guid>
+        
+        
+      </item>
     
       <item>
         <title>优秀程序员的九种素质</title>
