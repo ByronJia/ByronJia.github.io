@@ -5,8 +5,8 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 13 Sep 2020 14:44:16 +0800</pubDate>
-    <lastBuildDate>Sun, 13 Sep 2020 14:44:16 +0800</lastBuildDate>
+    <pubDate>Sun, 13 Sep 2020 14:49:46 +0800</pubDate>
+    <lastBuildDate>Sun, 13 Sep 2020 14:49:46 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -98,6 +98,84 @@
         <guid isPermaLink="true">http://localhost:4000/2020/09/%E4%BC%98%E7%A7%80%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E4%B9%9D%E7%A7%8D%E7%B4%A0%E8%B4%A8/</guid>
         
         <category>闲谈</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>蓝牙协议栈</title>
+        <description>&lt;h3 id=&quot;协议栈内容&quot;&gt;协议栈内容&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;phy层&quot;&gt;PHY层&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Physical layer 用来指定BLE所用的无线频段，调试解调方式和方法等。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;ll层&quot;&gt;LL层&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;link layer 是协议栈的核心，选择使用哪个射频通道进行通信，怎么识别inflight数据包，在哪个时间点发送数据包，哪个时间点接收数据包，怎么保证数据完整性，ACK接收，如何重传，链路管理控制等。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;hci层&quot;&gt;HCI层&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Host controller interface  HCI是可选的，主要用于2颗芯片实现BLE协议栈的场合，规范两者之间的通信协议和通信命令等
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;gap层&quot;&gt;GAP层&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Generic access profile 对LL层payload 如何进行解析的一种方式，最简单。GAP对payload进行一些规范和定义，因此功能有限，主要用来广播，扫描和发起连接等。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;l2cap层&quot;&gt;L2CAP层&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Logic link control and adaption protocol 对LL进行简单封装，LL只关心传输的数据本身，L2CAP区分是加密通道还是普通通道，同时对连接间隔进行管理
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;smp&quot;&gt;SMP&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Security manager protocol 管理BLE连接的加密和安全
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;att&quot;&gt;ATT&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Attribute protocol ATT层用来定义用户命令以及命令操作的数据，比如读、写、通知等。Attribute定义数据和数据可以使用的命令。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;gatt&quot;&gt;GATT&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Generic attribute profile 用来规范attribute 中的数据内容，运用group来对attribute进行分类管理。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;设备连接&quot;&gt;设备连接&lt;/h3&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;连接指设备A和B 一对一‘同步’成功 连接成功包含以下几点： - 设备A和B对接下来要使用的物理信道达成一致 - 设备A和B双方建立一个共同的时间锚点，把时间原点变成同一个点 - 设备A和B时钟同步成功，明确双方什么时候发数据，什么时候接收数据
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上图表示连接成功后，A将以CI为周期向B发送数据包，B将以CI (connection interval)为周期打开射频接收窗口来接收A的数据包。在B接收A数据包后150us后，切换为发送状态，把数据发送给A，A切换为接收状态接收B的数据。&lt;/p&gt;
+
+&lt;p&gt;以发送0x53为例，看看不同协议层做了些什么&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;对开发者来说，很简单，他只需要调用send(0x53)&lt;/li&gt;
+  &lt;li&gt;GATT层定义数据的类型和分组，方便起见，我们用0x0013表示电量这种数据类型，这样- GATT层把数据打包成130053（小端模式！）&lt;/li&gt;
+  &lt;li&gt;ATT层用来选择具体的通信命令，比如读/写/notify/indicate等，这里选择notify命令0x1B，这样数据包变成了：1B130053&lt;/li&gt;
+  &lt;li&gt;L2CAP用来指定connection interval（连接间隔），比如每10ms同步一次（CI不体现在数据包中），同时指定逻辑通道编号0004（表示ATT命令），最后把ATT数据长度0x0004加在包头，这样数据就变为：040004001B130053&lt;/li&gt;
+  &lt;li&gt;LL层要做的工作很多，首先LL层需要指定用哪个物理信道进行传输（物理信道不体现在数据包中），然后再给此连接分配一个Access address（0x50655DAB）以标识此连接只为设备A和设备B直连服务，然后加上LL header和payload length字段，LL header标识此packet为数据packet，而不是control packet等，payload length为整个L2CAP字段的长度，最后加上CRC24字段，以保证整个packet的数据完整性，所以数据包最后变成：
+    &lt;ul&gt;
+      &lt;li&gt;AAAB5D65501E08040004001B130053D550F6&lt;/li&gt;
+      &lt;li&gt;AA – 前导帧(preamble)&lt;/li&gt;
+      &lt;li&gt;0x50655DAB – 访问地址(access address)&lt;/li&gt;
+      &lt;li&gt;1E – LL帧头字段(LL header)&lt;/li&gt;
+      &lt;li&gt;08 – 有效数据包长度(payload length)&lt;/li&gt;
+      &lt;li&gt;04000400 – ATT数据长度，以及L2CAP通道编号&lt;/li&gt;
+      &lt;li&gt;1B – notify command&lt;/li&gt;
+      &lt;li&gt;0x0013 – 电量数据handle&lt;/li&gt;
+      &lt;li&gt;0x53 – 真正要发送的电量数据&lt;/li&gt;
+      &lt;li&gt;0xF650D5 – CRC24值&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+</description>
+        <pubDate>Mon, 01 Jun 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/</guid>
         
         
       </item>
