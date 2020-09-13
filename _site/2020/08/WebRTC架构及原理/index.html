@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>蓝牙协议栈</title>
-  <meta name="description" content="协议栈内容">
+  <title>WebRTC架构及原理</title>
+  <meta name="description" content="架构主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。  音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现  视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层  传输层包含P2P,STUN,TU...">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="蓝牙协议栈">
-  <meta name="twitter:description" content="协议栈内容">
+  <meta name="twitter:title" content="WebRTC架构及原理">
+  <meta name="twitter:description" content="架构主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。  音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现  视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层  传输层包含P2P,STUN,TU...">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="蓝牙协议栈">
-  <meta property="og:description" content="协议栈内容">
+  <meta property="og:title" content="WebRTC架构及原理">
+  <meta property="og:description" content="架构主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。  音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现  视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层  传输层包含P2P,STUN,TU...">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/">
+  <link rel="canonical" href="http://localhost:4000/2020/08/WebRTC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -179,10 +179,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">蓝牙协议栈</h1>
+    <h1 class="post-title">WebRTC架构及原理</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-06-01 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-06-01</time>  
+      <time datetime="2020-08-11 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-08-11</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -192,91 +192,152 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#协议栈内容">协议栈内容</a>
+  <li><a href="#架构">架构</a></li>
+  <li><a href="#信令服务器">信令服务器</a>
     <ul>
-      <li><a href="#phy层">PHY层</a></li>
-      <li><a href="#ll层">LL层</a></li>
-      <li><a href="#hci层">HCI层</a></li>
-      <li><a href="#gap层">GAP层</a></li>
-      <li><a href="#l2cap层">L2CAP层</a></li>
-      <li><a href="#smp">SMP</a></li>
-      <li><a href="#att">ATT</a></li>
-      <li><a href="#gatt">GATT</a></li>
+      <li><a href="#nat穿越">NAT穿越：</a>
+        <ul>
+          <li><a href="#穿越原理">穿越原理</a></li>
+        </ul>
+      </li>
+      <li><a href="#stun">STUN:</a></li>
+      <li><a href="#turn">TURN:</a></li>
+      <li><a href="#ice">ICE:</a>
+        <ul>
+          <li><a href="#candidata">Candidata</a></li>
+          <li><a href="#sdp">SDP</a></li>
+          <li><a href="#连接流程图">连接流程图</a></li>
+        </ul>
+      </li>
     </ul>
   </li>
-  <li><a href="#设备连接">设备连接</a></li>
 </ul>
 
   
 
   <section class="post">
-    <h3 id="协议栈内容">协议栈内容</h3>
-
-<p><img src="/images/posts/iOS/1.png" alt="" /></p>
-
-<h4 id="phy层">PHY层</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Physical layer 用来指定BLE所用的无线频段，调试解调方式和方法等。
-</code></pre></div></div>
-
-<h4 id="ll层">LL层</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>link layer 是协议栈的核心，选择使用哪个射频通道进行通信，怎么识别inflight数据包，在哪个时间点发送数据包，哪个时间点接收数据包，怎么保证数据完整性，ACK接收，如何重传，链路管理控制等。
-</code></pre></div></div>
-
-<h4 id="hci层">HCI层</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Host controller interface  HCI是可选的，主要用于2颗芯片实现BLE协议栈的场合，规范两者之间的通信协议和通信命令等
-</code></pre></div></div>
-
-<h4 id="gap层">GAP层</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Generic access profile 对LL层payload 如何进行解析的一种方式，最简单。GAP对payload进行一些规范和定义，因此功能有限，主要用来广播，扫描和发起连接等。
-</code></pre></div></div>
-
-<h4 id="l2cap层">L2CAP层</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Logic link control and adaption protocol 对LL进行简单封装，LL只关心传输的数据本身，L2CAP区分是加密通道还是普通通道，同时对连接间隔进行管理
-</code></pre></div></div>
-
-<h4 id="smp">SMP</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Security manager protocol 管理BLE连接的加密和安全
-</code></pre></div></div>
-
-<h4 id="att">ATT</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Attribute protocol ATT层用来定义用户命令以及命令操作的数据，比如读、写、通知等。Attribute定义数据和数据可以使用的命令。
-</code></pre></div></div>
-
-<h4 id="gatt">GATT</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Generic attribute profile 用来规范attribute 中的数据内容，运用group来对attribute进行分类管理。
-</code></pre></div></div>
+    <h2 id="架构">架构</h2>
+<p><img src="/images/posts/iOS/3.png" alt="" />
+主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。</p>
+<ul>
+  <li>音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现</li>
+  <li>视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层</li>
+  <li>传输层包含P2P,STUN,TURN,ICE，RTP,RTSP等传输控制协议。网络IO层可override 自己实现</li>
+</ul>
 
 <hr />
 
-<h3 id="设备连接">设备连接</h3>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>连接指设备A和B 一对一‘同步’成功 连接成功包含以下几点： - 设备A和B对接下来要使用的物理信道达成一致 - 设备A和B双方建立一个共同的时间锚点，把时间原点变成同一个点 - 设备A和B时钟同步成功，明确双方什么时候发数据，什么时候接收数据
-</code></pre></div></div>
+<h2 id="信令服务器">信令服务器</h2>
+<p><img src="/images/posts/iOS/4.png" alt="" /></p>
 
-<p><img src="/images/posts/iOS/2.png" alt="" /></p>
+<h3 id="nat穿越">NAT穿越：</h3>
+<blockquote>
+  <p>设备大多在网关背后，想要简历P2P连接就要穿过网关，连接到内网的设备，网关一般包含以下4种防火墙类型。</p>
+</blockquote>
 
-<p>上图表示连接成功后，A将以CI为周期向B发送数据包，B将以CI (connection interval)为周期打开射频接收窗口来接收A的数据包。在B接收A数据包后150us后，切换为发送状态，把数据发送给A，A切换为接收状态接收B的数据。</p>
-
-<p>以发送0x53为例，看看不同协议层做了些什么</p>
 <ul>
-  <li>对开发者来说，很简单，他只需要调用send(0x53)</li>
-  <li>GATT层定义数据的类型和分组，方便起见，我们用0x0013表示电量这种数据类型，这样- GATT层把数据打包成130053（小端模式！）</li>
-  <li>ATT层用来选择具体的通信命令，比如读/写/notify/indicate等，这里选择notify命令0x1B，这样数据包变成了：1B130053</li>
-  <li>L2CAP用来指定connection interval（连接间隔），比如每10ms同步一次（CI不体现在数据包中），同时指定逻辑通道编号0004（表示ATT命令），最后把ATT数据长度0x0004加在包头，这样数据就变为：040004001B130053</li>
-  <li>LL层要做的工作很多，首先LL层需要指定用哪个物理信道进行传输（物理信道不体现在数据包中），然后再给此连接分配一个Access address（0x50655DAB）以标识此连接只为设备A和设备B直连服务，然后加上LL header和payload length字段，LL header标识此packet为数据packet，而不是control packet等，payload length为整个L2CAP字段的长度，最后加上CRC24字段，以保证整个packet的数据完整性，所以数据包最后变成：
+  <li>完全锥形：网关只做简单的映射，最容易穿越</li>
+  <li>地址限制锥形：对于主动访问外网的IP做记录，容易穿越</li>
+  <li>端口限制锥形：对主动访问外网的IP和Port做记录，比上一个更严格</li>
+  <li>对称型：内网与外网通信会建立一个IP和Port,不同的外网地址建立不同的IP和port,基本无法穿越。<strong>是否可用中继服务器的方式打洞</strong></li>
+</ul>
+
+<h4 id="穿越原理">穿越原理</h4>
+<ul>
+  <li>C1, C2向STUN发消息</li>
+  <li>交换公网IP和Port</li>
+  <li>C1-&gt;C2, C2-&gt;C1。如果是对称型需要端口猜测</li>
+</ul>
+
+<hr />
+
+<h3 id="stun">STUN:</h3>
+<blockquote>
+  <p>目的就是获取设备的公网IP和Port然后互相交换</p>
+</blockquote>
+
+<hr />
+
+<h3 id="turn">TURN:</h3>
+<blockquote>
+  <p>目的是解决对称NAT无法穿越的问题，用来转发数据。
+获取到双方地址后尝试P2P链接，如果链接失败，则使用数据转发</p>
+</blockquote>
+
+<hr />
+<h3 id="ice">ICE:</h3>
+<blockquote>
+  <p>包含了STUN, TURN的一整个解决方案框架，不断选择最优的链接通路，获取不同的candidate，尝试最优的链路。</p>
+</blockquote>
+
+<ul>
+  <li>收集Candidata</li>
+  <li>对Candidate Pair排序，筛选出最合适的候选者对，否则直接检查浪费时间
     <ul>
-      <li>AAAB5D65501E08040004001B130053D550F6</li>
-      <li>AA – 前导帧(preamble)</li>
-      <li>0x50655DAB – 访问地址(access address)</li>
-      <li>1E – LL帧头字段(LL header)</li>
-      <li>08 – 有效数据包长度(payload length)</li>
-      <li>04000400 – ATT数据长度，以及L2CAP通道编号</li>
-      <li>1B – notify command</li>
-      <li>0x0013 – 电量数据handle</li>
-      <li>0x53 – 真正要发送的电量数据</li>
-      <li>0xF650D5 – CRC24值</li>
+      <li>一方收集到所有候选者后，通过信令传给对方</li>
+      <li>另一方收到候选者后也做收集工作</li>
+      <li>当双方拿到全部列表后，将候选者形成匹配对儿</li>
+    </ul>
+  </li>
+  <li>对Candidate Pair连通性检查
+    <ul>
+      <li>对每个后选对进行发送，接收检查</li>
     </ul>
   </li>
 </ul>
+
+<p><img src="/images/posts/iOS/5.png" alt="" />
+***</p>
+
+<h4 id="candidata">Candidata</h4>
+<p>是一个地址，例如： …UDP…192.168.1.2  1816 type host等协议，地址，类型
+类型包含3个：</p>
+<ul>
+  <li>主机候选者， 本机网卡上所有地址和类型</li>
+  <li>反射候选者，NAT穿越后的地址和类型， SUTN/TURN</li>
+  <li>中继候选者， TURN服务开通后的地址和类型， TURN</li>
+</ul>
+
+<hr />
+
+<h4 id="sdp">SDP</h4>
+<blockquote>
+  <p>Session Description Protocol ， 是设备之间互通配置信息的协议</p>
+</blockquote>
+
+<p><img src="/images/posts/iOS/6.png" alt="" />
+上图中是SDP基本内容， 其中有2个candidate, 一个是本机UDP,另一个是NAT穿越后的地址UDP</p>
+
+<p>SDP规范包括2部分：</p>
+<ul>
+  <li>会话层： 会话时间，名称等全局基本信息，多个媒体信息</li>
+  <li>媒体层
+    <ul>
+      <li>媒体格式:音频、视频、数据</li>
+      <li>传输协议：TCP/UDP</li>
+      <li>传输IP和Port</li>
+      <li>媒体负载类型:VP8 VP9 h264. h265</li>
+    </ul>
+  </li>
+</ul>
+
+<blockquote>
+  <p>m 媒体名称和地址, c 传输层信息, b 带宽信息 ,a 各种属性定义和对m的描述</p>
+</blockquote>
+
+<p>WebRTC中的SDP包含5个部分：</p>
+<ul>
+  <li>会话元</li>
+  <li>网络描述</li>
+  <li>流描述</li>
+  <li>安全描述</li>
+  <li>服务质量</li>
+</ul>
+
+<hr />
+
+<h4 id="连接流程图">连接流程图</h4>
+<p><img src="/images/posts/iOS/7.png" alt="" /></p>
 
 
   </section>
@@ -347,13 +408,13 @@
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/05/%E5%9C%A8%E8%85%BE%E8%AE%AF%E4%BA%91%E4%B8%8A%E6%90%AD%E5%BB%BAjekyll%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/" data-toggle="tooltip" data-placement="top" title="在腾讯云上搭建jekyll静态博客">上一篇：  <span>在腾讯云上搭建jekyll静态博客</span>
+            <a href="/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/" data-toggle="tooltip" data-placement="top" title="SIG蓝牙协议5.2版本更新内容">上一篇：  <span>SIG蓝牙协议5.2版本更新内容</span>
             </a>
         </li>
         
         
         <li class="next">
-            <a href="/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/" data-toggle="tooltip" data-placement="top" title="SIG蓝牙协议5.2版本更新内容">下一篇：  <span>SIG蓝牙协议5.2版本更新内容</span>
+            <a href="/2020/09/%E4%BC%98%E7%A7%80%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E4%B9%9D%E7%A7%8D%E7%B4%A0%E8%B4%A8/" data-toggle="tooltip" data-placement="top" title="优秀程序员的九种素质">下一篇：  <span>优秀程序员的九种素质</span>
             </a>
         </li>
         
