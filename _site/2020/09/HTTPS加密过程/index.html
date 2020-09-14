@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>HTTPS加密过程</title>
-  <meta name="description" content="HTTPS在传统的HTTP和TCP之间加了一层用于加密解密的SSL/TLS层（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。HTTPS解决的问题">
+  <title>深入理解HTTPS</title>
+  <meta name="description" content="WhatHTTPS在传统的HTTP和TCP之间加了一层用于加密解密的SSL/TLS层（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。WhyHTTP的问题  不加密，通信是明文，可能被窃...">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="HTTPS加密过程">
-  <meta name="twitter:description" content="HTTPS在传统的HTTP和TCP之间加了一层用于加密解密的SSL/TLS层（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。HTTPS解决的问题">
+  <meta name="twitter:title" content="深入理解HTTPS">
+  <meta name="twitter:description" content="WhatHTTPS在传统的HTTP和TCP之间加了一层用于加密解密的SSL/TLS层（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。WhyHTTP的问题  不加密，通信是明文，可能被窃...">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="HTTPS加密过程">
-  <meta property="og:description" content="HTTPS在传统的HTTP和TCP之间加了一层用于加密解密的SSL/TLS层（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。HTTPS解决的问题">
+  <meta property="og:title" content="深入理解HTTPS">
+  <meta property="og:description" content="WhatHTTPS在传统的HTTP和TCP之间加了一层用于加密解密的SSL/TLS层（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。WhyHTTP的问题  不加密，通信是明文，可能被窃...">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -174,12 +174,25 @@
         <div class="content-wrapper__inner">
             <head>
   <link rel="stylesheet" href="/css/post.css">
-  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.0.0/mermaid.min.js"></script>
+<script>
+  var config = {
+    startOnLoad:true,
+    theme: 'forest',
+    flowchart:{
+            useMaxWidth:false,
+            htmlLabels:true
+        }
+  };
+  mermaid.initialize(config);
+  window.mermaid.init(undefined, document.querySelectorAll('.language-mermaid'));
+</script>
+
 </head>
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">HTTPS加密过程</h1>
+    <h1 class="post-title">深入理解HTTPS</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
       <time datetime="2020-09-13 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-09-13</time>  
@@ -191,61 +204,117 @@
 
   
     <h2 class="post-title">目录</h2>
-    
+    <ul>
+  <li><a href="#what">What</a></li>
+  <li><a href="#why">Why</a>
+    <ul>
+      <li><a href="#http的问题">HTTP的问题</a></li>
+      <li><a href="#https解决的问题">HTTPS解决的问题</a></li>
+    </ul>
+  </li>
+  <li><a href="#how">How</a>
+    <ul>
+      <li><a href="#如何加密">如何加密</a>
+        <ul>
+          <li><a href="#对称加密">对称加密</a></li>
+          <li><a href="#非对称加密">非对称加密</a></li>
+        </ul>
+      </li>
+      <li><a href="#如何保证数据完整性-数字签名">如何保证数据完整性-数字签名</a></li>
+      <li><a href="#如何校验身份-数字证书">如何校验身份-数字证书</a></li>
+    </ul>
+  </li>
+</ul>
 
   
 
   <section class="post">
-    <p>HTTPS在传统的HTTP和TCP之间加了一层用于<code class="highlighter-rouge">加密解密的SSL/TLS层</code>（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。</p>
+    <h2 id="what">What</h2>
+<p>HTTPS在传统的HTTP和TCP之间加了一层用于<code class="highlighter-rouge">加密解密的SSL/TLS层</code>（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。</p>
 
-<p>HTTPS解决的问题</p>
+<h2 id="why">Why</h2>
+<h3 id="http的问题">HTTP的问题</h3>
+<ul>
+  <li>不加密，通信是明文，可能被窃听</li>
+  <li>无法证明报文的完整性，可能被篡改</li>
+  <li>没验证通信方的身份，可能遭遇中间人伪装</li>
+</ul>
 
+<h3 id="https解决的问题">HTTPS解决的问题</h3>
 <ul>
   <li>信息加密传输：第三方无法窃听；</li>
   <li>校验机制：一旦被篡改，通信双方会立刻发现；</li>
   <li>身份证书：防止身份被冒充。</li>
 </ul>
 
-<p>HTTPS加密过程：</p>
+<h2 id="how">How</h2>
+<h3 id="如何加密">如何加密</h3>
+<h4 id="对称加密">对称加密</h4>
+<p>加密和解密同用一个密钥。<strong>没有密钥就无法对密码解密，反过来说，任何人只要持有密钥就能解密了</strong>。对称加密有很多种算法，常用的有AES, DES。由于它效率很高，所以被广泛使用在很多加密协议的核心当中。</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    encrypt(明文，秘钥) = 密文
+    decrypt(密文，秘钥) = 明文
+</code></pre></div></div>
+<p>优点: 相对于非对称加密，加解密效率高得多，加密速度块。
+缺点: 对于秘钥的管理和分发上比较困难，秘钥管理负担重。</p>
 
+<h4 id="非对称加密">非对称加密</h4>
+<p>指的是加、解密使用不同的密钥，一把作为公开的公钥，另一把作为私钥。公钥加密的信息，只有私钥才能解密。<strong>私钥只能由一方安全保管，不能外泄，而公钥则可任意发布给需要的人</strong>。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    encrypt(明文，公钥) = 密文
+    decrypt(密文，私钥) = 明文
+</code></pre></div></div>
+<p>优点: 安全性高，私钥自己保存，不需要传输。
+缺点: 加解密消耗高，速度慢。</p>
+
+<p>HTTPS采用了对称加密+非对称加密的方案。具体做法如下：
+<img src="/images/posts/server/4.png" alt="" /></p>
+
+<p><strong>但是依然解决不了中间人的攻击，如下图：</strong>
+<img src="/images/posts/server/5.png" alt="" /></p>
+
+<p><strong>因此需要保证数据完整性引入数字签名</strong></p>
+
+<h3 id="如何保证数据完整性-数字签名">如何保证数据完整性-数字签名</h3>
+<blockquote>
+  <p>网络传输过程中需要经过很多中间节点，虽然数据无法被解密，但可能被篡改，那如何校验数据的完整性呢？—-校验数字签名。</p>
+</blockquote>
+
+<p>数字签名有两种功效：</p>
+<ul>
+  <li>能确定消息确实是由发送方签名并发出来的，因为别人假冒不了发送方的签名。</li>
+  <li>数字签名能确定消息的完整性,证明数据是否未被篡改过。</li>
+</ul>
+
+<p><strong>数字签名生如何成：</strong></p>
+
+<p><img src="/images/posts/server/2.png" alt="" />
+将一段文本先用Hash函数生成消息摘要，然后用发送者的私钥加密生成数字签名，与原文文一起传送给接收者。接下来就是接收者校验数字签名的流程了。</p>
+
+<p><strong>校验数字签名流程：</strong>
+<img src="/images/posts/server/3.png" alt="" />
+接收者只有用发送者的公钥才能解密被加密的摘要信息，然后用Hash函数对收到的原文产生一个摘要信息，与上一步得到的摘要信息对比。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改，否则说明信息被修改过，因此数字签名能够验证信息的完整性。</p>
+
+<p><strong>上面可行的前提是需要事先拿到可信的公钥，因此引入数字证书</strong></p>
+
+<h3 id="如何校验身份-数字证书">如何校验身份-数字证书</h3>
+<p>数字证书就是Server将公钥和公司信息提交给证书颁发机构（Certificate Authority，简称CA），CA将公钥和其他信息数字签名后生成证书， Client也会内置所有受信CA的证书。</p>
+
+<p><img src="/images/posts/server/6.png" alt="" /></p>
+
+<p>至此HTTPS的流程如下：</p>
 <ol>
   <li>客户端请求服务器获取<code class="highlighter-rouge">证书公钥</code></li>
-  <li>客户端(SSL/TLS)解析证书（无效会弹出警告）</li>
-  <li>生成随机值</li>
-  <li>用<code class="highlighter-rouge">公钥加密</code>随机值生成<code class="highlighter-rouge">密钥</code></li>
-  <li>客户端将<code class="highlighter-rouge">秘钥</code>发送给服务器</li>
-  <li>服务端用<code class="highlighter-rouge">私钥</code>解密<code class="highlighter-rouge">秘钥</code>得到随机值</li>
-  <li><code class="highlighter-rouge">将信息和随机值混合在一起</code>进行对称加密</li>
+  <li>客户端(SSL/TLS)解析证书，判断真实性</li>
+  <li>生成<code class="highlighter-rouge">密钥</code></li>
+  <li>用<code class="highlighter-rouge">公钥</code>加密<code class="highlighter-rouge">密钥</code></li>
+  <li>客户端将<code class="highlighter-rouge">密钥</code>发送给服务器</li>
+  <li>服务端用<code class="highlighter-rouge">私钥</code>解密得到<code class="highlighter-rouge">密钥</code></li>
+  <li><code class="highlighter-rouge">将信息和秘钥混合在一起</code>进行对称加密</li>
   <li>将加密的内容发送给客户端</li>
   <li>客户端用<code class="highlighter-rouge">秘钥</code>解密信息</li>
 </ol>
 
 <p><img src="/images/posts/server/1.png" alt="" /></p>
-
-<p>加密过程使用了对称加密和非对称加密。</p>
-<ul>
-  <li>对称加密: 客户端和服务端采用相同的密钥经行加密</li>
-</ul>
-
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    encrypt(明文，秘钥) = 密文
-    decrypt(密文，秘钥) = 明文
-</code></pre></div></div>
-
-<p>-非对称加密：客户端通过公钥加密。服务端通过私钥解密</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    encrypt(明文，公钥) = 密文
-    decrypt(密文，私钥) = 明文
-</code></pre></div></div>
-
-<p>因为TLS握手的过程中采用了非对称加密，客户端本身不知道服务器的秘钥，这样通信就不会被中间人劫持。此外这一步服务端还提供了证书，并且可能要求客户端提供证书。关于证书下文会提到，只要有了证书，就能保证和你通信的对方是真实的，而不是别人伪造的。
-那然后验证证书呢？</p>
-
-<ol>
-  <li>客户端获取到了站点证书，拿到了站点的公钥</li>
-  <li>客户端找到其站点证书颁发者的信息</li>
-  <li>站点证书的颁发者验证服务端站点是否可信</li>
-  <li>往上回溯，找到根证书颁发者</li>
-  <li>通过根证书颁发者一步步验证站点证书颁布者是否可信</li>
-</ol>
 
 <p>附：</p>
 
