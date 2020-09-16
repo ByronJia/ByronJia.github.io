@@ -5,8 +5,8 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 16 Sep 2020 22:32:22 +0800</pubDate>
-    <lastBuildDate>Wed, 16 Sep 2020 22:32:22 +0800</lastBuildDate>
+    <pubDate>Wed, 16 Sep 2020 22:41:49 +0800</pubDate>
+    <lastBuildDate>Wed, 16 Sep 2020 22:41:49 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -884,8 +884,9 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
 &lt;p&gt;优点: 安全性高，私钥自己保存，不需要传输。
 缺点: 加解密消耗高，速度慢。&lt;/p&gt;
 
-&lt;p&gt;HTTPS采用了对称加密+非对称加密的方案。具体做法如下：
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633632456.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;HTTPS采用了对称加密+非对称加密的方案。具体做法如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633632456.png&quot; style=&quot;zoom:60%&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;但是依然解决不了中间人的攻击，如下图：&lt;/strong&gt;
 &lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633723857.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
@@ -1046,8 +1047,9 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
       <item>
         <title>WebRTC架构及原理</title>
         <description>&lt;h2 id=&quot;架构&quot;&gt;架构&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002625734050.png&quot; alt=&quot;&quot; /&gt;
-主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002625734050.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。&lt;/p&gt;
 &lt;ul&gt;
   &lt;li&gt;音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现&lt;/li&gt;
   &lt;li&gt;视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层&lt;/li&gt;
@@ -1057,7 +1059,8 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
 &lt;hr /&gt;
 
 &lt;h2 id=&quot;信令服务器&quot;&gt;信令服务器&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002625864892.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002625864892.png&quot; style=&quot;zoom:80%&quot; /&gt;&lt;/p&gt;
 &lt;h3 id=&quot;nat穿越&quot;&gt;NAT穿越：&lt;/h3&gt;
 &lt;blockquote&gt;
   &lt;p&gt;设备大多在网关背后，想要简历P2P连接就要穿过网关，连接到内网的设备，网关一般包含以下4种防火墙类型。&lt;/p&gt;
@@ -1114,9 +1117,8 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
   &lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002626005389.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;hr /&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002626005389.png&quot; style=&quot;zoom:80%&quot; /&gt;
+***&lt;/p&gt;
 
 &lt;h4 id=&quot;candidata&quot;&gt;Candidata&lt;/h4&gt;
 &lt;p&gt;是一个地址，例如： …UDP…192.168.1.2  1816 type host等协议，地址，类型
@@ -1255,8 +1257,10 @@ SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据�
 &lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002632747277.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;h5 id=&quot;广播模式&quot;&gt;广播模式&lt;/h5&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;称作BIS (Broadcast Isochronous Stream)。 多个BIS 可组成BIG (Broadcast Isochronous Groups).通过一个周期广播的PUD实现。 该PDU包含针对每个BIS的时间戳，一旦同步，广播接收者变成同步接收者。例如，广场舞大妈蓝牙耳机听同一音源歌曲。 ![](http://image.smartjames.cn/mweb/20200916/16002633057507.png)
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;称作BIS (Broadcast Isochronous Stream)。 多个BIS 可组成BIG (Broadcast Isochronous Groups).通过一个周期广播的PUD实现。 该PDU包含针对每个BIS的时间戳，一旦同步，广播接收者变成同步接收者。例如，广场舞大妈蓝牙耳机听同一音源歌曲。
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633057507.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 </description>
         <pubDate>Fri, 05 Jun 2020 00:00:00 +0800</pubDate>

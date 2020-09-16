@@ -7,16 +7,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   <title>WebRTC架构及原理</title>
-  <meta name="description" content="架构主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。  音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现  视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层  传输层包含P2P,STUN,TU...">
+  <meta name="description" content="架构">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="WebRTC架构及原理">
-  <meta name="twitter:description" content="架构主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。  音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现  视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层  传输层包含P2P,STUN,TU...">
+  <meta name="twitter:description" content="架构">
   
   <meta property="og:type" content="article">
   <meta property="og:title" content="WebRTC架构及原理">
-  <meta property="og:description" content="架构主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。  音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现  视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层  传输层包含P2P,STUN,TU...">
+  <meta property="og:description" content="架构">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -230,8 +230,9 @@
 
   <section class="post">
     <h2 id="架构">架构</h2>
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002625734050.png" alt="" />
-主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。</p>
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002625734050.png" alt="" /></p>
+
+<p>主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。</p>
 <ul>
   <li>音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现</li>
   <li>视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层</li>
@@ -241,7 +242,8 @@
 <hr />
 
 <h2 id="信令服务器">信令服务器</h2>
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002625864892.png" alt="" /></p>
+
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002625864892.png" style="zoom:80%" /></p>
 <h3 id="nat穿越">NAT穿越：</h3>
 <blockquote>
   <p>设备大多在网关背后，想要简历P2P连接就要穿过网关，连接到内网的设备，网关一般包含以下4种防火墙类型。</p>
@@ -298,9 +300,8 @@
   </li>
 </ul>
 
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002626005389.png" alt="" /></p>
-
-<hr />
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002626005389.png" style="zoom:80%" />
+***</p>
 
 <h4 id="candidata">Candidata</h4>
 <p>是一个地址，例如： …UDP…192.168.1.2  1816 type host等协议，地址，类型
