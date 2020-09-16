@@ -5,12 +5,12 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 16 Sep 2020 23:57:15 +0800</pubDate>
-    <lastBuildDate>Wed, 16 Sep 2020 23:57:15 +0800</lastBuildDate>
+    <pubDate>Wed, 16 Sep 2020 23:59:25 +0800</pubDate>
+    <lastBuildDate>Wed, 16 Sep 2020 23:59:25 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
-        <title>CoreAnimation</title>
+        <title>CoreAnimation详解</title>
         <description>&lt;h2 id=&quot;1-图层树&quot;&gt;1. 图层树&lt;/h2&gt;
 &lt;p&gt;CALayer 是存在于UIView中的一种平行的层级关系
 &lt;img src=&quot;http://image.smartjames.cn/20200811234017.jpg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
