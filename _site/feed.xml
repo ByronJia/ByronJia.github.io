@@ -5,8 +5,8 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 16 Sep 2020 22:41:49 +0800</pubDate>
-    <lastBuildDate>Wed, 16 Sep 2020 22:41:49 +0800</lastBuildDate>
+    <pubDate>Wed, 16 Sep 2020 22:44:05 +0800</pubDate>
+    <lastBuildDate>Wed, 16 Sep 2020 22:44:05 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -86,7 +86,7 @@ API增加了Z轴旋转角度，XYZ轴缩放比例，和Z轴的移动距离&lt;/p
 CATransform3DMakeScale(CGFloat sx, CGFloat sy, CGFloat sz)
 CATransform3DMakeTranslation(Gloat tx, CGFloat ty, CGFloat tz)
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/20200812222012.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;50%&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/20200812222012.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;由图所见，绕Z轴的旋转等同于之前二维空间的仿射旋转，但是绕X轴和Y轴的旋转就突破了屏幕的二维空间，并且在用户视角看来发生了倾斜。
 但是旋转得到的结果是等距投影，与真实世界里透视投影不一样。在等距投影中，远处的物体和近处的物体保持同样的缩放比例。引出透视投影的概念。&lt;/p&gt;
