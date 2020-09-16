@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>SIG蓝牙协议5.2版本更新内容</title>
-  <meta name="description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <title>GCC 拥塞控制算法详解</title>
+  <meta name="description" content="GCC 拥塞控制算法谷歌使用GCC (Google Congestion Control ) 在 WebRTC中的拥塞控制算法，包含2个部分，一个是基于丢包的用拥塞控制，一个是基于延迟的拥塞控制。最终基于丢包的码率估计值和基于延迟的码率估计值做比较，使用最小的码率估计值作为最终发送码率。">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="SIG蓝牙协议5.2版本更新内容">
-  <meta name="twitter:description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <meta name="twitter:title" content="GCC 拥塞控制算法详解">
+  <meta name="twitter:description" content="GCC 拥塞控制算法谷歌使用GCC (Google Congestion Control ) 在 WebRTC中的拥塞控制算法，包含2个部分，一个是基于丢包的用拥塞控制，一个是基于延迟的拥塞控制。最终基于丢包的码率估计值和基于延迟的码率估计值做比较，使用最小的码率估计值作为最终发送码率。">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="SIG蓝牙协议5.2版本更新内容">
-  <meta property="og:description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <meta property="og:title" content="GCC 拥塞控制算法详解">
+  <meta property="og:description" content="GCC 拥塞控制算法谷歌使用GCC (Google Congestion Control ) 在 WebRTC中的拥塞控制算法，包含2个部分，一个是基于丢包的用拥塞控制，一个是基于延迟的拥塞控制。最终基于丢包的码率估计值和基于延迟的码率估计值做比较，使用最小的码率估计值作为最终发送码率。">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/">
+  <link rel="canonical" href="http://localhost:4000/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -192,10 +192,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">SIG蓝牙协议5.2版本更新内容</h1>
+    <h1 class="post-title">GCC 拥塞控制算法详解</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-06-05 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-06-05</time>  
+      <time datetime="2020-08-05 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-08-05</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -205,17 +205,16 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#主要是3块新特性">主要是3块新特性</a>
+  <li><a href="#gcc-拥塞控制算法">GCC 拥塞控制算法</a>
     <ul>
-      <li><a href="#背景介绍">背景介绍</a></li>
-    </ul>
-  </li>
-  <li><a href="#一enhanced-att">一、Enhanced ATT</a></li>
-  <li><a href="#二le-power-control">二、LE Power Control</a></li>
-  <li><a href="#三le-isochronous-channels">三、LE Isochronous Channels</a>
-    <ul>
-      <li><a href="#链接模式">链接模式</a></li>
-      <li><a href="#广播模式">广播模式</a></li>
+      <li><a href="#基于丢包的带宽估计">基于丢包的带宽估计</a></li>
+      <li><a href="#基于延迟梯度的带宽估计">基于延迟梯度的带宽估计</a>
+        <ul>
+          <li><a href="#到达时间滤波器">到达时间滤波器</a></li>
+          <li><a href="#过载检测器">过载检测器</a></li>
+          <li><a href="#速率控制器">速率控制器</a></li>
+        </ul>
+      </li>
     </ul>
   </li>
 </ul>
@@ -223,85 +222,96 @@
   
 
   <section class="post">
-    <h4 id="主要是3块新特性">主要是3块新特性</h4>
-<ul>
-  <li>Enhanced Attribute Protocol</li>
-  <li>LE Power Control</li>
-  <li>LE Isochronous Channels</li>
-</ul>
-
-<h5 id="背景介绍">背景介绍</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PUD: Protocol Data Unit 协议数据单元 被某一层处理为指定数据格式的数据。
-
-SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据，比如输入的数据，叫SDU,封装成PDU通过层与层之间的管道传输给下一层。
+    <h2 id="gcc-拥塞控制算法">GCC 拥塞控制算法</h2>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>谷歌使用GCC (Google Congestion Control ) 在 WebRTC中的拥塞控制算法，包含2个部分，一个是基于丢包的用拥塞控制，一个是基于延迟的拥塞控制。
+最终基于丢包的码率估计值和基于延迟的码率估计值做比较，使用最小的码率估计值作为最终发送码率。
 </code></pre></div></div>
 
-<p>本层的PDU是下一层的SDU,本层的SDU是上一层的PDU</p>
+<p>早期实现中2部分分别在发送端和接收端实现，接收端实现延迟梯度算法计算出估计带宽，反馈给发送端，发送端再根据2个算法结果确定最终发送码率。最近的WebRTC中的GCC都在发送端来实现，所以需要接收端在RTCP中反馈包达到时间用来计算延迟。</p>
 
-<hr />
-<h4 id="一enhanced-att">一、Enhanced ATT</h4>
-
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002632642584.png" alt="" /></p>
-
-<p>ATT: 定义了不同服务的属性参数和可使用的命令，用来作为主从设备间的信息交换个协商。</p>
-
-<p>MTU(Maximum Transmission Unit) 是不同协议的最大数据处理能力，决定不同层协议处理最大PUD/SDU的尺寸。ATT中定义了服务的MTU,在L2CAP根据上下层不同的MTU来分割/组合数据，来适配整体数据通路的PDU/SDU。</p>
-
-<p>LE5.1之前：</p>
-<ul>
-  <li>ATT与L2CAP之间的MTU是固定的，建立连接后不能改。</li>
-  <li>数据处理是串行的，不同业务MTU必须在上一个PDU/SDU完成后才能执行。</li>
-</ul>
-
-<p>LE5.2:</p>
-<ul>
-  <li>MTU在ATT和L2CAP之间不再一一对应，可以互相独立配置，即ATT和L2CAP之间的MTU和PDU大小动态配置。</li>
-  <li>不同业务PDU可以交叉处理，减小数据延迟</li>
-</ul>
-
-<p>EATT相比ATT的影响：</p>
-<ul>
-  <li>新的PDU只能再EATT上使用</li>
-  <li>某些ATT PDU只能用在ATT上</li>
-  <li>一些PDU的定义或流程被细化或优化</li>
-  <li>EATT只能加密连接使用，ATT可以通过未加密、加密连接</li>
-</ul>
-
-<hr />
-<h4 id="二le-power-control">二、LE Power Control</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>在蓝牙接收错误率BER超过0.1%时，连接被认为是质量不好连接 增加了发射功率的动态管理，通过信号响度RSSI的监控，通知发射方增加或减少发射功率。使接收器的信号强度落在不太强也不太弱的区域，刚好满足应用又省电。
+<h3 id="基于丢包的带宽估计">基于丢包的带宽估计</h3>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>思想是基于丢包多少来判断网络拥塞程度，丢包少提高发送码率，丢包多降低码率。
 </code></pre></div></div>
 
-<hr />
-<h4 id="三le-isochronous-channels">三、LE Isochronous Channels</h4>
-<p>定义了一个有时间依赖的数据传输通道和传输策略。</p>
-<ul>
-  <li>增加对于一对多接收方同步获取数据的机制</li>
-  <li>允许发送方在指定时间外丢弃数据，保证接收方数据满足时效要求</li>
-</ul>
+<p>接收端通过在RTCP协议中的fraction lost字段反馈给发送端丢包率， WebRTC通过以下公式估算发送码率，式中 As(tk) 即为 tk 时刻的带宽估计值，fl(tk)即为 tk 时刻的丢包率：
+<img src="http://image.smartjames.cn/mweb/20200916/16002700924519.png" style="zoom=100%" /></p>
 
-<p>该通道支持链接模式和广播模式.
-俩种模式下 ISO异同点：</p>
-<ul>
-  <li>每个BIG CIG最多包含31个BIS CIS</li>
-  <li>CIS中从设备对主设备有信息反馈，BIS没有</li>
-  <li>BIS重传是通过接收方信息反馈决定， CIS是强制的</li>
-  <li>CIG中CIS同步通过CIG的时间以及CIS时间参数实现，BIG中的BIS通过周期广播的PDU实现</li>
-</ul>
-
-<p>能实现多重串流音频（Multi-Stream Audio）和音频分享（Audio Sharing）</p>
-
-<h5 id="链接模式">链接模式</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>称作CIS (LE Connected Isochronous Stream)逻辑传输通道，可将延迟数据丢弃。 不同的CIS组成CIG ( Connected Isochronous Groups ),同一个CIG内的CIS有相同的时间戳，保证同一个group内数据同步。例如一对TWS耳机
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>fl &gt; 10%: 有拥塞，根据丢包率降低带宽
+2%&lt; fl &lt; 10%: 正常，保持当前码率不变，避免因波动丢包等误判导致降低码率
+fl &lt; 2% : 网络良好， As + 5% 提高带宽来探测真实可用带宽
 </code></pre></div></div>
 
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002632747277.png" alt="" /></p>
-
-<h5 id="广播模式">广播模式</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>称作BIS (Broadcast Isochronous Stream)。 多个BIS 可组成BIG (Broadcast Isochronous Groups).通过一个周期广播的PUD实现。 该PDU包含针对每个BIS的时间戳，一旦同步，广播接收者变成同步接收者。例如，广场舞大妈蓝牙耳机听同一音源歌曲。
+<h3 id="基于延迟梯度的带宽估计">基于延迟梯度的带宽估计</h3>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>接收端在RTCP中增加transport-cc-feedback字段反馈所有媒体包到达的时间，发送端根据接受延迟和发送间隔计算出延迟梯度，从而估计带宽。
 </code></pre></div></div>
 
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002633057507.png" alt="" /></p>
+<p>步骤有3个：</p>
+<ul>
+  <li>到达时间滤波器</li>
+  <li>过载检测器</li>
+  <li>
+    <p>速率控制器</p>
+
+    <p>到达滤波器根据包的到达时延和发送间隔，计算延迟变化，用卡尔曼滤波器平滑处理消除网络噪音。
+  延迟变化作为过载检测器的输入，判断出当前网络状态underuse/overuse/normal。 
+  速率控制器根据网络状态和带宽公式计算出带宽。</p>
+  </li>
+</ul>
+
+<h4 id="到达时间滤波器">到达时间滤波器</h4>
+
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002707293607.png" alt="" /></p>
+
+<p>用两个包到达时间间隔减去发送时间间隔，得到一个延迟的变化，公式如下：</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002708393823.png" alt="图片12" /></p>
+
+<p>理想情况下，每个包的到达时间间隔和发送间隔是一样的，所以延迟梯度为0。如果某一个包因为拥塞导致排队，那么延迟梯度就不为0。为了计算精确，计算策略如下：</p>
+<ul>
+  <li>由于测量粒度很小，为了避免网络噪音的误差，使用卡尔曼滤波来平滑延迟梯度的结果</li>
+  <li>实现中是按照数据组来计算整体延迟梯度，不是按单个包计算。发送时间间隔小于5ms位一个组。</li>
+</ul>
+
+<h4 id="过载检测器">过载检测器</h4>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>将延迟梯度和某个阈值比较，高于阈值则为拥塞，低于阈值则为良好，阈值是动态调整的。
+</code></pre></div></div>
+
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002702640507.png" style="zoom=100%" /></p>
+
+<p>m(t<sub>i</sub>)表示计算出的延迟梯度</p>
+
+<p>γ(t<sub>i</sub>)表示判断阈值</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002703739032.png" alt="图片32" /></p>
+
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002704016723.png" alt="图片24" /></p>
+
+<p>上面为阈值自适应算法，当梯度减小时，阈值会以更慢的速率减小。梯度增加时，阈值会以更慢的速率增加。阈值的减小速度要小于增加速度，因为最终目的还是要探测更多可用的网络带宽。</p>
+
+<h4 id="速率控制器">速率控制器</h4>
+
+<p>根据过载探测器输出的信号，驱动速率控制状态机，估算出当前网络速率。</p>
+<ul>
+  <li>当收到overuse，进入decrease状态</li>
+  <li>当收到normal，进入increase状态</li>
+  <li>当收到underuse， 进入hold状态</li>
+</ul>
+
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002704269607.png" style="zoom=100%" /></p>
+
+<p>这个状态机输出的是带宽估计值。</p>
+<ul>
+  <li>当前处于降低带宽值状态，发现带宽低载或者正常，就不再下降，如果依然过载，继续降</li>
+  <li>当前处于平衡状态，发现带宽正常，则尝试增加带宽估计值，寻求达到低载状态，争夺多一点的带宽资源</li>
+  <li>当前处于增加带宽值状态，发现带宽正常，继续增加，发现过载，降低带宽估计值，发现低载，目的达到了，保持当前状态</li>
+</ul>
+
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002704602190.png" style="zoom=100%" /></p>
+
+<p>其中η=1.05，α=0.85。 当increase时，以上一次估计码率乘1.05作为当前码率。 当decrease时以当前估算的接受端码率 乘0.85作为当前码率，hold状态不变。</p>
+
+<p>最终基于丢包的码率估计值和基于延迟的码率估计值做比较，使用最小的码率估计值作为最终发送码率。</p>
 
 
   </section>
@@ -372,13 +382,13 @@ SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据�
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/" data-toggle="tooltip" data-placement="top" title="蓝牙协议栈">上一篇：  <span>蓝牙协议栈</span>
+            <a href="/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="BBR 拥塞控制算法详解">上一篇：  <span>BBR 拥塞控制算法详解</span>
             </a>
         </li>
         
         
         <li class="next">
-            <a href="/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="TCP相关控制算法详解">下一篇：  <span>TCP相关控制算法详解</span>
+            <a href="/2020/08/WebRTC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/" data-toggle="tooltip" data-placement="top" title="WebRTC架构及原理">下一篇：  <span>WebRTC架构及原理</span>
             </a>
         </li>
         

@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>SIG蓝牙协议5.2版本更新内容</title>
-  <meta name="description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <title>BBR 拥塞控制算法详解</title>
+  <meta name="description" content="BBR 拥塞控制算法BBR: Bottleneck Bandwidth and RTTBBR 发明的目的是解决2个问题。  在有一定丢包率的网络链路上充分利用带宽  降低网络链路上的buffer占用率，降低延迟。">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="SIG蓝牙协议5.2版本更新内容">
-  <meta name="twitter:description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <meta name="twitter:title" content="BBR 拥塞控制算法详解">
+  <meta name="twitter:description" content="BBR 拥塞控制算法BBR: Bottleneck Bandwidth and RTTBBR 发明的目的是解决2个问题。  在有一定丢包率的网络链路上充分利用带宽  降低网络链路上的buffer占用率，降低延迟。">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="SIG蓝牙协议5.2版本更新内容">
-  <meta property="og:description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <meta property="og:title" content="BBR 拥塞控制算法详解">
+  <meta property="og:description" content="BBR 拥塞控制算法BBR: Bottleneck Bandwidth and RTTBBR 发明的目的是解决2个问题。  在有一定丢包率的网络链路上充分利用带宽  降低网络链路上的buffer占用率，降低延迟。">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/">
+  <link rel="canonical" href="http://localhost:4000/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -192,10 +192,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">SIG蓝牙协议5.2版本更新内容</h1>
+    <h1 class="post-title">BBR 拥塞控制算法详解</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-06-05 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-06-05</time>  
+      <time datetime="2020-08-02 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-08-02</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -205,17 +205,23 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#主要是3块新特性">主要是3块新特性</a>
+  <li><a href="#bbr-拥塞控制算法">BBR 拥塞控制算法</a>
     <ul>
-      <li><a href="#背景介绍">背景介绍</a></li>
-    </ul>
-  </li>
-  <li><a href="#一enhanced-att">一、Enhanced ATT</a></li>
-  <li><a href="#二le-power-control">二、LE Power Control</a></li>
-  <li><a href="#三le-isochronous-channels">三、LE Isochronous Channels</a>
-    <ul>
-      <li><a href="#链接模式">链接模式</a></li>
-      <li><a href="#广播模式">广播模式</a></li>
+      <li><a href="#其他拥塞算法原理">其他拥塞算法原理</a></li>
+      <li><a href="#bbr和常规算法区别">BBR和常规算法区别</a></li>
+      <li><a href="#bbr算法步骤">BBR算法步骤</a>
+        <ul>
+          <li><a href="#计算最大发送窗口带宽探测">计算最大发送窗口(带宽探测)</a></li>
+          <li><a href="#计算最低延迟排空阶段">计算最低延迟（排空阶段）</a></li>
+          <li><a href="#稳定阶段">稳定阶段</a></li>
+        </ul>
+      </li>
+      <li><a href="#性能评估">性能评估</a>
+        <ul>
+          <li><a href="#bbr对于带宽变化的响应">BBR对于带宽变化的响应</a></li>
+          <li><a href="#bbr与标准tcp效果比对">BBR与标准TCP效果比对</a></li>
+        </ul>
+      </li>
     </ul>
   </li>
 </ul>
@@ -223,85 +229,100 @@
   
 
   <section class="post">
-    <h4 id="主要是3块新特性">主要是3块新特性</h4>
-<ul>
-  <li>Enhanced Attribute Protocol</li>
-  <li>LE Power Control</li>
-  <li>LE Isochronous Channels</li>
-</ul>
-
-<h5 id="背景介绍">背景介绍</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PUD: Protocol Data Unit 协议数据单元 被某一层处理为指定数据格式的数据。
-
-SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据，比如输入的数据，叫SDU,封装成PDU通过层与层之间的管道传输给下一层。
+    <h2 id="bbr-拥塞控制算法">BBR 拥塞控制算法</h2>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>BBR: Bottleneck Bandwidth and RTT
 </code></pre></div></div>
 
-<p>本层的PDU是下一层的SDU,本层的SDU是上一层的PDU</p>
-
-<hr />
-<h4 id="一enhanced-att">一、Enhanced ATT</h4>
-
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002632642584.png" alt="" /></p>
-
-<p>ATT: 定义了不同服务的属性参数和可使用的命令，用来作为主从设备间的信息交换个协商。</p>
-
-<p>MTU(Maximum Transmission Unit) 是不同协议的最大数据处理能力，决定不同层协议处理最大PUD/SDU的尺寸。ATT中定义了服务的MTU,在L2CAP根据上下层不同的MTU来分割/组合数据，来适配整体数据通路的PDU/SDU。</p>
-
-<p>LE5.1之前：</p>
+<p>BBR 发明的目的是解决2个问题。</p>
 <ul>
-  <li>ATT与L2CAP之间的MTU是固定的，建立连接后不能改。</li>
-  <li>数据处理是串行的，不同业务MTU必须在上一个PDU/SDU完成后才能执行。</li>
+  <li>在有一定丢包率的网络链路上充分利用带宽</li>
+  <li>降低网络链路上的buffer占用率，降低延迟。</li>
 </ul>
 
-<p>LE5.2:</p>
+<p>BBR 原理 使用极大带宽和极小延迟的乘积作为发送窗口大小。</p>
+
+<h3 id="其他拥塞算法原理">其他拥塞算法原理</h3>
+<p>所有拥塞算法目标都是最大化利用网络上瓶颈链路的带宽，通常办法是不断增加数据量，直到发生丢包或者延迟增大等这些信号表明当前带宽已经使用100%。
+GCC等其他算法都是基于某些信号认为网络发生拥塞，例如丢包。</p>
+
+<p><strong>网络链路上能容纳的数据量=链路带宽×往返时延</strong>
+但是常用的标准TCP拥塞控制算法的<strong>问题</strong>在于：</p>
+<ol>
+  <li>网络上丢包不都是拥塞导致的，可能是传输错误导致的丢包，如果因为传输错误的丢包影响算法对带宽的评估，是失败的。</li>
+  <li>网络中的缓冲区buffer会被计算在内被占用，计算出的带宽=真实带宽+buffer大小， 问题称为buffrbloat （缓冲区膨胀）</li>
+</ol>
+
+<p>缓冲区膨胀问题：</p>
 <ul>
-  <li>MTU在ATT和L2CAP之间不再一一对应，可以互相独立配置，即ATT和L2CAP之间的MTU和PDU大小动态配置。</li>
-  <li>不同业务PDU可以交叉处理，减小数据延迟</li>
+  <li><strong>增加网络延迟</strong>， buffer东西越多，排队时间越长</li>
+  <li>共享网络瓶颈的连接较多时，可能导致缓冲区被填满而丢包，被误认为发生拥塞。  <strong>这个地方有点不理解</strong></li>
 </ul>
 
-<p>EATT相比ATT的影响：</p>
+<h3 id="bbr和常规算法区别">BBR和常规算法区别</h3>
+<ol>
+  <li>既然区分不了拥塞丢包和错误丢包，就不考虑丢包这个信号</li>
+  <li>不断加快数据发送量，容易产生缓冲区膨胀，就单独估计带宽和延迟，而不是简单加快发送数据量。</li>
+</ol>
+
+<h3 id="bbr算法步骤">BBR算法步骤</h3>
+
+<p>BBR分为3个阶段</p>
 <ul>
-  <li>新的PDU只能再EATT上使用</li>
-  <li>某些ATT PDU只能用在ATT上</li>
-  <li>一些PDU的定义或流程被细化或优化</li>
-  <li>EATT只能加密连接使用，ATT可以通过未加密、加密连接</li>
+  <li>慢启动：增加数据量，计算最大发送窗口</li>
+  <li>排空阶段：清空数据量，基本不发数据，计算最低延迟</li>
+  <li>稳定阶段：交替探测带宽和延迟</li>
 </ul>
 
-<hr />
-<h4 id="二le-power-control">二、LE Power Control</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>在蓝牙接收错误率BER超过0.1%时，连接被认为是质量不好连接 增加了发射功率的动态管理，通过信号响度RSSI的监控，通知发射方增加或减少发射功率。使接收器的信号强度落在不太强也不太弱的区域，刚好满足应用又省电。
+<p><em>下图是发送速率(发送窗口)和时延与网络中的数据量关系</em>
+<img src="http://image.smartjames.cn/mweb/20200916/16002691822869.png" style="zoom:60%" /></p>
+
+<p>随着数据量增加，发送速率达到最高点100%即达到真实带宽，再继续增加数据量会占用buffer而不会增加发送率，RTT在发送率到达100%之前都是最小值，超过后开始产生延迟，且越来越高，直到buffer溢出发生丢包。</p>
+
+<p>BBR会在窗口1和窗口2之间停下，会超过真实带宽单但没到丢包。
+基于丢包的标准TCP会在窗口2停下，直到丢包才停止。</p>
+
+<p>所以BBR需要计算的就是蓝色和绿色的转折点，分别代表最低延迟和最大发送窗口。</p>
+
+<h4 id="计算最大发送窗口带宽探测">计算最大发送窗口(带宽探测)</h4>
+
+<p>刚开始时采用慢启动，每个包都会收到ACK，当发现通过i计算ACK得到的带宽 没有因为增加发送率而增加时，就知道此时已经占用了buffer，开始结束第一阶段，得到的值是3倍bandwight。</p>
+
+<h4 id="计算最低延迟排空阶段">计算最低延迟（排空阶段）</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>因为要计算最低延迟，需要将inflight数据清空，发送极少数据才能保证RTT是极小值. 指数降低发送速率，buffer被慢慢排空，把上一个阶段占用的2倍bandwight的buffer消耗掉，直到延迟不再降低，则为最小延迟(因为buffer的存在说明有数据在排队，会增加延迟)。
 </code></pre></div></div>
 
-<hr />
-<h4 id="三le-isochronous-channels">三、LE Isochronous Channels</h4>
-<p>定义了一个有时间依赖的数据传输通道和传输策略。</p>
-<ul>
-  <li>增加对于一对多接收方同步获取数据的机制</li>
-  <li>允许发送方在指定时间外丢弃数据，保证接收方数据满足时效要求</li>
-</ul>
+<h4 id="稳定阶段">稳定阶段</h4>
+<p>以8个往返为周期，第一个往返时间里，BBR增加为1.25倍的发包率，在第二个时间里，降低为0.85的发包率。后面6个往返里使用估计的带宽发包。
+这里主要是<strong>带宽探测</strong>任务，</p>
 
-<p>该通道支持链接模式和广播模式.
-俩种模式下 ISO异同点：</p>
-<ul>
-  <li>每个BIG CIG最多包含31个BIS CIS</li>
-  <li>CIS中从设备对主设备有信息反馈，BIS没有</li>
-  <li>BIS重传是通过接收方信息反馈决定， CIS是强制的</li>
-  <li>CIG中CIS同步通过CIG的时间以及CIS时间参数实现，BIG中的BIS通过周期广播的PDU实现</li>
-</ul>
+<p>BBR每过10s ，如果最小延迟没有变化，就进入<strong>探测阶段</strong>，持续时间200ms， 发送窗口固定4个包，用来探测最小延迟作为新的延迟估计。<strong>大约2%的时间BBR用极低的发包率来测量延迟</strong></p>
 
-<p>能实现多重串流音频（Multi-Stream Audio）和音频分享（Audio Sharing）</p>
+<h3 id="性能评估">性能评估</h3>
 
-<h5 id="链接模式">链接模式</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>称作CIS (LE Connected Isochronous Stream)逻辑传输通道，可将延迟数据丢弃。 不同的CIS组成CIG ( Connected Isochronous Groups ),同一个CIG内的CIS有相同的时间戳，保证同一个group内数据同步。例如一对TWS耳机
+<h4 id="bbr对于带宽变化的响应">BBR对于带宽变化的响应</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>大部分时间内带宽的变化比延迟变化更频繁，BBR绝大多数时间都处于带宽探测阶段 *蓝色是延迟，绿色是inflight数量* 当带宽增长一倍时，BBR会每个周期向上探测1.25倍，大概3个周期后就能达到增长后的带宽。
 </code></pre></div></div>
 
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002632747277.png" alt="" /></p>
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002692643086.png" style="zoom:90%" /></p>
 
-<h5 id="广播模式">广播模式</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>称作BIS (Broadcast Isochronous Stream)。 多个BIS 可组成BIG (Broadcast Isochronous Groups).通过一个周期广播的PUD实现。 该PDU包含针对每个BIS的时间戳，一旦同步，广播接收者变成同步接收者。例如，广场舞大妈蓝牙耳机听同一音源歌曲。
-</code></pre></div></div>
+<p>当带宽降低一半时，多出来的包占用了buffer，导致延迟显著增加，但是延迟采用的是不发包测得的极小值，对于刚刚实际延迟增加没有影响。
+带宽估计 是使用一段滑动窗口内的极大值，滑动窗口是多个往返周期，所以需要等当前任务滑出窗口后，发送窗口减半，估计带宽降低一半，发送包速率键盘，buffer被排空，延迟才会缓慢下降。</p>
 
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002633057507.png" alt="" /></p>
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002692913442.png" style="zoom:90%" /></p>
+
+<p>带宽增加一倍，BBR用时1.5s收敛; 带宽降低一半，BBR用时4s收敛;</p>
+
+<h4 id="bbr与标准tcp效果比对">BBR与标准TCP效果比对</h4>
+<p>BBR 要解决的第一个问题，丢包错误导致误判拥塞问题。
+只要有0.01%丢包率，标准TCP带宽只剩下30%。 0.1%丢包率TCP带宽只有10%。1%丢包率几乎停滞。
+而BBR在5%以下几乎没有带宽损失， 15%时仍然有75%带宽
+<img src="http://image.smartjames.cn/mweb/20200916/16002693162811.png" style="zoom:90%" /></p>
+
+<p>BBR 要解决的第二个问题，降低延迟，减少缓冲区膨胀。
+TCP倾向于填满缓冲区，延迟就越高，当用户网络接入速度很慢时，延迟可能超过造成连接失败。
+BBR不会占用多于的缓冲区，会有单独的延迟探测阶段可以避免这个问题</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002693358027.png" style="zoom:90%" /></p>
 
 
   </section>
@@ -372,13 +393,13 @@ SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据�
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/" data-toggle="tooltip" data-placement="top" title="蓝牙协议栈">上一篇：  <span>蓝牙协议栈</span>
+            <a href="/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="TCP相关控制算法详解">上一篇：  <span>TCP相关控制算法详解</span>
             </a>
         </li>
         
         
         <li class="next">
-            <a href="/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="TCP相关控制算法详解">下一篇：  <span>TCP相关控制算法详解</span>
+            <a href="/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="GCC 拥塞控制算法详解">下一篇：  <span>GCC 拥塞控制算法详解</span>
             </a>
         </li>
         

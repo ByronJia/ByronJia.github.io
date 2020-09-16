@@ -5,8 +5,8 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 16 Sep 2020 22:44:05 +0800</pubDate>
-    <lastBuildDate>Wed, 16 Sep 2020 22:44:05 +0800</lastBuildDate>
+    <pubDate>Wed, 16 Sep 2020 23:57:15 +0800</pubDate>
+    <lastBuildDate>Wed, 16 Sep 2020 23:57:15 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -1175,7 +1175,321 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
         <link>http://localhost:4000/2020/08/WebRTC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/08/WebRTC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/</guid>
         
-        <category>WebRTC</category>
+        <category>webRTC</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>GCC 拥塞控制算法详解</title>
+        <description>&lt;h2 id=&quot;gcc-拥塞控制算法&quot;&gt;GCC 拥塞控制算法&lt;/h2&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;谷歌使用GCC (Google Congestion Control ) 在 WebRTC中的拥塞控制算法，包含2个部分，一个是基于丢包的用拥塞控制，一个是基于延迟的拥塞控制。
+最终基于丢包的码率估计值和基于延迟的码率估计值做比较，使用最小的码率估计值作为最终发送码率。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;早期实现中2部分分别在发送端和接收端实现，接收端实现延迟梯度算法计算出估计带宽，反馈给发送端，发送端再根据2个算法结果确定最终发送码率。最近的WebRTC中的GCC都在发送端来实现，所以需要接收端在RTCP中反馈包达到时间用来计算延迟。&lt;/p&gt;
+
+&lt;h3 id=&quot;基于丢包的带宽估计&quot;&gt;基于丢包的带宽估计&lt;/h3&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;思想是基于丢包多少来判断网络拥塞程度，丢包少提高发送码率，丢包多降低码率。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;接收端通过在RTCP协议中的fraction lost字段反馈给发送端丢包率， WebRTC通过以下公式估算发送码率，式中 As(tk) 即为 tk 时刻的带宽估计值，fl(tk)即为 tk 时刻的丢包率：
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002700924519.png&quot; style=&quot;zoom=100%&quot; /&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;fl &amp;gt; 10%: 有拥塞，根据丢包率降低带宽
+2%&amp;lt; fl &amp;lt; 10%: 正常，保持当前码率不变，避免因波动丢包等误判导致降低码率
+fl &amp;lt; 2% : 网络良好， As + 5% 提高带宽来探测真实可用带宽
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;基于延迟梯度的带宽估计&quot;&gt;基于延迟梯度的带宽估计&lt;/h3&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;接收端在RTCP中增加transport-cc-feedback字段反馈所有媒体包到达的时间，发送端根据接受延迟和发送间隔计算出延迟梯度，从而估计带宽。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;步骤有3个：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;到达时间滤波器&lt;/li&gt;
+  &lt;li&gt;过载检测器&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;速率控制器&lt;/p&gt;
+
+    &lt;p&gt;到达滤波器根据包的到达时延和发送间隔，计算延迟变化，用卡尔曼滤波器平滑处理消除网络噪音。
+  延迟变化作为过载检测器的输入，判断出当前网络状态underuse/overuse/normal。 
+  速率控制器根据网络状态和带宽公式计算出带宽。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;到达时间滤波器&quot;&gt;到达时间滤波器&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002707293607.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;用两个包到达时间间隔减去发送时间间隔，得到一个延迟的变化，公式如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002708393823.png&quot; alt=&quot;图片12&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;理想情况下，每个包的到达时间间隔和发送间隔是一样的，所以延迟梯度为0。如果某一个包因为拥塞导致排队，那么延迟梯度就不为0。为了计算精确，计算策略如下：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;由于测量粒度很小，为了避免网络噪音的误差，使用卡尔曼滤波来平滑延迟梯度的结果&lt;/li&gt;
+  &lt;li&gt;实现中是按照数据组来计算整体延迟梯度，不是按单个包计算。发送时间间隔小于5ms位一个组。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;过载检测器&quot;&gt;过载检测器&lt;/h4&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;将延迟梯度和某个阈值比较，高于阈值则为拥塞，低于阈值则为良好，阈值是动态调整的。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002702640507.png&quot; style=&quot;zoom=100%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;m(t&lt;sub&gt;i&lt;/sub&gt;)表示计算出的延迟梯度&lt;/p&gt;
+
+&lt;p&gt;γ(t&lt;sub&gt;i&lt;/sub&gt;)表示判断阈值&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002703739032.png&quot; alt=&quot;图片32&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002704016723.png&quot; alt=&quot;图片24&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上面为阈值自适应算法，当梯度减小时，阈值会以更慢的速率减小。梯度增加时，阈值会以更慢的速率增加。阈值的减小速度要小于增加速度，因为最终目的还是要探测更多可用的网络带宽。&lt;/p&gt;
+
+&lt;h4 id=&quot;速率控制器&quot;&gt;速率控制器&lt;/h4&gt;
+
+&lt;p&gt;根据过载探测器输出的信号，驱动速率控制状态机，估算出当前网络速率。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;当收到overuse，进入decrease状态&lt;/li&gt;
+  &lt;li&gt;当收到normal，进入increase状态&lt;/li&gt;
+  &lt;li&gt;当收到underuse， 进入hold状态&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002704269607.png&quot; style=&quot;zoom=100%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这个状态机输出的是带宽估计值。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;当前处于降低带宽值状态，发现带宽低载或者正常，就不再下降，如果依然过载，继续降&lt;/li&gt;
+  &lt;li&gt;当前处于平衡状态，发现带宽正常，则尝试增加带宽估计值，寻求达到低载状态，争夺多一点的带宽资源&lt;/li&gt;
+  &lt;li&gt;当前处于增加带宽值状态，发现带宽正常，继续增加，发现过载，降低带宽估计值，发现低载，目的达到了，保持当前状态&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002704602190.png&quot; style=&quot;zoom=100%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;其中η=1.05，α=0.85。 当increase时，以上一次估计码率乘1.05作为当前码率。 当decrease时以当前估算的接受端码率 乘0.85作为当前码率，hold状态不变。&lt;/p&gt;
+
+&lt;p&gt;最终基于丢包的码率估计值和基于延迟的码率估计值做比较，使用最小的码率估计值作为最终发送码率。&lt;/p&gt;
+
+</description>
+        <pubDate>Wed, 05 Aug 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</guid>
+        
+        <category>webRTC</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>BBR 拥塞控制算法详解</title>
+        <description>&lt;h2 id=&quot;bbr-拥塞控制算法&quot;&gt;BBR 拥塞控制算法&lt;/h2&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;BBR: Bottleneck Bandwidth and RTT
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;BBR 发明的目的是解决2个问题。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;在有一定丢包率的网络链路上充分利用带宽&lt;/li&gt;
+  &lt;li&gt;降低网络链路上的buffer占用率，降低延迟。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;BBR 原理 使用极大带宽和极小延迟的乘积作为发送窗口大小。&lt;/p&gt;
+
+&lt;h3 id=&quot;其他拥塞算法原理&quot;&gt;其他拥塞算法原理&lt;/h3&gt;
+&lt;p&gt;所有拥塞算法目标都是最大化利用网络上瓶颈链路的带宽，通常办法是不断增加数据量，直到发生丢包或者延迟增大等这些信号表明当前带宽已经使用100%。
+GCC等其他算法都是基于某些信号认为网络发生拥塞，例如丢包。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;网络链路上能容纳的数据量=链路带宽×往返时延&lt;/strong&gt;
+但是常用的标准TCP拥塞控制算法的&lt;strong&gt;问题&lt;/strong&gt;在于：&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;网络上丢包不都是拥塞导致的，可能是传输错误导致的丢包，如果因为传输错误的丢包影响算法对带宽的评估，是失败的。&lt;/li&gt;
+  &lt;li&gt;网络中的缓冲区buffer会被计算在内被占用，计算出的带宽=真实带宽+buffer大小， 问题称为buffrbloat （缓冲区膨胀）&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;缓冲区膨胀问题：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;增加网络延迟&lt;/strong&gt;， buffer东西越多，排队时间越长&lt;/li&gt;
+  &lt;li&gt;共享网络瓶颈的连接较多时，可能导致缓冲区被填满而丢包，被误认为发生拥塞。  &lt;strong&gt;这个地方有点不理解&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;bbr和常规算法区别&quot;&gt;BBR和常规算法区别&lt;/h3&gt;
+&lt;ol&gt;
+  &lt;li&gt;既然区分不了拥塞丢包和错误丢包，就不考虑丢包这个信号&lt;/li&gt;
+  &lt;li&gt;不断加快数据发送量，容易产生缓冲区膨胀，就单独估计带宽和延迟，而不是简单加快发送数据量。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;bbr算法步骤&quot;&gt;BBR算法步骤&lt;/h3&gt;
+
+&lt;p&gt;BBR分为3个阶段&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;慢启动：增加数据量，计算最大发送窗口&lt;/li&gt;
+  &lt;li&gt;排空阶段：清空数据量，基本不发数据，计算最低延迟&lt;/li&gt;
+  &lt;li&gt;稳定阶段：交替探测带宽和延迟&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;em&gt;下图是发送速率(发送窗口)和时延与网络中的数据量关系&lt;/em&gt;
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002691822869.png&quot; style=&quot;zoom:60%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;随着数据量增加，发送速率达到最高点100%即达到真实带宽，再继续增加数据量会占用buffer而不会增加发送率，RTT在发送率到达100%之前都是最小值，超过后开始产生延迟，且越来越高，直到buffer溢出发生丢包。&lt;/p&gt;
+
+&lt;p&gt;BBR会在窗口1和窗口2之间停下，会超过真实带宽单但没到丢包。
+基于丢包的标准TCP会在窗口2停下，直到丢包才停止。&lt;/p&gt;
+
+&lt;p&gt;所以BBR需要计算的就是蓝色和绿色的转折点，分别代表最低延迟和最大发送窗口。&lt;/p&gt;
+
+&lt;h4 id=&quot;计算最大发送窗口带宽探测&quot;&gt;计算最大发送窗口(带宽探测)&lt;/h4&gt;
+
+&lt;p&gt;刚开始时采用慢启动，每个包都会收到ACK，当发现通过i计算ACK得到的带宽 没有因为增加发送率而增加时，就知道此时已经占用了buffer，开始结束第一阶段，得到的值是3倍bandwight。&lt;/p&gt;
+
+&lt;h4 id=&quot;计算最低延迟排空阶段&quot;&gt;计算最低延迟（排空阶段）&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;因为要计算最低延迟，需要将inflight数据清空，发送极少数据才能保证RTT是极小值. 指数降低发送速率，buffer被慢慢排空，把上一个阶段占用的2倍bandwight的buffer消耗掉，直到延迟不再降低，则为最小延迟(因为buffer的存在说明有数据在排队，会增加延迟)。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;稳定阶段&quot;&gt;稳定阶段&lt;/h4&gt;
+&lt;p&gt;以8个往返为周期，第一个往返时间里，BBR增加为1.25倍的发包率，在第二个时间里，降低为0.85的发包率。后面6个往返里使用估计的带宽发包。
+这里主要是&lt;strong&gt;带宽探测&lt;/strong&gt;任务，&lt;/p&gt;
+
+&lt;p&gt;BBR每过10s ，如果最小延迟没有变化，就进入&lt;strong&gt;探测阶段&lt;/strong&gt;，持续时间200ms， 发送窗口固定4个包，用来探测最小延迟作为新的延迟估计。&lt;strong&gt;大约2%的时间BBR用极低的发包率来测量延迟&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;性能评估&quot;&gt;性能评估&lt;/h3&gt;
+
+&lt;h4 id=&quot;bbr对于带宽变化的响应&quot;&gt;BBR对于带宽变化的响应&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;大部分时间内带宽的变化比延迟变化更频繁，BBR绝大多数时间都处于带宽探测阶段 *蓝色是延迟，绿色是inflight数量* 当带宽增长一倍时，BBR会每个周期向上探测1.25倍，大概3个周期后就能达到增长后的带宽。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002692643086.png&quot; style=&quot;zoom:90%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;当带宽降低一半时，多出来的包占用了buffer，导致延迟显著增加，但是延迟采用的是不发包测得的极小值，对于刚刚实际延迟增加没有影响。
+带宽估计 是使用一段滑动窗口内的极大值，滑动窗口是多个往返周期，所以需要等当前任务滑出窗口后，发送窗口减半，估计带宽降低一半，发送包速率键盘，buffer被排空，延迟才会缓慢下降。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002692913442.png&quot; style=&quot;zoom:90%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;带宽增加一倍，BBR用时1.5s收敛; 带宽降低一半，BBR用时4s收敛;&lt;/p&gt;
+
+&lt;h4 id=&quot;bbr与标准tcp效果比对&quot;&gt;BBR与标准TCP效果比对&lt;/h4&gt;
+&lt;p&gt;BBR 要解决的第一个问题，丢包错误导致误判拥塞问题。
+只要有0.01%丢包率，标准TCP带宽只剩下30%。 0.1%丢包率TCP带宽只有10%。1%丢包率几乎停滞。
+而BBR在5%以下几乎没有带宽损失， 15%时仍然有75%带宽
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002693162811.png&quot; style=&quot;zoom:90%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;BBR 要解决的第二个问题，降低延迟，减少缓冲区膨胀。
+TCP倾向于填满缓冲区，延迟就越高，当用户网络接入速度很慢时，延迟可能超过造成连接失败。
+BBR不会占用多于的缓冲区，会有单独的延迟探测阶段可以避免这个问题&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002693358027.png&quot; style=&quot;zoom:90%&quot; /&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Sun, 02 Aug 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</guid>
+        
+        <category>webRTC</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>TCP相关控制算法详解</title>
+        <description>&lt;h2 id=&quot;tcp相关控制算法&quot;&gt;TCP相关控制算法&lt;/h2&gt;
+&lt;h4 id=&quot;以段为单位发送数据&quot;&gt;以段为单位发送数据&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;在TCP建立连接三次握手的时候，协议中带有自己接口最适合的MSS (Maximum Segment Size)大小，发送方以后就按照这个大写切分数据段。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;滑动窗口来提高传输速度&quot;&gt;滑动窗口来提高传输速度&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;原先发送发每发送一条数据，都要等待接收方的反馈才会发送下一条，这样效率太低。
+现在定义一个窗口大小，每次发送窗口大小内数据不等待反馈，全部发送完毕等待一次反馈，相比原来节约很多时。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002713341011.png&quot; alt=&quot;截屏2020-07-27 下午11.11.45&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;滑动窗口与重发机制&quot;&gt;滑动窗口与重发机制&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;在使用窗口控制中，出现段丢失或者应答丢失会不会出发重传？ - **==数据应答丢失==** ![截屏2020-07-27 下午11.14.25](http://image.smartjames.cn/mweb/20200916/16002713675070.png)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;==数据段丢失==&lt;/strong&gt;
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002713787395.png&quot; alt=&quot;截屏2020-07-27 下午11.14.45&quot; /&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;流控制-flow-control&quot;&gt;流控制 flow control&lt;/h4&gt;
+&lt;p&gt;主要利用滑动窗口和上面相关设计实现，滑动窗口主要由接收方反馈缓存情况来维护，维护接收方的承受能力&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;接收端主机向发送端通知自己可以接收数据的大小，于是发送端会发生不超过这个限度的数据，
+这个限度就是窗口大小，由接收端确定的。值越大说明网络的吞吐量越高。
+如果接收端数据缓冲区一旦溢出，窗口大小也会减小并发给发送端。
+
+若接收端无法及时清理缓冲区，导致缓冲区没有多于空间，发送方会等待接收方通知新的有效窗口值，
+如果过了超时时间没有收到新通知，会发送一个窗口探测包，获取窗口大小。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002714362536.png&quot; alt=&quot;截屏2020-09-16 下午11.50.12&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;拥塞控制-congestion-control&quot;&gt;拥塞控制 congestion control&lt;/h4&gt;
+&lt;p&gt;主要利用拥塞窗口实现，拥塞窗口主要由发送方的拥塞控制算法检测出的网络拥塞程度来决定的，维护网络带宽的承受能力&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;慢启动的时候，初始大小设为1个MSS，发送后收到一个ACK，拥塞窗口增加1。
+在发送数据包时将拥塞窗口和滑动窗口做比较，用较小值继续作为阈值继续发送。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002714935699.png&quot; alt=&quot;截屏2020-07-27 下午11.28.36&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;由于拥塞窗口会以指数型激增，导致网络拥塞，所以引入阈值，当拥塞窗口到达阈值，后面会降低增长速度 。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002715071116.png&quot; alt=&quot;截屏2020-07-27 下午11.28.42&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;TCP刚开始没有设置慢启动阈值，所以会指数型上升直到遇到超时（采用重发机制,不同于下面的高速重发机制）(==①慢启动阶段==)。
+超出带宽上限。此时设置拥塞窗口为当时窗口一半的大小，cwnd缓慢增加( ==②拥塞避免阶段==)。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;超时重发： 数据段发送后，在一个时间周期内没有收到ACK，则自动重发
+快速重发： 在一个滑动窗口内，收到3次重复ACK,则启动重发，不需要等待超时
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;由重复确认应答进行高速重发控制时，慢启动阈值设置为当时窗口一半，拥塞窗口大小设置为慢启动阈值+3个数据段。&lt;/p&gt;
+
+&lt;p&gt;快速重发后没有使用慢启动算法，而是拥塞避免，所以又叫快恢复阶段&lt;/p&gt;
+
+&lt;h5 id=&quot;延迟确认应答&quot;&gt;延迟确认应答&lt;/h5&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;因为有滑动窗口的概念，应答少一些也无妨，所以延迟确认得以实现，例如每次双数的数据段到达才回复ACK，或者最多0.5s内没收到下一个数据段就回复ACK。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;是提高网络利用率降低计算机处理负荷的一种较优机制.&lt;/p&gt;
+
+&lt;h5 id=&quot;捎带应答&quot;&gt;捎带应答&lt;/h5&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;在使用延迟应答的同时，拿到程序对于本次接收消息的回复内容，放在ACK中发送给发送方.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;hr /&gt;
+
+&lt;h4 id=&quot;常见是拥塞控制算法&quot;&gt;常见是拥塞控制算法&lt;/h4&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Reno：Linux内核使用的
+BBR： Google 2016年提出的
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;reno&quot;&gt;Reno&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;分为4个阶段，慢启动，拥塞避免，快重传，快恢复
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002715755176.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;与TCP 内部拥塞控制相似。&lt;/p&gt;
+
+&lt;h4 id=&quot;缩略词&quot;&gt;缩略词&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;RTT: round-trip delay time 来回通信时延 
+TD:  Triple duplicate acknowledgements 三次重复确认应答
+TO:  TimeOut  丢包超时
+MSS: Maximum Segment Size 最大包尺寸
+ssthresh: slow start threshold 慢启动阈值
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+</description>
+        <pubDate>Tue, 28 Jul 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</guid>
+        
+        <category>webRTC</category>
         
         
       </item>
@@ -1447,1553 +1761,6 @@ $ jekyll --version
         <pubDate>Thu, 21 May 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/05/%E5%9C%A8%E8%85%BE%E8%AE%AF%E4%BA%91%E4%B8%8A%E6%90%AD%E5%BB%BAjekyll%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/05/%E5%9C%A8%E8%85%BE%E8%AE%AF%E4%BA%91%E4%B8%8A%E6%90%AD%E5%BB%BAjekyll%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/</guid>
-        
-        
-      </item>
-    
-      <item>
-        <title>Flutter渲染机制—UI线程(四)</title>
-        <description>&lt;h2 id=&quot;四framework层绘制&quot;&gt;四、Framework层绘制&lt;/h2&gt;
-&lt;p&gt;在引擎层的处理过程会调用到window.onBeginFrame()和onDrawFrame，回到framework层从这个两个方法开始说起。&lt;/p&gt;
-
-&lt;h3 id=&quot;41-schedulerbindinginitinstances&quot;&gt;4.1 SchedulerBinding.initInstances&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/scheduler/binding.dart:: SchedulerBinding]&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;mixin SchedulerBinding on BindingBase, ServicesBinding {
-  @override
-  void initInstances() {
-    super.initInstances();
-    _instance = this;
-    ui.window.onBeginFrame = _handleBeginFrame; //[见小节4.2]
-    ui.window.onDrawFrame = _handleDrawFrame;  //[见小节4.4]
-    SystemChannels.lifecycle.setMessageHandler(_handleLifecycleMessage);
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;可见，引擎层中的Window::BeginFrame()调用的两个方法，进入到dart层则分别是_handleBeginFrame()和_handleDrawFrame()方法&lt;/p&gt;
-
-&lt;h4 id=&quot;411-window初始化&quot;&gt;4.1.1 Window初始化&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/lib/ui/window.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class Window {
-    Window._()
-
-    FrameCallback get onBeginFrame =&amp;gt; _onBeginFrame;
-    FrameCallback _onBeginFrame;
-
-    VoidCallback get onDrawFrame =&amp;gt; _onDrawFrame;
-    VoidCallback _onDrawFrame;
-    ...
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;Window初始化过程，可以知道onBeginFrame和onDrawFrame分别保存_onBeginFrame和_onDrawFrame方法。&lt;/p&gt;
-
-&lt;h3 id=&quot;42-_handlebeginframe&quot;&gt;4.2 _handleBeginFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/scheduler/binding.dart:: SchedulerBinding]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void _handleBeginFrame(Duration rawTimeStamp) {
-  if (_warmUpFrame) {
-    _ignoreNextEngineDrawFrame = true;
-    return;
-  }
-  handleBeginFrame(rawTimeStamp);  //[见小节4.3]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;43-handlebeginframe&quot;&gt;4.3 handleBeginFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/scheduler/binding.dart:: SchedulerBinding]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void handleBeginFrame(Duration rawTimeStamp) {
-  Timeline.startSync('Frame', arguments: timelineWhitelistArguments);
-  _firstRawTimeStampInEpoch ??= rawTimeStamp;
-  _currentFrameTimeStamp = _adjustForEpoch(rawTimeStamp ?? _lastRawTimeStamp);
-  if (rawTimeStamp != null)
-    _lastRawTimeStamp = rawTimeStamp;
-
-  profile(() {
-    _profileFrameNumber += 1;
-    _profileFrameStopwatch.reset();
-    _profileFrameStopwatch.start();
-  });
-
-  //此时阶段等于SchedulerPhase.idle;
-  _hasScheduledFrame = false;
-  try {
-    Timeline.startSync('Animate', arguments: timelineWhitelistArguments);
-    _schedulerPhase = SchedulerPhase.transientCallbacks;
-    //执行动画的回调方法
-    final Map&amp;lt;int, _FrameCallbackEntry&amp;gt; callbacks = _transientCallbacks;
-    _transientCallbacks = &amp;lt;int, _FrameCallbackEntry&amp;gt;{};
-    callbacks.forEach((int id, _FrameCallbackEntry callbackEntry) {
-      if (!_removedIds.contains(id))
-        _invokeFrameCallback(callbackEntry.callback, _currentFrameTimeStamp, callbackEntry.debugStack);
-    });
-    _removedIds.clear();
-  } finally {
-    _schedulerPhase = SchedulerPhase.midFrameMicrotasks;
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;该方法主要功能是遍历_transientCallbacks，执行相应的Animate操作，可通过scheduleFrameCallback()/cancelFrameCallbackWithId()来完成添加和删除成员，再来简单看看这两个方法。&lt;/p&gt;
-
-&lt;h4 id=&quot;431-scheduleframecallback&quot;&gt;4.3.1 scheduleFrameCallback&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/scheduler/binding.dart:: SchedulerBinding]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;int scheduleFrameCallback(FrameCallback callback, { bool rescheduling = false }) {
-  scheduleFrame();  //触发帧绘制的调度
-  _nextFrameCallbackId += 1;
-  _transientCallbacks[_nextFrameCallbackId] = _FrameCallbackEntry(callback, rescheduling: rescheduling);
-  return _nextFrameCallbackId;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;callback保存在_FrameCallbackEntry对象里面&lt;/p&gt;
-
-&lt;h4 id=&quot;432-cancelframecallbackwithid&quot;&gt;4.3.2 cancelFrameCallbackWithId&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/scheduler/binding.dart:: SchedulerBinding]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void cancelFrameCallbackWithId(int id) {
-  assert(id &amp;gt; 0);
-  _transientCallbacks.remove(id);
-  _removedIds.add(id);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;44-_handledrawframe&quot;&gt;4.4 _handleDrawFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/scheduler/binding.dart:: SchedulerBinding]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void _handleDrawFrame() {
-  if (_ignoreNextEngineDrawFrame) {
-    _ignoreNextEngineDrawFrame = false;
-    return;
-  }
-  handleDrawFrame();  //[见小节4.5]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;45-handledrawframe&quot;&gt;4.5 handleDrawFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/scheduler/binding.dart:: SchedulerBinding]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void handleDrawFrame() {
-  assert(_schedulerPhase == SchedulerPhase.midFrameMicrotasks);
-  Timeline.finishSync(); // 标识结束&quot;Animate&quot;阶段
-  try {
-    _schedulerPhase = SchedulerPhase.persistentCallbacks;
-    //执行PERSISTENT FRAME回调
-    for (FrameCallback callback in _persistentCallbacks)
-      _invokeFrameCallback(callback, _currentFrameTimeStamp); //[见小节4.5.1]
-
-    _schedulerPhase = SchedulerPhase.postFrameCallbacks;
-    // 执行POST-FRAME回调
-    final List&amp;lt;FrameCallback&amp;gt; localPostFrameCallbacks = List&amp;lt;FrameCallback&amp;gt;.from(_postFrameCallbacks);
-    _postFrameCallbacks.clear();
-    for (FrameCallback callback in localPostFrameCallbacks)
-      _invokeFrameCallback(callback, _currentFrameTimeStamp);
-  } finally {
-    _schedulerPhase = SchedulerPhase.idle;
-    Timeline.finishSync(); //标识结束”Frame“阶段
-    profile(() {
-      _profileFrameStopwatch.stop();
-      _profileFramePostEvent();
-    });
-    _currentFrameTimeStamp = null;
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;该方法主要功能：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;遍历_persistentCallbacks，执行相应的回调方法，可通过addPersistentFrameCallback()注册，一旦注册后不可移除，后续每一次frame回调都会执行；&lt;/li&gt;
-  &lt;li&gt;遍历_postFrameCallbacks，执行相应的回调方法，可通过addPostFrameCallback()注册，handleDrawFrame()执行完成后会清空_postFrameCallbacks内容。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;451-_invokeframecallback&quot;&gt;4.5.1 _invokeFrameCallback&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/scheduler/binding.dart:: SchedulerBinding]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void _invokeFrameCallback(FrameCallback callback, Duration timeStamp, [ StackTrace callbackStack ]) {
-  try {
-    callback(timeStamp);  //[见小节4.5.2]
-  } catch (exception, exceptionStack) {
-    FlutterError.reportError(FlutterErrorDetails(...));
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;这里的callback是_persistentCallbacks列表中的成员，再来看看其成员是如何添加进去的。&lt;/p&gt;
-
-&lt;h4 id=&quot;452-widgetsbindinginitinstances&quot;&gt;4.5.2 WidgetsBinding.initInstances&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/widgets/binding.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;mixin WidgetsBinding on BindingBase, SchedulerBinding, GestureBinding, RendererBinding, SemanticsBinding {
-  @override
-  void initInstances() {
-    super.initInstances();  //[见小节4.5.3]
-    _instance = this;
-    buildOwner.onBuildScheduled = _handleBuildScheduled;
-    ui.window.onLocaleChanged = handleLocaleChanged;
-    ui.window.onAccessibilityFeaturesChanged = handleAccessibilityFeaturesChanged;
-    SystemChannels.navigation.setMethodCallHandler(_handleNavigationInvocation);
-    SystemChannels.system.setMessageHandler(_handleSystemMessage);
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;在flutter app启动过程，也就是执行runApp过程会有WidgetsFlutterBinding初始化过程，WidgetsBinding的initInstances()，根据mixin的顺序，可知此处的super.initInstances() 便是RendererBinding类。&lt;/p&gt;
-
-&lt;h4 id=&quot;453-rendererbindinginitinstances&quot;&gt;4.5.3 RendererBinding.initInstances&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/binding.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;mixin RendererBinding on BindingBase, ServicesBinding, SchedulerBinding, SemanticsBinding, HitTestable {
-
-  void initInstances() {
-    super.initInstances();
-    _instance = this;
-    _pipelineOwner = PipelineOwner(
-      onNeedVisualUpdate: ensureVisualUpdate,
-      onSemanticsOwnerCreated: _handleSemanticsOwnerCreated,
-      onSemanticsOwnerDisposed: _handleSemanticsOwnerDisposed,
-    );
-    ui.window
-      ..onMetricsChanged = handleMetricsChanged
-      ..onTextScaleFactorChanged = handleTextScaleFactorChanged
-      ..onSemanticsEnabledChanged = _handleSemanticsEnabledChanged
-      ..onSemanticsAction = _handleSemanticsAction;
-    initRenderView();
-    _handleSemanticsEnabledChanged();
-    addPersistentFrameCallback(_handlePersistentFrameCallback); //[见小节4.5.4]
-  }
-
-  void _handlePersistentFrameCallback(Duration timeStamp) {
-    drawFrame();  //[见小节4.6]
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;454-schedulerbindingaddpersistentframecallback&quot;&gt;4.5.4 SchedulerBinding.addPersistentFrameCallback&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/scheduler/binding.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;mixin SchedulerBinding on BindingBase, ServicesBinding {
-
-  void addPersistentFrameCallback(FrameCallback callback) {
-    _persistentCallbacks.add(callback);
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;46-widgetsbindingdrawframe&quot;&gt;4.6 WidgetsBinding.drawFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/widgets/binding.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void drawFrame() {
-  try {
-    if (renderViewElement != null)
-      buildOwner.buildScope(renderViewElement);   //[见小节4.6.1]
-    super.drawFrame();   //[见小节4.6.4]
-    buildOwner.finalizeTree();  //[见小节4.12]
-  } finally {
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;461-buildownerbuildscope&quot;&gt;4.6.1 BuildOwner.buildScope&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/widgets/framework.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void buildScope(Element context, [VoidCallback callback]) {
-  if (callback == null &amp;amp;&amp;amp; _dirtyElements.isEmpty)
-    return;
-  Timeline.startSync('Build', arguments: timelineWhitelistArguments);
-  try {
-    _scheduledFlushDirtyElements = true;
-    if (callback != null) {
-      _dirtyElementsNeedsResorting = false;
-      callback();  //执行回调方法
-    }
-    _dirtyElements.sort(Element._sort); //排序
-    _dirtyElementsNeedsResorting = false;
-    int dirtyCount = _dirtyElements.length;
-    int index = 0;
-    while (index &amp;lt; dirtyCount) {
-      try {
-        //具体Element子类执行重建操作 [见小节4.6.2]
-        _dirtyElements[index].rebuild();
-      } catch (e, stack) {
-      }
-      index += 1;
-      if (dirtyCount &amp;lt; _dirtyElements.length || _dirtyElementsNeedsResorting) {
-        _dirtyElements.sort(Element._sort);
-        _dirtyElementsNeedsResorting = false;
-        dirtyCount = _dirtyElements.length;
-        while (index &amp;gt; 0 &amp;amp;&amp;amp; _dirtyElements[index - 1].dirty) {
-          index -= 1;
-        }
-      }
-    }
-  } finally {
-    for (Element element in _dirtyElements) {
-      element._inDirtyList = false;
-    }
-    _dirtyElements.clear();
-    _scheduledFlushDirtyElements = false;
-    _dirtyElementsNeedsResorting = null;
-    Timeline.finishSync();
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;462-elementrebuild&quot;&gt;4.6.2 Element.rebuild&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/widgets/framework.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void rebuild() {
-  if (!_active || !_dirty)
-    return;
-  performRebuild();
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;performRebuild具体执行方法，取决于相应的Element子类，这里以ComponentElement为例&lt;/p&gt;
-
-&lt;h4 id=&quot;463-componentelementperformrebuild&quot;&gt;4.6.3 ComponentElement.performRebuild&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/widgets/framework.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void performRebuild() {
-  Widget built;
-  try {
-    built = build();  //执行build方法
-  } catch (e, stack) {
-    built = ErrorWidget.builder(_debugReportException('building $this', e, stack));
-  } finally {
-    _dirty = false;
-  }
-  try {
-    _child = updateChild(_child, built, slot); //更新子元素
-  } catch (e, stack) {
-    built = ErrorWidget.builder(_debugReportException('building $this', e, stack));
-    _child = updateChild(null, built, slot);
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;464-rendererbindingdrawframe&quot;&gt;4.6.4 RendererBinding.drawFrame&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/binding.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void drawFrame() {
-  pipelineOwner.flushLayout();  //[见小节4.7]
-  pipelineOwner.flushCompositingBits();  //[见小节4.8]
-  pipelineOwner.flushPaint(); //[见小节4.9]
-  renderView.compositeFrame();  //[见小节4.10]
-  pipelineOwner.flushSemantics(); //[见小节4.11]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;RendererBinding的initInstances()过程注册了一个Persistent的帧回调方法_handlePersistentFrameCallback()，故handleDrawFrame()过程会调用该方法。pipelineOwner管理渲染管道，提供了一个用于驱动渲染管道的接口，并存储了哪些渲染对象请求访问状态，要刷新管道，需要按顺序运行如下5个阶段：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;[flushLayout]：更新需要计算其布局的渲染对象，在此阶段计算每个渲染对象的大小和位置，渲染对象可能会弄脏其绘画或者合成状态，这个过程可能还会调用到build过程。
-耗时对应timeline的‘Layout’过程&lt;/li&gt;
-  &lt;li&gt;[flushCompositingBits]：更新具有脏合成位的任何渲染对象，在此阶段每个渲染对象都会了解其子项是否需要合成。在绘制阶段使用此信息选择如何实现裁剪等视觉效果。如果渲染对象有一个自己合成的子项，它需要使用布局信息来创建裁剪，以便将裁剪应用于已合成的子项
-耗时对应timeline的‘Compositing bits’过程&lt;/li&gt;
-  &lt;li&gt;[flushPaint]：访问需要绘制的任何渲染对象，在此阶段，渲染对象有机会将绘制命令记录到[PictureLayer]，并构建其他合成的[Layer]；
-    &lt;ul&gt;
-      &lt;li&gt;耗时对应timeline的‘Paint’过程&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;[compositeFrame]：将Compositing bits发送给GPU；
-    &lt;ul&gt;
-      &lt;li&gt;耗时对应timeline的‘Compositing’过程&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;[flushSemantics]：编译渲染对象的语义，并将语义发送给操作系统；
-    &lt;ul&gt;
-      &lt;li&gt;耗时对应timeline的‘Semantics’过程&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;packages/flutter/lib/src/rendering/debug.dart，这里面记录着关于render过程相关的调试开关，可以逐一实践。&lt;/p&gt;
-
-&lt;h3 id=&quot;47-pipelineownerflushlayout&quot;&gt;4.7 PipelineOwner.flushLayout&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/object.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void flushLayout() {
-  profile(() {
-    Timeline.startSync('Layout', arguments: timelineWhitelistArguments);
-  });
-  try {
-    //遍历所有的渲染对象
-    while (_nodesNeedingLayout.isNotEmpty) {
-      final List&amp;lt;RenderObject&amp;gt; dirtyNodes = _nodesNeedingLayout;
-      _nodesNeedingLayout = &amp;lt;RenderObject&amp;gt;[];
-      for (RenderObject node in dirtyNodes..sort((RenderObject a, RenderObject b) =&amp;gt; a.depth - b.depth)) {
-        //如果渲染对象需要重新布局，则执行布局操作 [见小节4.7.1]
-        if (node._needsLayout &amp;amp;&amp;amp; node.owner == this)
-          node._layoutWithoutResize();
-      }
-    }
-  } finally {
-    profile(() {
-      Timeline.finishSync();
-    });
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;471-_layoutwithoutresize&quot;&gt;4.7.1 _layoutWithoutResize&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/object.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void _layoutWithoutResize() {
-  try {
-    performLayout();  //执行布局操作[]
-    markNeedsSemanticsUpdate();  //[见小节4.7.2]
-  } catch (e, stack) {
-    _debugReportException('performLayout', e, stack);
-  }
-  _needsLayout = false; //完成layout操作
-  markNeedsPaint(); // [见小节4.7.3]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;该方法主要工作：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;performLayout操作：参数sizedByParent为false需要同时改变渲染对象和指导子项的布局，性能更慢；&lt;/li&gt;
-  &lt;li&gt;markNeedsSemanticsUpdate：标记需要更新语义；&lt;/li&gt;
-  &lt;li&gt;markNeedsPaint：标记需要绘制；&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;SchedulerBinding.scheduleWarmUpFrame
-  RenderView.performLayout
-    RenderObject.layout
-      _RenderLayoutBuilder.performLayout
-        _LayoutBuilderElement._layout
-          BuildOwner.buildScope
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;472-markneedssemanticsupdate&quot;&gt;4.7.2 markNeedsSemanticsUpdate&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/object.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void markNeedsSemanticsUpdate() {
-  if (!attached || owner._semanticsOwner == null) {
-    _cachedSemanticsConfiguration = null;
-    return;
-  }
-
-  final bool wasSemanticsBoundary = _semantics != null &amp;amp;&amp;amp; _cachedSemanticsConfiguration?.isSemanticBoundary == true;
-  _cachedSemanticsConfiguration = null;
-  bool isEffectiveSemanticsBoundary = _semanticsConfiguration.isSemanticBoundary &amp;amp;&amp;amp; wasSemanticsBoundary;
-  RenderObject node = this;
-
-  while (!isEffectiveSemanticsBoundary &amp;amp;&amp;amp; node.parent is RenderObject) {
-    if (node != this &amp;amp;&amp;amp; node._needsSemanticsUpdate)
-      break;
-    node._needsSemanticsUpdate = true;
-
-    node = node.parent;
-    isEffectiveSemanticsBoundary = node._semanticsConfiguration.isSemanticBoundary;
-    if (isEffectiveSemanticsBoundary &amp;amp;&amp;amp; node._semantics == null) {
-      return;
-    }
-  }
-  if (node != this &amp;amp;&amp;amp; _semantics != null &amp;amp;&amp;amp; _needsSemanticsUpdate) {
-    owner._nodesNeedingSemantics.remove(this);
-  }
-  if (!node._needsSemanticsUpdate) {
-    node._needsSemanticsUpdate = true;
-    if (owner != null) {
-      //记录需要更新语义的渲染对象
-      owner._nodesNeedingSemantics.add(node);
-      owner.requestVisualUpdate();
-    }
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;473-markneedspaint&quot;&gt;4.7.3 markNeedsPaint&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/object.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void markNeedsPaint() {
-  if (_needsPaint)
-    return;
-  _needsPaint = true;
-  if (isRepaintBoundary) {
-    if (owner != null) {
-      //记录需要重新绘制的渲染对象
-      owner._nodesNeedingPaint.add(this);
-      owner.requestVisualUpdate();
-    }
-  } else if (parent is RenderObject) {
-    final RenderObject parent = this.parent;
-    parent.markNeedsPaint();
-  } else {
-    if (owner != null)
-      owner.requestVisualUpdate();
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;48-pipelineownerflushcompositingbits&quot;&gt;4.8 PipelineOwner.flushCompositingBits&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/object.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void flushCompositingBits() {
-  profile(() { Timeline.startSync('Compositing bits'); });
-  _nodesNeedingCompositingBitsUpdate.sort((RenderObject a, RenderObject b) =&amp;gt; a.depth - b.depth);
-  for (RenderObject node in _nodesNeedingCompositingBitsUpdate) {
-    //根据需要来决定是否更新位合成
-    if (node._needsCompositingBitsUpdate &amp;amp;&amp;amp; node.owner == this)
-      node._updateCompositingBits(); // [见小节4.8.1]
-  }
-  _nodesNeedingCompositingBitsUpdate.clear();  //清空需要位合成的渲染对象
-  profile(() { Timeline.finishSync(); });
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;481-_updatecompositingbits&quot;&gt;4.8.1 _updateCompositingBits&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/object.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void _updateCompositingBits() {
-  if (!_needsCompositingBitsUpdate)
-    return;
-  final bool oldNeedsCompositing = _needsCompositing;
-  _needsCompositing = false;
-  visitChildren((RenderObject child) {
-    //遍历所有子项来更新位合成
-    child._updateCompositingBits();
-    if (child.needsCompositing)
-      _needsCompositing = true;
-  });
-  if (isRepaintBoundary || alwaysNeedsCompositing)
-    _needsCompositing = true;
-  if (oldNeedsCompositing != _needsCompositing)
-    markNeedsPaint();
-  _needsCompositingBitsUpdate = false;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;49-pipelineownerflushpaint&quot;&gt;4.9 PipelineOwner.flushPaint&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/object.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void flushPaint() {
-  profile(() { Timeline.startSync('Paint', arguments: timelineWhitelistArguments); });
-  try {
-    final List&amp;lt;RenderObject&amp;gt; dirtyNodes = _nodesNeedingPaint;
-    _nodesNeedingPaint = &amp;lt;RenderObject&amp;gt;[];
-    //排序脏节点，深度最大的节点排第一位
-    for (RenderObject node in dirtyNodes..sort((RenderObject a, RenderObject b) =&amp;gt; b.depth - a.depth)) {
-      if (node._needsPaint &amp;amp;&amp;amp; node.owner == this) {
-        //此节点是否连接到树中，如果连接则重绘，否则跳过
-        if (node._layer.attached) {
-          PaintingContext.repaintCompositedChild(node);  //[小节4.9.1]
-        } else {
-          node._skippedPaintingOnLayer();
-        }
-      }
-    }
-  } finally {
-    profile(() { Timeline.finishSync(); });
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;491-repaintcompositedchild&quot;&gt;4.9.1 repaintCompositedChild&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/object.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;static void repaintCompositedChild(RenderObject child, { bool debugAlsoPaintedParent = false }) {
-  _repaintCompositedChild(
-    child,
-    debugAlsoPaintedParent: debugAlsoPaintedParent,
-  );
-}
-
-static void _repaintCompositedChild(
-  RenderObject child, {
-  bool debugAlsoPaintedParent = false,
-  PaintingContext childContext,
-}) {
-  if (child._layer == null) {
-    child._layer = OffsetLayer();
-  } else {
-    child._layer.removeAllChildren();
-  }
-  childContext ??= PaintingContext(child._layer, child.paintBounds);
-  child._paintWithContext(childContext, Offset.zero);
-  childContext.stopRecordingIfNeeded();
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;410-renderviewcompositeframe&quot;&gt;4.10 RenderView.compositeFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/view.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void compositeFrame() {
-  Timeline.startSync('Compositing', arguments: timelineWhitelistArguments);
-  try {
-    //创建SceneBuilder [见小节4.10.1]
-    final ui.SceneBuilder builder = ui.SceneBuilder();
-    //创建Scene [见小节4.10.2]
-    final ui.Scene scene = layer.buildScene(builder);
-    if (automaticSystemUiAdjustment)
-      _updateSystemChrome();
-    ui.window.render(scene); // [见小节4.10.3]
-    scene.dispose();
-  } finally {
-    Timeline.finishSync();
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;该方法主要工作：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;分别创建Flutter框架(dart)和引擎层(C++)的两个SceneBuilder；&lt;/li&gt;
-  &lt;li&gt;分别创建Flutter框架(dart)和引擎层(C++)的两个Scene；&lt;/li&gt;
-  &lt;li&gt;执行render()将layer树发送给GPU线程；&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;4101-scenebuilder初始化&quot;&gt;4.10.1 SceneBuilder初始化&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/ui/compositing.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class SceneBuilder extends NativeFieldWrapperClass2 {
-  @pragma('vm:entry-point')
-  SceneBuilder() { _constructor(); }
-  void _constructor() native 'SceneBuilder_constructor';
-  ...
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;SceneBuilder_constructor这是native方法，最终调用到引擎中的lib/ui/compositing/scene_builder.h中的SceneBuilder::create()方法， 创建C++的SceneBuilder对象。&lt;/p&gt;
-
-&lt;h4 id=&quot;4102-offsetlayerbuildscene&quot;&gt;4.10.2 OffsetLayer.buildScene&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/layer.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ui.Scene buildScene(ui.SceneBuilder builder) {
-  updateSubtreeNeedsAddToScene();  //遍历layer树，将需要子树加入到scene
-  addToScene(builder); //将layer添加到SceneBuilder
-  return builder.build(); //调用C++层的build来构建Scene对象。
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;遍历layer树，将需要更新的全部都加入到SceneBuilder。再调用build()，同样也是native方法，执行SceneBuilder::build()来构建Scene对象。&lt;/p&gt;
-
-&lt;h4 id=&quot;4103-windowrender&quot;&gt;4.10.3 Window::Render&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/lib/ui/window/window.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Render(Dart_NativeArguments args) {
-  Dart_Handle exception = nullptr;
-  Scene* scene = tonic::DartConverter&amp;lt;Scene*&amp;gt;::FromArguments(args, 1, exception);
-  if (exception) {
-    Dart_ThrowException(exception);
-    return;
-  }
-  UIDartState::Current()-&amp;gt;window()-&amp;gt;client()-&amp;gt;Render(scene);  // [4.10.4]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;ui.window.render()位于window.dart文件，这是一个native方法，会调用到window.cc的Render()方法。&lt;/p&gt;
-
-&lt;h4 id=&quot;4104-runtimecontrollerrender&quot;&gt;4.10.4 RuntimeController::Render&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/runtime/runtime_controller.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void RuntimeController::Render(Scene* scene) {
-  //从scene中取出layer树 [见小节4.10.5]
-  client_.Render(scene-&amp;gt;takeLayerTree());
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;4105-enginerender&quot;&gt;4.10.5 Engine::Render&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/engine.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Engine::Render(std::unique_ptr&amp;lt;flow::LayerTree&amp;gt; layer_tree) {
-  if (!layer_tree)
-    return;
-
-  SkISize frame_size = SkISize::Make(viewport_metrics_.physical_width,
-                                     viewport_metrics_.physical_height);
-  if (frame_size.isEmpty())
-    return;
-
-  layer_tree-&amp;gt;set_frame_size(frame_size);
-  animator_-&amp;gt;Render(std::move(layer_tree));  // [4.10.6]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;4106-animatorrender&quot;&gt;4.10.6 Animator::Render&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/animator.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Animator::Render(std::unique_ptr&amp;lt;flow::LayerTree&amp;gt; layer_tree) {
-  if (dimension_change_pending_ &amp;amp;&amp;amp;
-      layer_tree-&amp;gt;frame_size() != last_layer_tree_size_) {
-    dimension_change_pending_ = false;
-  }
-  last_layer_tree_size_ = layer_tree-&amp;gt;frame_size();
-
-  if (layer_tree) {
-    layer_tree-&amp;gt;set_construction_time(fml::TimePoint::Now() -
-                                      last_begin_frame_time_);
-  }
-
-  //提交待处理的continuation，本次PipelineProduce完成 //[见小节4.10.7]
-  producer_continuation_.Complete(std::move(layer_tree));
-
-  delegate_.OnAnimatorDraw(layer_tree_pipeline_); //[见小节4.10.8]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;UI线程的耗时从doFrame(frameTimeNanos)中的frameTimeNanos为起点，以Animator::Render()方法结束为终点， 并将结果保存到LayerTree的成员变量construction_time_，这便是UI线程的耗时时长。&lt;/p&gt;
-
-&lt;h4 id=&quot;4107-producercontinuationcomplete&quot;&gt;4.10.7 ProducerContinuation.Complete&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/synchronization/pipeline.h]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class ProducerContinuation {
-  void Complete(ResourcePtr resource) {
-    if (continuation_) {
-      continuation_(std::move(resource), trace_id_);
-      continuation_ = nullptr;
-      TRACE_EVENT_ASYNC_END0(&quot;flutter&quot;, &quot;PipelineProduce&quot;, trace_id_);
-      TRACE_FLOW_STEP(&quot;flutter&quot;, &quot;PipelineItem&quot;, trace_id_);
-    }
-  }
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;4108-shellonanimatordraw&quot;&gt;4.10.8 Shell::OnAnimatorDraw&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/shell.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Shell::OnAnimatorDraw(
-    fml::RefPtr&amp;lt;flutter::Pipeline&amp;lt;flow::LayerTree&amp;gt;&amp;gt; pipeline) {
-
-  //向GPU线程提交绘制任务
-  task_runners_.GetGPUTaskRunner()-&amp;gt;PostTask(
-      [rasterizer = rasterizer_-&amp;gt;GetWeakPtr(),
-       pipeline = std::move(pipeline)]() {
-        if (rasterizer) {
-          //由GPU线程来负责栅格化操作
-          rasterizer-&amp;gt;Draw(pipeline);
-        }
-      });
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;这个方法主要是向GPU线程提交绘制任务。&lt;/p&gt;
-
-&lt;h3 id=&quot;411-pipelineownerflushsemantics&quot;&gt;4.11 PipelineOwner.flushSemantics&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/view.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void flushSemantics() {
-  if (_semanticsOwner == null)
-    return;
-  profile(() { Timeline.startSync('Semantics'); });
-  try {
-    final List&amp;lt;RenderObject&amp;gt; nodesToProcess = _nodesNeedingSemantics.toList()
-      ..sort((RenderObject a, RenderObject b) =&amp;gt; a.depth - b.depth);
-    _nodesNeedingSemantics.clear();
-    //遍历_nodesNeedingSemantics，更新需要更新语义的渲染对象
-    for (RenderObject node in nodesToProcess) {
-      if (node._needsSemanticsUpdate &amp;amp;&amp;amp; node.owner == this)
-        node._updateSemantics(); // [见小节4.11.1]
-    }
-    _semanticsOwner.sendSemanticsUpdate(); // 发送语义更新[见小节4.11.2]
-  } finally {
-    profile(() { Timeline.finishSync(); });
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;4111-_updatesemantics&quot;&gt;4.11.1 _updateSemantics&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/rendering/object.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void _updateSemantics() {
-  if (_needsLayout) {
-    //此子树中没有足够的信息来计算语义，子树可能被视图窗口保持活着但没有布局
-    return;
-  }
-  final _SemanticsFragment fragment = _getSemanticsForParent(
-    mergeIntoParent: _semantics?.parent?.isPartOfNodeMerging ?? false,
-  );
-  final _InterestingSemanticsFragment interestingFragment = fragment;
-  final SemanticsNode node = interestingFragment.compileChildren(
-    parentSemanticsClipRect: _semantics?.parentSemanticsClipRect,
-    parentPaintClipRect: _semantics?.parentPaintClipRect,
-  ).single;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;4112-sendsemanticsupdate&quot;&gt;4.11.2 sendSemanticsUpdate&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/semantics/semantics.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void sendSemanticsUpdate() {
-  if (_dirtyNodes.isEmpty)
-    return;
-  final Set&amp;lt;int&amp;gt; customSemanticsActionIds = Set&amp;lt;int&amp;gt;();
-  final List&amp;lt;SemanticsNode&amp;gt; visitedNodes = &amp;lt;SemanticsNode&amp;gt;[];
-  while (_dirtyNodes.isNotEmpty) {
-    final List&amp;lt;SemanticsNode&amp;gt; localDirtyNodes = _dirtyNodes.where((SemanticsNode node) =&amp;gt; !_detachedNodes.contains(node)).toList();
-    _dirtyNodes.clear();
-    _detachedNodes.clear();
-    localDirtyNodes.sort((SemanticsNode a, SemanticsNode b) =&amp;gt; a.depth - b.depth);
-    visitedNodes.addAll(localDirtyNodes);
-    for (SemanticsNode node in localDirtyNodes) {
-      if (node.isPartOfNodeMerging) {
-        //如果合并到父节点，确保父节点已被添加到脏列表
-        if (node.parent != null &amp;amp;&amp;amp; node.parent.isPartOfNodeMerging)
-          node.parent._markDirty(); //将节点添加到脏列表
-      }
-    }
-  }
-  visitedNodes.sort((SemanticsNode a, SemanticsNode b) =&amp;gt; a.depth - b.depth);
-  final ui.SemanticsUpdateBuilder builder = ui.SemanticsUpdateBuilder();
-  for (SemanticsNode node in visitedNodes) {
-    if (node._dirty &amp;amp;&amp;amp; node.attached)
-      node._addToUpdate(builder, customSemanticsActionIds);
-  }
-  _dirtyNodes.clear();
-  for (int actionId in customSemanticsActionIds) {
-    final CustomSemanticsAction action = CustomSemanticsAction.getAction(actionId);
-    builder.updateCustomAction(id: actionId, label: action.label, hint: action.hint, overrideId: action.action?.index ?? -1);
-  }
-  ui.window.updateSemantics(builder.build());  // [见小节4.11.3]
-  notifyListeners(); //通知已注册的监听器
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;可以看看监听器的数据，是否影响性能。&lt;/p&gt;
-
-&lt;p&gt;updateSemantics这是window.dart中的一个native方法，调用到如下方法。&lt;/p&gt;
-
-&lt;h4 id=&quot;4113-windowupdatesemantics&quot;&gt;4.11.3 Window::updateSemantics&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/lib/ui/window/window.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void UpdateSemantics(Dart_NativeArguments args) {
-  Dart_Handle exception = nullptr;
-  SemanticsUpdate* update =
-      tonic::DartConverter&amp;lt;SemanticsUpdate*&amp;gt;::FromArguments(args, 1, exception);
-  if (exception) {
-    Dart_ThrowException(exception);
-    return;
-  }
-  UIDartState::Current()-&amp;gt;window()-&amp;gt;client()-&amp;gt;UpdateSemantics(update); // [见小节4.11.4]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;4114-runtimecontrollerupdatesemantics&quot;&gt;4.11.4 RuntimeController::UpdateSemantics&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/runtime/runtime_controller.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void RuntimeController::UpdateSemantics(SemanticsUpdate* update) {
-  if (window_data_.semantics_enabled) {
-    client_.UpdateSemantics(update-&amp;gt;takeNodes(), update-&amp;gt;takeActions()); // [见小节4.11.5]
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;4115-engineupdatesemantics&quot;&gt;4.11.5 Engine::UpdateSemantics&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/engine.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Engine::UpdateSemantics(blink::SemanticsNodeUpdates update,
-                             blink::CustomAccessibilityActionUpdates actions) {
-  delegate_.OnEngineUpdateSemantics(std::move(update), std::move(actions)); // [见小节4.11.6]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;4116-shellonanimatordraw&quot;&gt;4.11.6 Shell::OnAnimatorDraw&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/shell.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Shell::OnEngineUpdateSemantics(
-    blink::SemanticsNodeUpdates update,
-    blink::CustomAccessibilityActionUpdates actions) {
-
-  task_runners_.GetPlatformTaskRunner()-&amp;gt;PostTask(
-      [view = platform_view_-&amp;gt;GetWeakPtr(), update = std::move(update),
-       actions = std::move(actions)] {
-        if (view) {
-          view-&amp;gt;UpdateSemantics(std::move(update), std::move(actions));
-        }
-      });
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;这个方法主要是向平台线程提交Semantic任务。&lt;/p&gt;
-
-&lt;p&gt;再回到小节4.6，可知接下来再执行finalizeTree()操作；&lt;/p&gt;
-
-&lt;h3 id=&quot;412-buildownerfinalizetree&quot;&gt;4.12 BuildOwner.finalizeTree&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; lib/src/widgets/framework.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void finalizeTree() {
-  Timeline.startSync('Finalize tree', arguments: timelineWhitelistArguments);
-  try {
-    lockState(() {
-      //遍历所有的Element，执行unmount()动作，且取消GlobalKeys的注册
-      _inactiveElements._unmountAll();
-    });
-  } catch (e, stack) {
-    _debugReportException('while finalizing the widget tree', e, stack);
-  } finally {
-    Timeline.finishSync();
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;遍历所有的Element，执行相应具体Element子类的unmount()操作，下面以常见的StatefulElement为例来说明。&lt;/p&gt;
-
-&lt;h4 id=&quot;4121-statefulelementunmount&quot;&gt;4.12.1 StatefulElement.unmount&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/widgets/framework.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void unmount() {
-  super.unmount(); //[见小节4.12.2]
-  _state.dispose(); //执行State的dispose()方法
-  _state._element = null;
-  _state = null;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;4122-elementunmount&quot;&gt;4.12.2 Element.unmount&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; lib/src/widgets/framework.dart]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void unmount() {
-  if (widget.key is GlobalKey) {
-    final GlobalKey key = widget.key;
-    key._unregister(this);  //取消GlobalKey的注册
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;附录&quot;&gt;附录&lt;/h2&gt;
-&lt;p&gt;本文涉及到相关源码文件&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;flutter/shell/common/
-    - vsync_waiter.cc
-    - engine.cc
-    - animator.cc
-    - shell.cc
-    - rasterizer.cc
-
-flutter/shell/platform/android/
-    - vsync_waiter_android.cc
-    - platform_view_android_jni.cc
-    - library_loader.cc
-    - io/flutter/view/VsyncWaiter.java
-
-flutter/runtime/runtime_controller.cc
-flutter/synchronization/pipeline.h
-flutter/fml/message_loop_impl.cc
-flutter/lib/ui/window/window.cc
-flutter/lib/ui/window.dart
-flutter/lib/ui/hooks.dart
-
-lib/src/widgets/framework.dart
-lib/src/widgets/binding.dart
-lib/src/scheduler/binding.dart
-lib/src/semantics/semantics.dart
-
-lib/src/rendering/
-    - binding.dart
-    - object.dart
-    - view.dart
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-</description>
-        <pubDate>Wed, 25 Mar 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E5%9B%9B)/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E5%9B%9B)/</guid>
-        
-        <category>Flutter</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Flutter渲染机制—UI线程(三)</title>
-        <description>&lt;h2 id=&quot;三engine层绘制&quot;&gt;三、Engine层绘制&lt;/h2&gt;
-&lt;h3 id=&quot;31-doframe&quot;&gt;3.1 doFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; Choreographer.java]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;public void doFrame(long frameTimeNanos) {
-    //Android FW每次当vsync信号触发，则会调用该方法 [见下方]
-    nativeOnVsync(frameTimeNanos, frameTimeNanos + refreshPeriodNanos, cookie);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Vsync注册过程见[小节2.6] Choreographer.FrameCallback()。注册了Vysnc信号后，一旦底层Vsync信号触发，经过层层调用回到FrameDisplayEventReceiver的过程，然后会有一个通过handler的方式post到线程”FlutterVsyncThread”来执行操作， 具体流程见Choreographer原理。紧接着再处理所有注册的doCallbacks方法，则会执行Choreographer.FrameCallback中的doFrame()方法，如下所示。&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;new Choreographer.FrameCallback() {
-    @Override
-    public void doFrame(long frameTimeNanos) {
-        //frameTimeNanos是VYSNC触发的时间点，也就是计划绘制的时间点 [见小节3.2]
-        nativeOnVsync(frameTimeNanos, frameTimeNanos + refreshPeriodNanos, cookie);
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;32-onnativevsync&quot;&gt;3.2 OnNativeVsync&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;public class VsyncWaiter {
-    ...
-    // [见小节3.2.1]
-    private static native void nativeOnVsync(long frameTimeNanos,
-                                             long frameTargetTimeNanos,
-                                             long cookie);
-    ...
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;由[小节2.5.3]可知，VsyncWaiter.java中的nativeOnVsync对应于vsync_waiter_android.cc的OnNativeVsync()，具体过程在jni加载过程初始化，如下所示。&lt;/p&gt;
-
-&lt;h4 id=&quot;321-onnativevsyncc&quot;&gt;3.2.1 OnNativeVsync[C++]&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/vsync_waiter_android.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;static void OnNativeVsync(JNIEnv* env, jclass jcaller,
-                          jlong frameTimeNanos,
-                          jlong frameTargetTimeNanos,
-                          jlong java_baton) {
-  auto frame_time = fml::TimePoint::FromEpochDelta(
-      fml::TimeDelta::FromNanoseconds(frameTimeNanos));
-  auto target_time = fml::TimePoint::FromEpochDelta(
-      fml::TimeDelta::FromNanoseconds(frameTargetTimeNanos));
-  //消费pending回调[见小节3.3]
-  ConsumePendingCallback(java_baton, frame_time, target_time);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;33-consumependingcallback&quot;&gt;3.3 ConsumePendingCallback&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/vsync_waiter_android.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;static void ConsumePendingCallback(jlong java_baton,
-                                   fml::TimePoint frame_start_time,
-                                   fml::TimePoint frame_target_time) {
-  auto* weak_this = reinterpret_cast&amp;lt;std::weak_ptr&amp;lt;VsyncWaiter&amp;gt;*&amp;gt;(java_baton);
-  auto shared_this = weak_this-&amp;gt;lock();
-  delete weak_this;
-
-  if (shared_this) {
-    //shared_this指向VsyncWaiter的弱引用 [见小节3.4]
-    shared_this-&amp;gt;FireCallback(frame_start_time, frame_target_time);
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;34-vsyncwaiterfirecallback&quot;&gt;3.4 VsyncWaiter::FireCallback&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/vsync_waiter.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void VsyncWaiter::FireCallback(fml::TimePoint frame_start_time,
-                               fml::TimePoint frame_target_time) {
-  Callback callback;
-  {
-    std::lock_guard&amp;lt;std::mutex&amp;gt; lock(callback_mutex_);
-    callback = std::move(callback_);
-  }
-  if (!callback) {
-    TRACE_EVENT_INSTANT0(&quot;flutter&quot;, &quot;MismatchedFrameCallback&quot;);
-    return;
-  }
-
-  TRACE_EVENT0(&quot;flutter&quot;, &quot;VsyncFireCallback&quot;);
-  //将任务放入task队列[见小节3.4.1]
-  task_runners_.GetUITaskRunner()-&amp;gt;PostTaskForTime(
-    [callback, flow_identifier, frame_start_time, frame_target_time]() {
-      FML_TRACE_EVENT(&quot;flutter&quot;, kVsyncTraceName, &quot;StartTime&quot;,
-                      frame_start_time, &quot;TargetTime&quot;, frame_target_time);
-      fml::tracing::TraceEventAsyncComplete(
-          &quot;flutter&quot;, &quot;VsyncSchedulingOverhead&quot;, fml::TimePoint::Now(),
-          frame_start_time);
-      //开始执行vync [见小节3.5]
-      callback(frame_start_time, frame_target_time);
-      TRACE_FLOW_END(&quot;flutter&quot;, kVsyncFlowName, flow_identifier);
-    },
-    frame_start_time);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;将任务闭包放入task队列，消息Loop一旦接受到消息则会读取出来。&lt;/p&gt;
-
-&lt;h4 id=&quot;341-messageloopimplrunexpiredtasks&quot;&gt;3.4.1 MessageLoopImpl::RunExpiredTasks&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/fml/message_loop_impl.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void MessageLoopImpl::RunExpiredTasks() {
-  TRACE_EVENT0(&quot;fml&quot;, &quot;MessageLoop::RunExpiredTasks&quot;);
-  std::vector&amp;lt;fml::closure&amp;gt; invocations;
-
-  {
-    std::lock_guard&amp;lt;std::mutex&amp;gt; lock(delayed_tasks_mutex_);
-    //当没有待处理的task则直接返回
-    if (delayed_tasks_.empty()) {
-      return;
-    }
-
-    auto now = fml::TimePoint::Now();
-    while (!delayed_tasks_.empty()) {
-      const auto&amp;amp; top = delayed_tasks_.top();
-      if (top.target_time &amp;gt; now) {
-        break;
-      }
-      invocations.emplace_back(std::move(top.task));
-      delayed_tasks_.pop();
-    }
-    WakeUp(delayed_tasks_.empty() ? fml::TimePoint::Max()
-                                  : delayed_tasks_.top().target_time);
-  }
-
-  for (const auto&amp;amp; invocation : invocations) {
-    invocation();  // [见小节3.5]
-    for (const auto&amp;amp; observer : task_observers_) {
-      observer.second();
-    }
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;对于ui线程处于消息loop状态，一旦有时间到达的任务则开始执行，否则处于空闲等等状态。前面[小节3.4] VsyncWaiter::FireCallback过程已经向该ui线程postTask。 对于不可复用layer tree的情况则调用Animator::BeginFrame()方法。&lt;/p&gt;
-
-&lt;h3 id=&quot;35-callback&quot;&gt;3.5 callback&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/animator.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[self = weak_factory_.GetWeakPtr()](fml::TimePoint frame_start_time,
-                                    fml::TimePoint frame_target_time) {
-  if (self) {
-    if (self-&amp;gt;CanReuseLastLayerTree()) {
-      self-&amp;gt;DrawLastLayerTree();
-    } else {
-      //根据默认参数regenerate_layer_tree_为true，则执行该分支 [见小节3.6]
-      self-&amp;gt;BeginFrame(frame_start_time, frame_target_time);
-    }
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;此次的callback赋值过程位于[小节2.3]Animator::AwaitVSync()方法的闭包参数，相关说明：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;frame_start_time：计划开始绘制时间点，来源于doFrame()方法中的参数；&lt;/li&gt;
-  &lt;li&gt;frame_target_time：从frame_start_time加上一帧时间(16.7ms)的时间，作为本次绘制的deadline。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;36-animatorbeginframe&quot;&gt;3.6 Animator::BeginFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/animator.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Animator::BeginFrame(fml::TimePoint frame_start_time,
-                          fml::TimePoint frame_target_time) {
-  TRACE_EVENT_ASYNC_END0(&quot;flutter&quot;, &quot;Frame Request Pending&quot;, frame_number_++);
-  TRACE_EVENT0(&quot;flutter&quot;, &quot;Animator::BeginFrame&quot;);
-
-  frame_scheduled_ = false;
-  notify_idle_task_id_++;
-  regenerate_layer_tree_ = false;
-  //信号量加1，可以注册新的vsync信号，也就是能执行Animator::RequestFrame()
-  pending_frame_semaphore_.Signal();
-
-  if (!producer_continuation_) {
-    //[小节3.6.1]/[小节3.6.2]
-    producer_continuation_ = layer_tree_pipeline_-&amp;gt;Produce();
-    //pipeline已满，说明GPU线程繁忙，则结束本次UI绘制，重新注册Vsync
-    if (!producer_continuation_) {
-      RequestFrame();
-      return;
-    }
-  }
-
-  //从pipeline中获取有效的continuation，并准备为可能的frame服务
-  last_begin_frame_time_ = frame_start_time;
-  //获取当前帧绘制截止时间，用于告知可GC的空闲时长
-  dart_frame_deadline_ = FxlToDartOrEarlier(frame_target_time);
-  {
-    TRACE_EVENT2(&quot;flutter&quot;, &quot;Framework Workload&quot;, &quot;mode&quot;, &quot;basic&quot;, &quot;frame&quot;,
-                 FrameParity());
-    //此处delegate_为Shell [小节3.7]
-    delegate_.OnAnimatorBeginFrame(last_begin_frame_time_);
-  }
-
-  if (!frame_scheduled_) {
-    task_runners_.GetUITaskRunner()-&amp;gt;PostDelayedTask(
-        [self = weak_factory_.GetWeakPtr(),
-         notify_idle_task_id = notify_idle_task_id_]() {
-          if (!self.get()) {
-            return;
-          }
-          // 该任务id和当前任务id一致，则不再需要审查frame，可以通知引擎当前处于空闲状态，100ms
-          if (notify_idle_task_id == self-&amp;gt;notify_idle_task_id_) {
-            self-&amp;gt;delegate_.OnAnimatorNotifyIdle(Dart_TimelineGetMicros() +
-                                                 100000);
-          }
-        },
-        kNotifyIdleTaskWaitTime); //延迟51ms再通知引擎空闲状态
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;该方法主要功能说明：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;layer_tree_pipeline_是在Animator对象初始化的过程中创建的LayerTreePipeline，其类型为Pipeline&lt;/li&gt;
-  &lt;li&gt;此处kNotifyIdleTaskWaitTime等于51ms，等于3帧的时间+1ms，之所以这样设计是由于在某些工作负载下（比如父视图调整大小，通过viewport metrics事件传达给子视图）实际上还没有schedule帧，尽管在下一个vsync会生成一帧(将在收到viewport事件后schedule)，因此推迟调用OnAnimatorNotifyIdle一点点，从而避免可能垃圾回收在不希望的时间触发。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;361-layertreepipeline初始化&quot;&gt;3.6.1 LayerTreePipeline初始化&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/animator.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Animator::Animator(Delegate&amp;amp; delegate,
-                   TaskRunners task_runners,
-                   std::unique_ptr&amp;lt;VsyncWaiter&amp;gt; waiter)
-    : delegate_(delegate),
-      task_runners_(std::move(task_runners)),
-      waiter_(std::move(waiter)),
-      last_begin_frame_time_(),
-      dart_frame_deadline_(0),
-      layer_tree_pipeline_(fml::MakeRefCounted&amp;lt;LayerTreePipeline&amp;gt;(2)),
-      ... {}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;此处LayerTreePipeline的初始化过程如下：&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;using LayerTreePipeline = Pipeline&amp;lt;flutter::LayerTree&amp;gt;;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;在pipeline.h的过程会初始化Pipeline，可见初始值empty_ = 2，available_ = 0；&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Pipeline(uint32_t depth) : empty_(depth), available_(0) {}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;362-pipelineproduce&quot;&gt;3.6.2 Pipeline::Produce&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/synchronization/pipeline.h]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ProducerContinuation Produce() {
-  //当管道不为空，则不允许再次向管道加入数据
-  if (!empty_.TryWait()) {
-    return {};
-  }
-
-  //[见小节3.6.3]
-  return ProducerContinuation{
-      std::bind(&amp;amp;Pipeline::ProducerCommit, this, std::placeholders::_1,
-                std::placeholders::_2),  // continuation
-      GetNextPipelineTraceID()};  
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;通过信号量empty_的初始值为depth(默认等于2)，来保证同一个管道的任务最多不超过depth个，每次UI线程执行Produce()会减1，当GPU线程执行完成Consume()方法后才会执行加1操作。&lt;/p&gt;
-
-&lt;h4 id=&quot;363-producercontinuation初始化&quot;&gt;3.6.3 ProducerContinuation初始化&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/synchronization/pipeline.h]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ProducerContinuation(Continuation continuation, size_t trace_id)
-    : continuation_(continuation), trace_id_(trace_id) {
-  TRACE_FLOW_BEGIN(&quot;flutter&quot;, &quot;PipelineItem&quot;, trace_id_);
-  TRACE_EVENT_ASYNC_BEGIN0(&quot;flutter&quot;, &quot;PipelineProduce&quot;, trace_id_);
-}
-3.6.3 Pipeline.ProducerCommit
-[-&amp;gt; flutter/synchronization/pipeline.h]
-
-void ProducerCommit(ResourcePtr resource, size_t trace_id) {
-  {
-    std::lock_guard&amp;lt;std::mutex&amp;gt; lock(queue_mutex_);
-    queue_.emplace(std::move(resource), trace_id);
-  }
-
-  available_.Signal();
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;37-shellonanimatorbeginframe&quot;&gt;3.7 Shell::OnAnimatorBeginFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/shell.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Shell::OnAnimatorBeginFrame(fml::TimePoint frame_time) {
-  if (engine_) {
-    engine_-&amp;gt;BeginFrame(frame_time);  // [小节3.8]
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;38-enginebeginframe&quot;&gt;3.8 Engine::BeginFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/engine.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Engine::BeginFrame(fml::TimePoint frame_time) {
-  TRACE_EVENT0(&quot;flutter&quot;, &quot;Engine::BeginFrame&quot;);
-  runtime_controller_-&amp;gt;BeginFrame(frame_time);  // [小节3.9]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;39-runtimecontrollerbeginframe&quot;&gt;3.9 RuntimeController::BeginFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/runtime/runtime_controller.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bool RuntimeController::BeginFrame(fml::TimePoint frame_time) {
-  if (auto* window = GetWindowIfAvailable()) {
-    window-&amp;gt;BeginFrame(frame_time);  // [小节3.10]
-    return true;
-  }
-  return false;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;310-windowbeginframe&quot;&gt;3.10 Window::BeginFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/lib/ui/window/window.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Window::BeginFrame(fml::TimePoint frameTime) {
-  std::shared_ptr&amp;lt;tonic::DartState&amp;gt; dart_state = library_.dart_state().lock();
-  if (!dart_state)
-    return;
-  tonic::DartState::Scope scope(dart_state);
-  //注意此处的frameTime便是前面小节3.1中doFrame方法中的参数frameTimeNanos
-  int64_t microseconds = (frameTime - fml::TimePoint()).ToMicroseconds();
-
-  // [见小节4.2]
-  DartInvokeField(library_.value(), &quot;_beginFrame&quot;,
-                  {Dart_NewInteger(microseconds)});
-
-  //执行MicroTask
-  UIDartState::Current()-&amp;gt;FlushMicrotasksNow();
-
-  // [见小节4.4]
-  DartInvokeField(library_.value(), &quot;_drawFrame&quot;, {});
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Window::BeginFrame()过程主要工作：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;执行_beginFrame&lt;/li&gt;
-  &lt;li&gt;执行FlushMicrotasksNow&lt;/li&gt;
-  &lt;li&gt;执行_drawFrame&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;可见，Microtask位于beginFrame和drawFrame之间，那么Microtask的耗时会影响ui绘制过程。&lt;/p&gt;
-
-&lt;p&gt;DartInvokeField()通过dart虚拟机调用了window.onBeginFrame()和onDrawFrame方法，见hooks.dart文件中如下过程：&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;@pragma('vm:entry-point')
-void _beginFrame(int microseconds) {
-  _invoke1&amp;lt;Duration&amp;gt;(window.onBeginFrame, window._onBeginFrameZone, new Duration(microseconds: microseconds));
-}
-
-@pragma('vm:entry-point')
-void _drawFrame() {
-  _invoke(window.onDrawFrame, window._onDrawFrameZone);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-</description>
-        <pubDate>Thu, 19 Mar 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%89)/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%89)/</guid>
-        
-        <category>Flutter</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Flutter渲染机制—UI线程(二)</title>
-        <description>&lt;h2 id=&quot;二-vsync注册流程&quot;&gt;二、 VSYNC注册流程&lt;/h2&gt;
-&lt;h3 id=&quot;21-enginescheduleframe&quot;&gt;2.1 Engine::ScheduleFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/engine.cc]&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Engine::ScheduleFrame(bool regenerate_layer_tree) {
-    //[见小节2.2]
-    animator_-&amp;gt;RequestFrame(regenerate_layer_tree);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;该方法说明：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;animator_的赋值过程是在Engine对象初始化过程完成，而Engine初始化过程在Shell创建过程，此处animator_便是Animator对象；&lt;/li&gt;
-  &lt;li&gt;ScheduleFrame的参数regenerate_layer_tree决定是否需要重新生成layer tree，还是直接复用上一次生成的layer tree；&lt;/li&gt;
-  &lt;li&gt;绝大多数情况下，调用RequestFrame()时将regenerate_layer_tree_设置为true或者用默认值true，执行完Animator::BeginFrame()则设置该变量为false；
-    &lt;ul&gt;
-      &lt;li&gt;当无参数调用该方法时，regenerate_layer_tree为默认值为true。&lt;/li&gt;
-      &lt;li&gt;特别的例子就是Shell::OnPlatformViewMarkTextureFrameAvailable()过程，设置参数为false，那么计划绘制一帧的时候就不需要重绘layer tree；&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;22-animatorrequestframe&quot;&gt;2.2 Animator::RequestFrame&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/animator.cc]&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Animator::RequestFrame(bool regenerate_layer_tree) {
-  if (regenerate_layer_tree) {
-    // regenerate_layer_tree_决定Vsync信号到来时，是否执行BeginFrame
-    regenerate_layer_tree_ = true;
-  }
-
-  //当调用Animator::Stop()则会停止动画绘制
-  if (paused_ &amp;amp;&amp;amp; !dimension_change_pending_) {
-    return;
-  }
-
-  //调用sem_trywait来保证不会同时有多个vsync请求
-  if (!pending_frame_semaphore_.TryWait()) {
-    return;
-  }
-
-  task_runners_.GetUITaskRunner()-&amp;gt;PostTask([self = weak_factory_.GetWeakPtr(),
-                                             frame_number = frame_number_]() {
-    if (!self.get()) {
-      return;
-    }
-    TRACE_EVENT_ASYNC_BEGIN0(&quot;flutter&quot;, &quot;Frame Request Pending&quot;, frame_number);
-    self-&amp;gt;AwaitVSync();  // [见小节2.3]
-  });
-  frame_scheduled_ = true;  //标注已经schedule绘画帧
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;过程说明：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;pending_frame_semaphore_：非负信号量，初始值为1，第一次调用TryWait减1，而后再次调用则会失败直接返回。当消费了这次vsync回调，也就是调用了Animator的BeginFrame()或者DrawLastLayerTree()方法后，改信号量会加1[见小节3.6]，可以再次执行vysnc的注册；&lt;/li&gt;
-  &lt;li&gt;通过Animator的Start()或者BeginFrame调用到的RequestFrame方法，则肯定需要重新生成layer tree；通过Engine的ScheduleFrame方法是否重建layer tree看小节2.1；&lt;/li&gt;
-  &lt;li&gt;此处通过post把Animator::AwaitVSync任务放入到UI Task Runner来执行。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;23-animatorawaitvsync&quot;&gt;2.3 Animator::AwaitVSync&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/animator.cc]&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void Animator::AwaitVSync() {
-  // [见小节2.4]
-  waiter_-&amp;gt;AsyncWaitForVsync(
-      [self = weak_factory_.GetWeakPtr()](fml::TimePoint frame_start_time,
-                                          fml::TimePoint frame_target_time) {
-        if (self) {
-          //是否能复用上次layer树，取决于regenerate_layer_tree_
-          if (self-&amp;gt;CanReuseLastLayerTree()) {
-            //复用上次layer树，直接把任务post到gpu线程做栅格化操作
-            self-&amp;gt;DrawLastLayerTree();
-          } else {
-            self-&amp;gt;BeginFrame(frame_start_time, frame_target_time);
-          }
-        }
-      });
-
-  delegate_.OnAnimatorNotifyIdle(dart_frame_deadline_);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;waiter_的赋值是在Animator初始化过程，取值为VsyncWaiterAndroid对象，当调用了RequestFrame()，默认参数regenerate_layer_tree_为true，意味着需要重新生成layer树，故不能重复使用上一次的layer树，接着来看一下AsyncWaitForVsync()方法的实现。&lt;/p&gt;
-
-&lt;h3 id=&quot;24-vsyncwaiterasyncwaitforvsync&quot;&gt;2.4 VsyncWaiter::AsyncWaitForVsync&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/common/vsync_waiter.cc]&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void VsyncWaiter::AsyncWaitForVsync(Callback callback) {
-  {
-    std::lock_guard&amp;lt;std::mutex&amp;gt; lock(callback_mutex_);
-    //赋值callback_
-    callback_ = std::move(callback);
-  }
-  TRACE_EVENT0(&quot;flutter&quot;, &quot;AsyncWaitForVsync&quot;);
-  AwaitVSync(); // [见小节2.5]
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;此次的callback_便是[小节2.3]方法中的参数，该方法根据regenerate_layer_tree_来决定执行流。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;当regenerate_layer_tree_=false，则执行DrawLastLayerTree();&lt;/li&gt;
-  &lt;li&gt;当regenerate_layer_tree_=false，则执行BeginFrame();&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;25-vsyncwaiterandroidawaitvsync&quot;&gt;2.5 VsyncWaiterAndroid::AwaitVSync&lt;/h3&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/vsync_waiter_android.cc]&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void VsyncWaiterAndroid::AwaitVSync() {
-  std::weak_ptr&amp;lt;VsyncWaiter&amp;gt;* weak_this =
-      new std::weak_ptr&amp;lt;VsyncWaiter&amp;gt;(shared_from_this());
-  //获取VsyncWaiter的弱引用
-  jlong java_baton = reinterpret_cast&amp;lt;jlong&amp;gt;(weak_this);
-
-  JNIEnv* env = fml::jni::AttachCurrentThread();
-  // 此次调用到Java层的asyncWaitForVsync方法，java_baton指向VsyncWaiter
-  env-&amp;gt;CallStaticVoidMethod(g_vsync_waiter_class-&amp;gt;obj(),     //
-                            g_async_wait_for_vsync_method_,  //
-                            java_baton                       //
-  );
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;此处g_vsync_waiter_class，g_async_wait_for_vsync_method_的赋值过程是由JNI_OnLoad完成，如下所示。&lt;/p&gt;
-
-&lt;h4 id=&quot;251-jni_onload&quot;&gt;2.5.1 JNI_OnLoad&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/library_loader.cc]&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
-  // 初始化Java虚拟机
-  fml::jni::InitJavaVM(vm);
-
-  JNIEnv* env = fml::jni::AttachCurrentThread();
-  bool result = false;
-
-  // 注册FlutterMain.
-  result = shell::FlutterMain::Register(env);
-
-  // 注册PlatformView [见小节2.5.2]
-  result = shell::PlatformViewAndroid::Register(env);
-
-  // 注册VSyncWaiter [见小节2.5.3]
-  result = shell::VsyncWaiterAndroid::Register(env);
-
-  return JNI_VERSION_1_4;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;首次加载共享库时虚拟机会调用此方法。&lt;/p&gt;
-
-&lt;h4 id=&quot;252-register&quot;&gt;2.5.2 Register&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/platform_view_android_jni.cc]&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bool PlatformViewAndroid::Register(JNIEnv* env) {
-  //记录FlutterCallbackInformation类的全局引用
-  g_flutter_callback_info_class = new fml::jni::ScopedJavaGlobalRef&amp;lt;jclass&amp;gt;(
-      env, env-&amp;gt;FindClass(&quot;io/flutter/view/FlutterCallbackInformation&quot;));
-  //记录FlutterCallbackInformation构造函数
-  g_flutter_callback_info_constructor = env-&amp;gt;GetMethodID(
-      g_flutter_callback_info_class-&amp;gt;obj(), &quot;&amp;lt;init&amp;gt;&quot;,
-      &quot;(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V&quot;);
-  //记录FlutterJNI类的全局引用
-  g_flutter_jni_class = new fml::jni::ScopedJavaGlobalRef&amp;lt;jclass&amp;gt;(
-      env, env-&amp;gt;FindClass(&quot;io/flutter/embedding/engine/FlutterJNI&quot;));
-  //记录SurfaceTexture类的全局引用
-  g_surface_texture_class = new fml::jni::ScopedJavaGlobalRef&amp;lt;jclass&amp;gt;(
-      env, env-&amp;gt;FindClass(&quot;android/graphics/SurfaceTexture&quot;));
-
-  static const JNINativeMethod callback_info_methods[] = {
-      {
-          .name = &quot;nativeLookupCallbackInformation&quot;,
-          .signature = &quot;(J)Lio/flutter/view/FlutterCallbackInformation;&quot;,
-          .fnPtr = reinterpret_cast&amp;lt;void*&amp;gt;(&amp;amp;shell::LookupCallbackInformation),
-      },
-  };
-  //注册FlutterCallbackInformation的nativeLookupCallbackInformation()方法
-  env-&amp;gt;RegisterNatives(g_flutter_callback_info_class-&amp;gt;obj(),
-                           callback_info_methods,
-                           arraysize(callback_info_methods)) != 0);
-
-  g_is_released_method =
-      env-&amp;gt;GetMethodID(g_surface_texture_class-&amp;gt;obj(), &quot;isReleased&quot;, &quot;()Z&quot;);
-
-  fml::jni::ClearException(env);
-
-  g_attach_to_gl_context_method = env-&amp;gt;GetMethodID(
-      g_surface_texture_class-&amp;gt;obj(), &quot;attachToGLContext&quot;, &quot;(I)V&quot;);
-
-  g_update_tex_image_method =
-      env-&amp;gt;GetMethodID(g_surface_texture_class-&amp;gt;obj(), &quot;updateTexImage&quot;, &quot;()V&quot;);
-
-  g_get_transform_matrix_method = env-&amp;gt;GetMethodID(
-      g_surface_texture_class-&amp;gt;obj(), &quot;getTransformMatrix&quot;, &quot;([F)V&quot;);
-
-  g_detach_from_gl_context_method = env-&amp;gt;GetMethodID(
-      g_surface_texture_class-&amp;gt;obj(), &quot;detachFromGLContext&quot;, &quot;()V&quot;);
-
-  return RegisterApi(env);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;该方法的主要工作：&lt;/p&gt;
-
-&lt;p&gt;记录和注册类FlutterCallbackInformation、FlutterJNI以及SurfaceTexture类的相关方法，用于Java和C++层方法的相互调用。&lt;/p&gt;
-&lt;h4 id=&quot;253-register&quot;&gt;2.5.3 Register&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; flutter/shell/platform/android/vsync_waiter_android.cc]&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bool VsyncWaiterAndroid::Register(JNIEnv* env) {
-  static const JNINativeMethod methods[] = ;
-
-  jclass clazz = env-&amp;gt;FindClass(&quot;io/flutter/view/VsyncWaiter&quot;);
-
-  g_vsync_waiter_class = new fml::jni::ScopedJavaGlobalRef&amp;lt;jclass&amp;gt;(env, clazz);
-
-  g_async_wait_for_vsync_method_ = env-&amp;gt;GetStaticMethodID(
-      g_vsync_waiter_class-&amp;gt;obj(), &quot;asyncWaitForVsync&quot;, &quot;(J)V&quot;);
-
-  return env-&amp;gt;RegisterNatives(clazz, methods, arraysize(methods)) == 0;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;该注册过程主要工作：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;将Java层的VsyncWaiter类的nativeOnVsync()方法，映射到C++层的OnNativeVsync()方法，用于该方法的Java调用C++的过程；&lt;/li&gt;
-  &lt;li&gt;将Java层的VsyncWaiter类的asyncWaitForVsync()方法，保存到C++层的g_async_wait_for_vsync_method_变量，用于该方法C++调用Java的过程。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;可见，将调用VsyncWaiter类的asyncWaitForVsync()方法&lt;/p&gt;
-
-&lt;h3 id=&quot;26-asyncwaitforvsync&quot;&gt;2.6 asyncWaitForVsync&lt;/h3&gt;
-&lt;p&gt;[Java]
-[-&amp;gt; flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java]&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;public class VsyncWaiter {
-    // FlutterView的刷新时间周期（16.7ms）
-    public static long refreshPeriodNanos = 1000000000 / 60;
-
-    private static HandlerThread handlerThread;
-    private static Handler handler;
-
-    static {
-        handlerThread = new HandlerThread(&quot;FlutterVsyncThread&quot;);
-        handlerThread.start();
-    }
-
-    public static void asyncWaitForVsync(final long cookie) {
-        if (handler == null) {
-            handler = new Handler(handlerThread.getLooper());
-        }
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                //注册帧回调方法，见小节[2.6.1]/[2.6.2]
-                Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
-                    @Override
-                    public void doFrame(long frameTimeNanos) {
-                        //frameTimeNanos是VYSNC触发的时间点，也就是计划绘制的时间点
-                        nativeOnVsync(frameTimeNanos, frameTimeNanos + refreshPeriodNanos, cookie);
-                    }
-                });
-            }
-        });
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;通过Handler将工作post到FlutterVsyncThread线程，具体的工作是通过Choreographer来注册回调方法doFrame()以监听系统VSYNC信号。&lt;/p&gt;
-
-&lt;h4 id=&quot;261-choreographergetinstance&quot;&gt;2.6.1 Choreographer.getInstance&lt;/h4&gt;
-&lt;p&gt;[-&amp;gt; Choreographer.java]&lt;/p&gt;
-
-&lt;p&gt;```public static Choreographer getInstance() {
-    return sThreadInstance.get(); //单例模式
-}&lt;/p&gt;
-
-&lt;p&gt;private static final ThreadLocal&lt;Choreographer&gt; sThreadInstance =
-    new ThreadLocal&lt;Choreographer&gt;() {&lt;/Choreographer&gt;&lt;/Choreographer&gt;&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;protected Choreographer initialValue() {
-    //获取当前线程FlutterVsyncThread的Looper
-    Looper looper = Looper.myLooper();
-    // 初始化Choreographer对象
-    return new Choreographer(looper);
-} };
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;private Choreographer(Looper looper) {
-    mLooper = looper;
-    //创建Handler对象
-    mHandler = new FrameHandler(looper);
-    //创建用于接收VSync信号的对象
-    mDisplayEventReceiver = USE_VSYNC ? new FrameDisplayEventReceiver(looper) : null;
-    mLastFrameTimeNanos = Long.MIN_VALUE;  //上一次帧绘制时间点
-    mFrameIntervalNanos = (long)(1000000000 / getRefreshRate());
-    mCallbackQueues = new CallbackQueue[CALLBACK_LAST + 1];&lt;br /&gt;
-    for (int i = 0; i &amp;lt;= CALLBACK_LAST; i++) {
-        mCallbackQueues[i] = new CallbackQueue();
-    }
-}&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;此处Choreographer的mLooper和mHandler都运行在FlutterVsyncThread线程。
-
-#### 2.6.2 postFrameCallback
-[-&amp;gt; Choreographer.java]
-
-```public void postFrameCallback(FrameCallback callback) {
-    postFrameCallbackDelayed(callback, 0);
-}
-
-public void postFrameCallbackDelayed(FrameCallback callback, long delayMillis) {
-    postCallbackDelayedInternal(CALLBACK_ANIMATION,
-            callback, FRAME_CALLBACK_TOKEN, delayMillis);
-}
-
-private void postCallbackDelayedInternal(int callbackType, Object action, Object token, long delayMillis) {
-    synchronized (mLock) {
-        final long now = SystemClock.uptimeMillis();
-        final long dueTime = now + delayMillis;
-        //添加到mCallbackQueues队列
-        mCallbackQueues[callbackType].addCallbackLocked(dueTime, action, token);
-        if (dueTime &amp;lt;= now) {
-          scheduleFrameLocked(now);
-        } else {
-          ...
-        }
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;将FrameCallback方法加入到mCallbackQueues[CALLBACK_ANIMATION]回调队列中。&lt;/p&gt;
-
-</description>
-        <pubDate>Thu, 12 Mar 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%BA%8C)/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%BA%8C)/</guid>
-        
-        <category>Flutter</category>
         
         
       </item>
