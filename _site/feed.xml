@@ -5,8 +5,8 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 14 Sep 2020 16:36:33 +0800</pubDate>
-    <lastBuildDate>Mon, 14 Sep 2020 16:36:33 +0800</lastBuildDate>
+    <pubDate>Wed, 16 Sep 2020 21:37:50 +0800</pubDate>
+    <lastBuildDate>Wed, 16 Sep 2020 21:37:50 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -49,10 +49,10 @@
 缺点: 加解密消耗高，速度慢。&lt;/p&gt;
 
 &lt;p&gt;HTTPS采用了对称加密+非对称加密的方案。具体做法如下：
-&lt;img src=&quot;/images/posts/server/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633632456.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;但是依然解决不了中间人的攻击，如下图：&lt;/strong&gt;
-&lt;img src=&quot;/images/posts/server/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633723857.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;因此需要保证数据完整性引入数字签名&lt;/strong&gt;&lt;/p&gt;
 
@@ -67,21 +67,21 @@
   &lt;li&gt;数字签名能确定消息的完整性,证明数据是否未被篡改过。&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;&lt;strong&gt;数字签名生如何成：&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;数字签名生如何成：&lt;/strong&gt;
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633815147.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images/posts/server/2.png&quot; alt=&quot;&quot; /&gt;
-将一段文本先用Hash函数生成消息摘要，然后用发送者的私钥加密生成数字签名，与原文文一起传送给接收者。接下来就是接收者校验数字签名的流程了。&lt;/p&gt;
+&lt;p&gt;将一段文本先用Hash函数生成消息摘要，然后用发送者的私钥加密生成数字签名，与原文文一起传送给接收者。接下来就是接收者校验数字签名的流程了。&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;校验数字签名流程：&lt;/strong&gt;
-&lt;img src=&quot;/images/posts/server/3.png&quot; alt=&quot;&quot; /&gt;
-接收者只有用发送者的公钥才能解密被加密的摘要信息，然后用Hash函数对收到的原文产生一个摘要信息，与上一步得到的摘要信息对比。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改，否则说明信息被修改过，因此数字签名能够验证信息的完整性。&lt;/p&gt;
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002634134529.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;接收者只有用发送者的公钥才能解密被加密的摘要信息，然后用Hash函数对收到的原文产生一个摘要信息，与上一步得到的摘要信息对比。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改，否则说明信息被修改过，因此数字签名能够验证信息的完整性。&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;上面可行的前提是需要事先拿到可信的公钥，因此引入数字证书&lt;/strong&gt;&lt;/p&gt;
 
 &lt;h3 id=&quot;如何校验身份-数字证书&quot;&gt;如何校验身份-数字证书&lt;/h3&gt;
-&lt;p&gt;数字证书就是Server将公钥和公司信息提交给证书颁发机构（Certificate Authority，简称CA），CA将公钥和其他信息数字签名后生成证书， Client也会内置所有受信CA的证书。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;/images/posts/server/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;数字证书就是Server将公钥和公司信息提交给证书颁发机构（Certificate Authority，简称CA），CA将公钥和其他信息数字签名后生成证书， Client也会内置所有受信CA的证书。
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002634229207.png&quot; alt=&quot;6&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;至此HTTPS的流程如下：&lt;/p&gt;
 &lt;ol&gt;
@@ -96,7 +96,7 @@
   &lt;li&gt;客户端用&lt;code class=&quot;highlighter-rouge&quot;&gt;秘钥&lt;/code&gt;解密信息&lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images/posts/server/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002634413967.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;附：&lt;/p&gt;
 
@@ -210,7 +210,7 @@
       <item>
         <title>WebRTC架构及原理</title>
         <description>&lt;h2 id=&quot;架构&quot;&gt;架构&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002625734050.png&quot; alt=&quot;&quot; /&gt;
 主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。&lt;/p&gt;
 &lt;ul&gt;
   &lt;li&gt;音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现&lt;/li&gt;
@@ -221,8 +221,7 @@
 &lt;hr /&gt;
 
 &lt;h2 id=&quot;信令服务器&quot;&gt;信令服务器&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002625864892.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 &lt;h3 id=&quot;nat穿越&quot;&gt;NAT穿越：&lt;/h3&gt;
 &lt;blockquote&gt;
   &lt;p&gt;设备大多在网关背后，想要简历P2P连接就要穿过网关，连接到内网的设备，网关一般包含以下4种防火墙类型。&lt;/p&gt;
@@ -279,8 +278,9 @@
   &lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/5.png&quot; alt=&quot;&quot; /&gt;
-***&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002626005389.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
 
 &lt;h4 id=&quot;candidata&quot;&gt;Candidata&lt;/h4&gt;
 &lt;p&gt;是一个地址，例如： …UDP…192.168.1.2  1816 type host等协议，地址，类型
@@ -298,7 +298,7 @@
   &lt;p&gt;Session Description Protocol ， 是设备之间互通配置信息的协议&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/6.png&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002626096788.png&quot; alt=&quot;&quot; /&gt;
 上图中是SDP基本内容， 其中有2个candidate, 一个是本机UDP,另一个是NAT穿越后的地址UDP&lt;/p&gt;
 
 &lt;p&gt;SDP规范包括2部分：&lt;/p&gt;
@@ -330,7 +330,7 @@
 &lt;hr /&gt;
 
 &lt;h4 id=&quot;连接流程图&quot;&gt;连接流程图&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002626241435.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 </description>
         <pubDate>Tue, 11 Aug 2020 00:00:00 +0800</pubDate>
@@ -362,7 +362,7 @@ SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据�
 &lt;hr /&gt;
 &lt;h4 id=&quot;一enhanced-att&quot;&gt;一、Enhanced ATT&lt;/h4&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002632642584.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;ATT: 定义了不同服务的属性参数和可使用的命令，用来作为主从设备间的信息交换个协商。&lt;/p&gt;
 
@@ -416,13 +416,12 @@ SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据�
 &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;称作CIS (LE Connected Isochronous Stream)逻辑传输通道，可将延迟数据丢弃。 不同的CIS组成CIG ( Connected Isochronous Groups ),同一个CIG内的CIS有相同的时间戳，保证同一个group内数据同步。例如一对TWS耳机
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/9.png&quot; alt=&quot;111&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002632747277.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;h5 id=&quot;广播模式&quot;&gt;广播模式&lt;/h5&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;称作BIS (Broadcast Isochronous Stream)。 多个BIS 可组成BIG (Broadcast Isochronous Groups).通过一个周期广播的PUD实现。 该PDU包含针对每个BIS的时间戳，一旦同步，广播接收者变成同步接收者。例如，广场舞大妈蓝牙耳机听同一音源歌曲。
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;称作BIS (Broadcast Isochronous Stream)。 多个BIS 可组成BIG (Broadcast Isochronous Groups).通过一个周期广播的PUD实现。 该PDU包含针对每个BIS的时间戳，一旦同步，广播接收者变成同步接收者。例如，广场舞大妈蓝牙耳机听同一音源歌曲。 ![](http://image.smartjames.cn/mweb/20200916/16002633057507.png)
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 </description>
         <pubDate>Fri, 05 Jun 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/</link>
@@ -437,7 +436,7 @@ SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据�
         <title>蓝牙协议栈</title>
         <description>&lt;h3 id=&quot;协议栈内容&quot;&gt;协议栈内容&lt;/h3&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002632222709.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;h4 id=&quot;phy层&quot;&gt;PHY层&lt;/h4&gt;
 &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Physical layer 用来指定BLE所用的无线频段，调试解调方式和方法等。
@@ -477,7 +476,7 @@ SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据�
 &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;连接指设备A和B 一对一‘同步’成功 连接成功包含以下几点： - 设备A和B对接下来要使用的物理信道达成一致 - 设备A和B双方建立一个共同的时间锚点，把时间原点变成同一个点 - 设备A和B时钟同步成功，明确双方什么时候发数据，什么时候接收数据
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images/posts/iOS/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002632477431.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;上图表示连接成功后，A将以CI为周期向B发送数据包，B将以CI (connection interval)为周期打开射频接收窗口来接收A的数据包。在B接收A数据包后150us后，切换为发送状态，把数据发送给A，A切换为接收状态接收B的数据。&lt;/p&gt;
 
@@ -550,7 +549,7 @@ rvm 1.29.10 (latest) by Michal Papis, Piotr Kuczynski, Wayne E. Seguin [https://
   &lt;li&gt;查看rvm当前可选ruby版本
     &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ rvm list known
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-    &lt;p&gt;&lt;img src=&quot;/images/posts/server/111.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+    &lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002634646313.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
   &lt;/li&gt;
   &lt;li&gt;选择一个想要的版本,例如2.7
     &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ rvm install 2.7

@@ -225,7 +225,7 @@
   <section class="post">
     <h3 id="协议栈内容">协议栈内容</h3>
 
-<p><img src="/images/posts/iOS/1.png" alt="" /></p>
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002632222709.png" alt="" /></p>
 
 <h4 id="phy层">PHY层</h4>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Physical layer 用来指定BLE所用的无线频段，调试解调方式和方法等。
@@ -265,7 +265,7 @@
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>连接指设备A和B 一对一‘同步’成功 连接成功包含以下几点： - 设备A和B对接下来要使用的物理信道达成一致 - 设备A和B双方建立一个共同的时间锚点，把时间原点变成同一个点 - 设备A和B时钟同步成功，明确双方什么时候发数据，什么时候接收数据
 </code></pre></div></div>
 
-<p><img src="/images/posts/iOS/2.png" alt="" /></p>
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002632477431.png" alt="" /></p>
 
 <p>上图表示连接成功后，A将以CI为周期向B发送数据包，B将以CI (connection interval)为周期打开射频接收窗口来接收A的数据包。在B接收A数据包后150us后，切换为发送状态，把数据发送给A，A切换为接收状态接收B的数据。</p>
 

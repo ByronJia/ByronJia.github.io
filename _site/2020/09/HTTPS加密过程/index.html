@@ -267,10 +267,10 @@
 缺点: 加解密消耗高，速度慢。</p>
 
 <p>HTTPS采用了对称加密+非对称加密的方案。具体做法如下：
-<img src="/images/posts/server/4.png" alt="" /></p>
+<img src="http://image.smartjames.cn/mweb/20200916/16002633632456.png" alt="" /></p>
 
 <p><strong>但是依然解决不了中间人的攻击，如下图：</strong>
-<img src="/images/posts/server/5.png" alt="" /></p>
+<img src="http://image.smartjames.cn/mweb/20200916/16002633723857.png" alt="" /></p>
 
 <p><strong>因此需要保证数据完整性引入数字签名</strong></p>
 
@@ -285,21 +285,21 @@
   <li>数字签名能确定消息的完整性,证明数据是否未被篡改过。</li>
 </ul>
 
-<p><strong>数字签名生如何成：</strong></p>
+<p><strong>数字签名生如何成：</strong>
+<img src="http://image.smartjames.cn/mweb/20200916/16002633815147.png" alt="" /></p>
 
-<p><img src="/images/posts/server/2.png" alt="" />
-将一段文本先用Hash函数生成消息摘要，然后用发送者的私钥加密生成数字签名，与原文文一起传送给接收者。接下来就是接收者校验数字签名的流程了。</p>
+<p>将一段文本先用Hash函数生成消息摘要，然后用发送者的私钥加密生成数字签名，与原文文一起传送给接收者。接下来就是接收者校验数字签名的流程了。</p>
 
 <p><strong>校验数字签名流程：</strong>
-<img src="/images/posts/server/3.png" alt="" />
-接收者只有用发送者的公钥才能解密被加密的摘要信息，然后用Hash函数对收到的原文产生一个摘要信息，与上一步得到的摘要信息对比。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改，否则说明信息被修改过，因此数字签名能够验证信息的完整性。</p>
+<img src="http://image.smartjames.cn/mweb/20200916/16002634134529.png" alt="" /></p>
+
+<p>接收者只有用发送者的公钥才能解密被加密的摘要信息，然后用Hash函数对收到的原文产生一个摘要信息，与上一步得到的摘要信息对比。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改，否则说明信息被修改过，因此数字签名能够验证信息的完整性。</p>
 
 <p><strong>上面可行的前提是需要事先拿到可信的公钥，因此引入数字证书</strong></p>
 
 <h3 id="如何校验身份-数字证书">如何校验身份-数字证书</h3>
-<p>数字证书就是Server将公钥和公司信息提交给证书颁发机构（Certificate Authority，简称CA），CA将公钥和其他信息数字签名后生成证书， Client也会内置所有受信CA的证书。</p>
-
-<p><img src="/images/posts/server/6.png" alt="" /></p>
+<p>数字证书就是Server将公钥和公司信息提交给证书颁发机构（Certificate Authority，简称CA），CA将公钥和其他信息数字签名后生成证书， Client也会内置所有受信CA的证书。
+<img src="http://image.smartjames.cn/mweb/20200916/16002634229207.png" alt="6" /></p>
 
 <p>至此HTTPS的流程如下：</p>
 <ol>
@@ -314,7 +314,7 @@
   <li>客户端用<code class="highlighter-rouge">秘钥</code>解密信息</li>
 </ol>
 
-<p><img src="/images/posts/server/1.png" alt="" /></p>
+<p><img src="http://image.smartjames.cn/mweb/20200916/16002634413967.png" alt="" /></p>
 
 <p>附：</p>
 
