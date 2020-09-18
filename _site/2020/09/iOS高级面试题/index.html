@@ -282,7 +282,6 @@ struct Block_layout {
     int __size;
     int val; //变量名
 };
-/// 对于block的深入了解，可以参考《Objective-C高级编程》
 </code></pre>
 <p><strong>2. GCD中的Block是在堆上还是栈上？</strong></p>
 
@@ -392,8 +391,6 @@ Autoreleasepool的原理是一个双向链表，它会对加入其中的对象�
   <li>如果消息转发也没有处理即为无法处理，会调用doesNotRecognizeSelector，引发崩溃。</li>
 </ul>
 
-<p>更多了解可以参考iOS开发·runtime原理与实践: 消息转发篇(Message Forwarding) (消息机制，方法未实现+API不兼容奔溃，模拟多继承)[12]</p>
-
 <p><strong>4.category能否添加属性，为什么？能否添加实例变量，为什么？</strong></p>
 
 <p>可以添加属性，这里的属性指@property，但跟类里的@property又不一样。类里的@property为：实例变量Ivar + Setter + Getter 方法，分类里的@property这三者都没有，需要我们手动实现。</p>
@@ -419,8 +416,6 @@ Autoreleasepool的原理是一个双向链表，它会对加入其中的对象�
 
 <p>如果不要metaclass可不可以？也是可以的，在objc_class再加一个类方法指针。但是这样的设计会将消息传递的过程复杂化，所以为了消息传递流程的复用，为了一切皆对象的思想，就有了metaclass。</p>
 
-<p>关于这一话题的深入讨论可以参考这两篇文章：为什么要存在MetaClass[13]；为什么要设计metaclass[14]</p>
-
 <p><strong>6.类方法是存储到什么地方的？类属性呢？</strong> <br />
     类方法和类属性都是存储到元类中的。</p>
 
@@ -432,7 +427,7 @@ Autoreleasepool的原理是一个双向链表，它会对加入其中的对象�
 // 调用方式
 NSString *temp = Person.name;
 </code></pre>
-<p>需要注意的是跟实例属性不一样，类属性不会自动生成实例变量和setter，getter方法，需要我们手动实现。具体实现方法可以参考这个文章：Objective-C Class Properties[15]</p>
+<p>需要注意的是跟实例属性不一样，类属性不会自动生成实例变量和setter，getter方法，需要我们手动实现。</p>
 
 <p><strong>7.讲几个runtime的应用场景</strong></p>
 
@@ -590,7 +585,7 @@ KVC可以通过key直接访问对象的属性，或者给对象的属性赋值�
     <p>利用Runloop，实时计算 kCFRunLoopBeforeSources 和 kCFRunLoopAfterWaiting 两个状态区域之间的耗时是否超过某个阀值</p>
   </li>
   <li>
-    <p>子线程检测，每次检测时设置标记位为YES，然后派发任务到主线程中将标记位设置为NO。接着子线程沉睡超时阙值时长，判断标志位是否成功设置成NO，如果没有说明主线程发生了卡顿。参考ANREye[17]的实现</p>
+    <p>子线程检测，每次检测时设置标记位为YES，然后派发任务到主线程中将标记位设置为NO。接着子线程沉睡超时阙值时长，判断标志位是否成功设置成NO，如果没有说明主线程发生了卡顿。</p>
   </li>
 </ul>
 
@@ -738,13 +733,10 @@ Swift和OC的区别有很多，这里简要总结这几条：</li>
 </table>
 
 <ol>
-  <li>从OC向Swift迁移的时候遇到过什么问题？
-可以参考这篇文章：OC项目转Swift指南[3] 里的混编注意事项。</li>
   <li>怎么理解面向协议编程？
 面向对象是以对象的视角观察整体结构，万物皆为对象。
 面向协议则是用协议的方式组织各个类的关系，Swift底层几乎所有类都构建在协议之上。
-面向协议能够解决面向对象的菱形继承，横切关注点和动态派发的安全性等问题。
-参考喵神的面向协议编程与 Cocoa 的邂逅 (上)[4]</li>
+面向协议能够解决面向对象的菱形继承，横切关注点和动态派发的安全性等问题。</li>
 </ol>
 
 <h2 id="计算机相关">计算机相关</h2>
@@ -945,10 +937,6 @@ Swift和OC的区别有很多，这里简要总结这几条：</li>
   <li>多语言管理，csv多语言文件读取，然后写入到项目Localizable.strings中；抓取项目中的多语言字符串。</li>
   <li>Icon剪裁</li>
 </ul>
-
-<p>脚本（script） 其实就是一系列指令，计算机看了指令就知道自己该做什么事情。像常见的Python，Shell，Ruby都是脚本语言，他们通常不需要编译，通过解释器运行。</p>
-
-<p>我们常见的打包流程</p>
 
 <p><strong>9. TCP为什么要三次握手，四次挥手？</strong></p>
 
