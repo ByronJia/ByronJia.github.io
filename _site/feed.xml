@@ -5,9 +5,688 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 16 Sep 2020 23:59:25 +0800</pubDate>
-    <lastBuildDate>Wed, 16 Sep 2020 23:59:25 +0800</lastBuildDate>
+    <pubDate>Fri, 18 Sep 2020 10:08:35 +0800</pubDate>
+    <lastBuildDate>Fri, 18 Sep 2020 10:08:35 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>iOS高级面试题</title>
+        <description>&lt;h2 id=&quot;oc&quot;&gt;OC&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;1.Block&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Block的本质是什么？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;block本质是对象，底层是用结构体struct实现&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Block对应的数据结构是什么样子的？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-C++&quot;&gt;struct Block_descriptor {
+    unsigned long int reserved;
+    unsigned long int size;
+    void (*copy)(void *dst, void *src);
+    void (*dispose)(void *);
+};
+
+struct Block_layout {
+    void *isa;
+    int flags;
+    int reserved;
+    void (*invoke)(void *, ...);
+    struct Block_descriptor *descriptor;
+    /* Imported variables. */
+};
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;isa 指针，所有对象都有该指针，用于实现对象相关的功能。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;flags，用于按 bit 位表示一些 block 的附加信息，本文后面介绍 block copy 的实现代码可以看到对该变量的使用。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;reserved，保留变量。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;invoke，函数指针，指向具体的 block 实现的函数调用地址。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;descriptor， 表示该 block 的附加描述信息，主要是 size 大小，以及 copy 和 dispose 函数的指针。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;variables，capture 过来的变量，block 能够访问它外部的局部变量，就是因为将这些变量（或变量的地址）复制到了结构体中。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;__block的作用是什么？它对应的数据结构又是什么样子的？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;__block的作用是让block可以捕获该变量，捕获之后的变量会进入到block内部，通过反编译的代码我们可以看到该对象是这样的：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-C++&quot;&gt;struct __Block_byref_i_0 {
+    void *__isa;
+    __Block_byref_i_0 *__forwarding;
+    int __flags;
+    int __size;
+    int val; //变量名
+};
+/// 对于block的深入了解，可以参考《Objective-C高级编程》
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;2. GCD中的Block是在堆上还是栈上？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;堆上,可以通过block的isa指针确认。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3. NSCoding协议是干什么用的？(初级)&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;一种编码协议，归档时和解档时需要依赖该协议定义的编码和解码方法。Foundation和Cocoa Touch中的大部分类都遵循了这个协议，一般被NSKeyedArchiver做自定义对象持久化时使用。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;4. KVO的实现原理&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;利用Runtime生成一个中间对象，让原对象的isa指针指向它，然后重写setter方法，插入willChangeValueForKey和didChangeValueForKey方法。当属性变化时会调用，会调用这两个方法通知到外界属性变化。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;5. NSOperation有哪些特性比着GCD有哪些优点，它有哪些API？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;NSOperation是对GCD的封装，具有面向对象的特点，可以更方便的进行封装，可以设置依赖关系。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;6. NSNotificaiton是同步还是异步的，如果发通知时在子线程，接收在哪个线程？&lt;/strong&gt;
+同步。子线程。&lt;/p&gt;
+
+&lt;h3 id=&quot;引用计数&quot;&gt;引用计数&lt;/h3&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;ARC方案的原理是什么？它是在什么时候做的隐式添加release操作？
+ARC(Automatic Reference Cunting)自动引用计数，意即通过LLVM编译器自动管理对应的引用计数状态。ARC开启时无需再次键入retain或者release代码。&lt;br /&gt;
+它是在编译阶段添加retain或者release代码的。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;循环引用有哪些场景，如何避免？(初级)
+循环引用及两个及以上对象出现引用环，导致对象无法释放的情况。一般在block，delegate，NSTimer时容易出现这个问题。&lt;br /&gt;
+解决方案就是让环的其中一环节实现弱引用。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;为什么当我们在使用block时外面是weak 声明一个weakSelf，还要在block内部使用strong再持有一下？（可扩展提问）
+block外界声明weakSelf是为了实现block方法块内部对obj的弱持有避免循环引用，而里面的storng作用是为了保证在block内部时对象不会随意释放。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;Autoreleasepool&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Autoreleasepool是实现机制是什么？&lt;br /&gt;
+Autoreleasepool的原理是一个双向链表，它会对加入其中的对象实现延迟释放。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;它是什么时候释放内部的对象的？&lt;br /&gt;
+当Autoreleasepool调用drain方法时会释放内部标记为autorelease的对象。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;它内部的数据结构是什么样的？&lt;/p&gt;
+
+    &lt;pre&gt;&lt;code class=&quot;language-C++&quot;&gt; class AutoreleasePoolPage {
+     magic_t const magic;
+     id *next;
+     pthread_t const thread;
+     AutoreleasePoolPage * const parent;
+     AutoreleasePoolPage *child;
+     uint32_t const depth;
+     uint32_t hiwat;
+ };
+&lt;/code&gt;&lt;/pre&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;哨兵对象的作用是什么，为什么要设计它？&lt;br /&gt;
+ 哨兵对象类似一个指针，指向自动释放池的栈顶位置，它的作用就是用于标记当前自动释放池需要释放内部对象时，释放到那个地方结束，每次入栈时它用于确定添加的位置，然后再次移动到栈顶。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;哪些对象会放入到Autoreleasepool中？&lt;/p&gt;
+
+    &lt;ul&gt;
+      &lt;li&gt;非alloc/new/copy/mutablecopy 开始的方式初始化时。&lt;/li&gt;
+      &lt;li&gt;id的指针或对象的指针在没有显示指定时&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;weak的实现原理是什么？当引用对象销毁时它是如何管理内部的Hash表的？（这里要参阅weak源码）
+ runTime会把对weak修饰的对象放到一个全局的哈希表中，用weak修饰的对象的内存地址为key，weak指针为值，在对象进行销毁时，用通过自身地址去哈希表中查找到所有指向此对象的weak指针，并把所有的weak指针置为nil。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;runtime&quot;&gt;Runtime&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;1.消息发送的流程是怎样的？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;OC中的方法调用会转化成给对象发送消息，发送消息会调用这个方法：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-ObjectiveC&quot;&gt;objc_msgSend(receiver, @selector(message))
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;该过程有以下关键步骤：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;先确定调用方法的类已经都加载完毕，如果没加载完毕的话进行加载&lt;/li&gt;
+  &lt;li&gt;从cache中查找方法&lt;/li&gt;
+  &lt;li&gt;cache中没有找到对应的方法，则到方法列表中查，查到则缓存&lt;/li&gt;
+  &lt;li&gt;如果本类中查询到没有结果，则遍历所有父类重复上面的查找过程，直到NSObject&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;2.关联对象时什么情况下会导致内存泄露？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;关联对象可以理解就是持有了一个对象，如果是retain等方式的持有，而该对象也持有了本类，那就是导致了循环引用。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3.消息转发的流程是什么？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;消息转发是发生在接收者（receiver）没有找到对应的方法（method）的时候，该步骤有如下几个关键步骤：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;消息转发的时候，如果是实例方法会走resolveInstanceMethod:，如果是类方法会走resolveClassMethod:，它们的返回值都是Bool，需要我们确定是否进行转发。&lt;/li&gt;
+  &lt;li&gt;如果第一步返回YES，确定转发就会进到下个方法forwardingTargetForSelector，这个方法需要我们指定一个被用receiver。&lt;/li&gt;
+  &lt;li&gt;methodSignatureForSelector用于指定方法签名，forwardInvocation用于处理Invocation，进行完整转发。&lt;/li&gt;
+  &lt;li&gt;如果消息转发也没有处理即为无法处理，会调用doesNotRecognizeSelector，引发崩溃。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;更多了解可以参考iOS开发·runtime原理与实践: 消息转发篇(Message Forwarding) (消息机制，方法未实现+API不兼容奔溃，模拟多继承)[12]&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;4.category能否添加属性，为什么？能否添加实例变量，为什么？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;可以添加属性，这里的属性指@property，但跟类里的@property又不一样。类里的@property为：实例变量Ivar + Setter + Getter 方法，分类里的@property这三者都没有，需要我们手动实现。&lt;/p&gt;
+
+&lt;p&gt;分类是运行时被编译的，这时类的结构已经固定了，所以我们无法添加实例变量。&lt;/p&gt;
+
+&lt;p&gt;对于分类自定义Setter和Getter方法，我们可以通过关联对象（Associated Object）进行实现。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;5.元类的作用是什么？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;元类的作用是存储类方法，同时它也是为了让OC的类结构能够形成闭环。&lt;/p&gt;
+
+&lt;p&gt;对于为什么设计元类有以下原因；&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;在OC的世界里一切皆对象（借鉴于Smalltalk），metaclass的设计就是要为满足这一点。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;在OC中Class也是一种对象，它对应的类就是metaclass，metaclass也是一种对象，它的类是root metaclass，在往上根元类（root metaclass）指向自己，形成了一个闭环，一个完备的设计。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;如果不要metaclass可不可以？也是可以的，在objc_class再加一个类方法指针。但是这样的设计会将消息传递的过程复杂化，所以为了消息传递流程的复用，为了一切皆对象的思想，就有了metaclass。&lt;/p&gt;
+
+&lt;p&gt;关于这一话题的深入讨论可以参考这两篇文章：为什么要存在MetaClass[13]；为什么要设计metaclass[14]&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;6.类方法是存储到什么地方的？类属性呢？&lt;/strong&gt; &lt;br /&gt;
+    类方法和类属性都是存储到元类中的。&lt;/p&gt;
+
+&lt;p&gt;类属性在Swift用的多些，OC中很少有人用到，但其实它也是有的，写法如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-ObjectiveC&quot;&gt;@interface Person : NSObject
+// 在属性类别中加上class
+@property (class, nonatomic, copy) NSString *name;
+@end
+// 调用方式
+NSString *temp = Person.name;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;需要注意的是跟实例属性不一样，类属性不会自动生成实例变量和setter，getter方法，需要我们手动实现。具体实现方法可以参考这个文章：Objective-C Class Properties[15]&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;7.讲几个runtime的应用场景&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;hook系统方法进行方法交换。&lt;/li&gt;
+  &lt;li&gt;了解一个类（闭源）的私有属性和方法。&lt;/li&gt;
+  &lt;li&gt;关联对象，实现添加分类属性的功能。&lt;/li&gt;
+  &lt;li&gt;修改isa指针，自定义KVO。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;runloop&quot;&gt;Runloop&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;1.讲一下对Runloop的理解？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Runloop就是一个运行循环，它保证了在没有任务的时候线程不退出，有任务的时候即使响应。Runloop跟线程，事件响应，手势识别，页面更新，定时器都有着紧密联系。&lt;/p&gt;
+
+&lt;p&gt;深入了解推荐ibireme的这篇深入理解RunLoop[16]&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;2.可以用Runloop实现什么功能？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;检测卡顿&lt;/li&gt;
+  &lt;li&gt;线程保活&lt;/li&gt;
+  &lt;li&gt;性能优化，将一些耗时操作放到runloop wait的情况处理。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;性能优化&quot;&gt;性能优化&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;1.对TableView进行性能优化有哪些方式？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;缓存高度&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;异步渲染&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;减少离屏渲染&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;2.Xcode的Instruments都有哪些调试的工具？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Activity Monitor（活动监视器）：监控进程的CPU、内存、磁盘、网络使用情况。是程序在手机运行真正占用内存大小&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Allocations（内存分配）：跟踪过程的匿名虚拟内存和堆的对象提供类名和可选保留/释放历史&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Core Animation（图形性能）：显示程序显卡性能以及CPU使用情况&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Core Data：跟踪Core Data文件系统活动&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Energy Log：耗电量监控&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;File Activity：检测文件创建、移动、变化、删除等&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Leaks（泄漏）：一般的措施内存使用情况，检查泄漏的内存，并提供了所有活动的分配和泄漏模块的类对象分配统计信息以及内存地址历史记录&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Network：用链接工具分析你的程序如何使用TCP/IP和UDP/IP链接&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;System Usage：记录关于文件读写，sockets，I/O系统活动，输入输出&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Time Profiler（时间探查）：方法执行耗时分析&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Zombies：测量一般的内存使用，专注于检测过度释放的野指针对象。也提供对象分配统计以及主动分配的内存地址历史&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;3.讲一下你做过的性能优化的事情。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;4.如何检测卡顿，都有哪些方法？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;FPS，通过CADisplayLink计算1s内刷新次数，也可以利用Instruments里的Core Animation。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;利用Runloop，实时计算 kCFRunLoopBeforeSources 和 kCFRunLoopAfterWaiting 两个状态区域之间的耗时是否超过某个阀值&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;子线程检测，每次检测时设置标记位为YES，然后派发任务到主线程中将标记位设置为NO。接着子线程沉睡超时阙值时长，判断标志位是否成功设置成NO，如果没有说明主线程发生了卡顿。参考ANREye[17]的实现&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;5.缩小包体积有哪些方案？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;图片压缩，无用图片删除&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;一些大图可以动态下发&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;删除无用类，无用方法&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;减少三方库的依赖&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;ui&quot;&gt;UI&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;1.事件响应链是如何传递的？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;手势的点击会发生两个重要事情，事件传递和事件响应。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;事件传递&lt;/strong&gt;：从UIApplication开始，到window，再逐步往下层（子视图）找，直到找到最深层的子视图，其为first responder。用到的判断方法是&lt;code class=&quot;highlighter-rouge&quot;&gt;pointInside:withEvent&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;hitTest:withEvent&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;事件响应&lt;/strong&gt;：从识别到的视图（first responder）开始验证能否响应事件，如果不能就交给其上层（父视图）视图，如果能响应将不再往下传递，如果直到找到UIApplication层还没有响应，那就忽略该次点击。用到的判断方法是&lt;code class=&quot;highlighter-rouge&quot;&gt;touchesBegan:withEvent&lt;/code&gt;、&lt;code class=&quot;highlighter-rouge&quot;&gt;touchesMoved:withEvent&lt;/code&gt;等。&lt;/p&gt;
+
+&lt;p&gt;这两个过程大致的相反的。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;2.什么是异步渲染？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;异步渲染就是在子线程进行绘制，然后拿到主线程显示。&lt;/p&gt;
+
+&lt;p&gt;UIView的显示是通过CALayer实现的，CALayer的显示则是通过contents进行的。异步渲染的实现原理是当我们改变UIView的frame时，会调用layer的setNeedsDisplay，然后调用layer的display方法。我们不能在非主线程将内容绘制到layer的context上，但我们单独开一个子线程通过CGBitmapContextCreateImage()绘制内容，绘制完成之后切回主线程，将内容赋值到contents上。&lt;/p&gt;
+
+&lt;p&gt;这个步骤可以参照YYText中YYTextAsyncLayer.m[6]文件中的实现方式。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3.layoutsubviews是在什么时机调用的？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;init初始化不会触发。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;addSubview时。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;设置frame且前后值变化，frame为zero且不添加到指定视图不会触发。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;旋转Screen会触发父视图的layoutSubviews。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;滚动UIScrollView引起View重新布局时会触发layoutSubviews。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;4.一张图片的展示经历了哪些步骤？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;5.什么是离屏渲染，什么情况会导致离屏渲染？&lt;/strong&gt;
+如果要在显示屏上显示内容，我们至少需要一块与屏幕像素数据量一样大的frame buffer，作为像素数据存储区域。如果有时因为面临一些限制，无法把渲染结果直接写入frame buffer，而是先暂存在另外的内存区域，之后再写入frame buffer，那么这个过程被称之为离屏渲染。
+以阴影为例，为什么它会导致离屏渲染。因为GPU的渲染是遵循“画家算法”，一层一层绘制的，但阴影很特殊，它需要全部内容绘制完成，再根据外轮廓进行绘制。这就导致了，阴影这一层要一直占据一块内存区域，这就导致了离屏渲染。&lt;/p&gt;
+
+&lt;p&gt;类似导致离屏渲染的情况还有：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;cornerRadius+clipsToBounds&lt;/li&gt;
+  &lt;li&gt;group opacity 组透明度&lt;/li&gt;
+  &lt;li&gt;mask 遮罩&lt;/li&gt;
+  &lt;li&gt;UIBlurEffect 毛玻璃效果&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;6.CoreAnimation这个框架的作用什么，它跟UIKit的关系是什么？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;CoreAnimation虽然直译是核心动画，但它其实是一个图像渲染框架，动画实现只是它的一部分功能。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200917/16003308335042.png&quot; alt=&quot;Core Animation&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;看这张图我们可以知道，它是UIKit和AppKit的底层实现，位于Metal、Core Graphics和GPU之上之上。&lt;/p&gt;
+
+&lt;p&gt;苹果官方文档：About Core Animation[9]&lt;/p&gt;
+
+&lt;h2 id=&quot;swift&quot;&gt;Swift&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;Swift中struct和class有什么区别？
+struct是值引用，更轻量，存放于栈区，class是类型引用，存放于堆区。struct无法继承，class可继承。&lt;/li&gt;
+  &lt;li&gt;Swift中的方法调用有哪些形式？
+直接派发、函数表派发、消息机制派发。派发方式受声明位置，引用类型，特定行为的影响。为什么Swift有这么多派发形式？为了效率。&lt;/li&gt;
+  &lt;li&gt;Swift和OC有什么区别？
+Swift和OC的区别有很多，这里简要总结这几条：&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt; &lt;/th&gt;
+      &lt;th&gt;Swift&lt;/th&gt;
+      &lt;th&gt;Objective-C&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;语言特性&lt;/td&gt;
+      &lt;td&gt;静态语言，更加安全&lt;/td&gt;
+      &lt;td&gt;动态语言不那么安全&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;语法&lt;/td&gt;
+      &lt;td&gt;更精简&lt;/td&gt;
+      &lt;td&gt;冗长&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;命名空间&lt;/td&gt;
+      &lt;td&gt;有&lt;/td&gt;
+      &lt;td&gt;无&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;方法调用&lt;/td&gt;
+      &lt;td&gt;直接调用，函数表调用，消息转发&lt;/td&gt;
+      &lt;td&gt;消息转发&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;泛型/元组/高阶函数&lt;/td&gt;
+      &lt;td&gt;有&lt;/td&gt;
+      &lt;td&gt;无&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;语言效率&lt;/td&gt;
+      &lt;td&gt;性能更高，速度更快&lt;/td&gt;
+      &lt;td&gt;略低&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;文件特性&lt;/td&gt;
+      &lt;td&gt;.swift 单文件&lt;/td&gt;
+      &lt;td&gt;.h/.m包含头文件&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;编程特性&lt;/td&gt;
+      &lt;td&gt;可以更好的实现函数式编程/响应式编程&lt;/td&gt;
+      &lt;td&gt;面向对象编程&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;从OC向Swift迁移的时候遇到过什么问题？
+可以参考这篇文章：OC项目转Swift指南[3] 里的混编注意事项。&lt;/li&gt;
+  &lt;li&gt;怎么理解面向协议编程？
+面向对象是以对象的视角观察整体结构，万物皆为对象。
+面向协议则是用协议的方式组织各个类的关系，Swift底层几乎所有类都构建在协议之上。
+面向协议能够解决面向对象的菱形继承，横切关注点和动态派发的安全性等问题。
+参考喵神的面向协议编程与 Cocoa 的邂逅 (上)[4]&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;计算机相关&quot;&gt;计算机相关&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;1.项目编译的流程是什么？手机上的应用程序自点击图标开始到首屏内容展示都经历了哪些步骤？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;编译流程：&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;预处理：处理宏定义，删除注释，展开头文件。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;词法分析：把代码切成一个个token，比如大小括号等于号还有字符串&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;语法分析：验证语法是否正确，合成抽象语法树AST&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;静态分析：查找代码错误&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;类型检查：动态和静态&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;目标代码的生成与优化，包括删除多余指令，选择合适的寻址方式，如果开启了bitcode，会做进一步的优化&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;汇编：由汇编器生成汇编语言&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;机器码：由汇编语言转成机器码，生成.o文件&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;应用启动的流程：&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;启动的前提是完成编译，运行程序即运行编译过后的目标程序，它分为main函数前和main函数后：&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;main前&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;加载可执行文件（App的.o文件集合）&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;加载动态链接库（系统和应用的动态链接库），进行rebase指针调整和bind符号绑定&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Objc运行时的初始处理，包括Objc相关类的注册，category注册，selector唯一性检查&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;初始化，包括执行+load()、attribute(constructor)修饰的函数的调用、创建C++静态全局变量&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;main后&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;首页初始化所需要配置文件的读写操作&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;首页界面渲染&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;2.对于基本数据类型，一般是存储到栈中的，它有没有可能存在堆上，什么情况下会存储到堆上？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;栈和堆都是同属一块内存，只不过一个是高地址往低地址存储，一个从低地址往高地址存储，他们并没有严格的界限说一个值只能放在堆上或者栈上。所以基本数据类型也是可以存储到堆上的。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3.数据库中的事务是什么意思？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;事务就是访问并操作各种数据项的一个数据库操作序列，这些操作要么全部执行，要么全部不执行。如果其中一个步骤出错就要撤销整个操作，回滚到进入事务之前的状态。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;4.使用过什么数据库（我回答的Sqlite，Realm），Realm在使用时有哪些注意事项，如何实现批量操作？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Realm需要注意&lt;/strong&gt;的主要就是不能直接跨线程访问同一对象。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;批量操作&lt;/strong&gt;可以在一个单独的事务中执行多个数据库的修改。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;5.LRU算法是否了解，如何实现一套LRU算法？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;LRU（Least recently used 最近最少使用）算法是一个缓存淘汰算法，其作用就是当缓存很多时，该淘汰哪些内容，见名知意，它的核心思想是淘汰最近使用最少的内容。实现它的关键步骤是：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;新数据插入到链表的头部&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;每当缓存命中时，则将数据移动到链表头部&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;链表满时，将尾部数据清除&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200917/16003308538183.png&quot; alt=&quot;LRU算法图解&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;6.知道哪些设计模式，怎么理解设计模式的作用？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;工厂模式、观察者模式、中介者模式、单例模式。这个根据实际情况说吧。
+&lt;a href=&quot;https://github.com/huang303513/Design-Pattern-For-iOS&quot;&gt;设计模式&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;7.如果有1000万个Int类型的数字，如何对他们排序？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;这里的隐藏含义是，内存不够用时如何排序，还有一个隐藏含义是硬盘足够大。这是可以采用分而治之的方法，将数据分成若干块，使每一小块满足当前内容大小，然后对每块内容单独排序，最后采用归并排序对所有块进行排序，就得到了一个有序序列。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;8.设计一套数据库方案，实现类似微信的搜索关键词能快速检索出包含该字符串的聊天信息，并展示对应数量（聊天记录的数据量较大）。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;可以对聊天记录的文本值加上索引。正常情况下数据库搜索都是全量检索的，加上索引之后只会检索满足条件的记录，大大降低检索量。&lt;/p&gt;
+
+&lt;h2 id=&quot;其他&quot;&gt;其他&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;1.MVVM和MVC有什么区别？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;对比架构时，可以从是否职责分离，可测试性，可易维护性三个维度对比&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;2. 静态库和动态库的区别是什么？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;静态库：链接时被完整复制到可执行文件中，多次使用就多份拷贝。&lt;/p&gt;
+
+&lt;p&gt;动态库：链接时不复制，而是由系统动态加载到内存，内存中只会有一份该动态库。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3. 了解Flutter吗？它有没有使用UIKit？它是如何渲染UI的？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;UIKit是基于CoreAnimation渲染的，而Flutter并没有用到它，而是自己基于C++实现了一套渲染框架。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200917/16003309243619.png&quot; alt=&quot;FlutterUI渲染&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;4. 二进制重排的核心依据是什么？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;修改链接顺序，减少启动时的缺页中断。&lt;/p&gt;
+
+&lt;p&gt;实践步骤可以参考李斌同学的这篇iOS 优化篇 - 启动优化之Clang插桩实现二进制重排&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;5. 如何设计一套切换主题的方案？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;核心思路是观察者模式+协议（通知），当获取到主题切换时，通知各个实现了主题协议的类进行更新。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;6. AVPlayer和IJKPlayer有什么区别？用IJKPlayer如何实现一个缓存视频列表每条视频前1s的内容？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;7. 类似微博的短视频列表，滑动停留播放，如何实现？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;这个主要就是监测contentOffset和屏幕中间位置，设置一些边界条件，处理滑动过程中的切换行为。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;8. 使用python做过哪些事？如何理解脚本语言？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;多语言管理，csv多语言文件读取，然后写入到项目Localizable.strings中；抓取项目中的多语言字符串。&lt;/li&gt;
+  &lt;li&gt;Icon剪裁&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;脚本（script） 其实就是一系列指令，计算机看了指令就知道自己该做什么事情。像常见的Python，Shell，Ruby都是脚本语言，他们通常不需要编译，通过解释器运行。&lt;/p&gt;
+
+&lt;p&gt;我们常见的打包流程&lt;/p&gt;
+
+&lt;h2 id=&quot;数据结构与算法&quot;&gt;数据结构与算法&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;1.什么是Hash表，什么是Hash碰撞，解决Hash碰撞有什么方法？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;哈希表（Hash Table，也叫散列表），是根据关键码值 (Key-Value) 而直接进行访问的数据结构。也就是说，它通过把关键码值映射到表中一个位置来访问记录，以加快查找的速度。我们常用的Dictionary就是一种Hash表。&lt;/p&gt;
+
+&lt;p&gt;那什么是Hash碰撞呢，我们知道Hash表的查找是通过键值进行定位的，当两个不同的输入对应一个输出时，即为Hash碰撞，也被称为Hash冲突。&lt;/p&gt;
+
+&lt;p&gt;如果使用字典的例子你可能联想不到冲突的情况，我们假设另一种情况：假设hash表的大小为9（即有9个槽），现在要把一串数据存到表里：5,28,19,15,20,33,12,17,10。我们使用的hash函数是对9取余。这样的话会出现hash(5)=5，hash(28)=1，hash(19)=1。28和19都对应一个地址，这就出现了Hash冲突。&lt;/p&gt;
+
+&lt;p&gt;解决Hash冲突的方式有开放定址法和链地址法。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;2.给出二叉树【10，6，14，4，8，12，16】进行前序、中序、后续遍历？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;前序遍历：根节点 &amp;gt; 左子节点 &amp;gt; 右子节点。&lt;/p&gt;
+
+&lt;p&gt;10，6，4，8，14，12，16&lt;/p&gt;
+
+&lt;p&gt;中序遍历：左子节点 &amp;gt; 根节点 &amp;gt; 右子节点。&lt;/p&gt;
+
+&lt;p&gt;4，6，8，10，12，14，16&lt;/p&gt;
+
+&lt;p&gt;后序遍历：左子节点 &amp;gt; 右子节点 &amp;gt; 根节点。&lt;/p&gt;
+
+&lt;p&gt;4，8，6，12，16，14，10&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3.简述下快速排序的过程，时间复杂度是多少？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;快排的思想是通过一趟排序将要排序的数据分割成独立的两部分，其中一部分的所有数据都比另外一部分的所有数据都要小，然后再按此方法对这两部分数据分别进行快速排序，整个排序过程可以递归进行。&lt;/p&gt;
+
+&lt;p&gt;一个简单的Swift实现方式如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-Swift&quot;&gt;func quicksort&amp;lt;T: Comparable&amp;gt;(_ a: [T]) -&amp;gt; [T] {
+  guard a.count &amp;gt; 1 else { return a }
+
+  let pivot = a[a.count/2]
+  let less = a.filter { $0 &amp;lt; pivot }
+  let equal = a.filter { $0 == pivot }
+  let greater = a.filter { $0 &amp;gt; pivot }
+
+  return quicksort(less) + equal + quicksort(greater)
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;快速排序是有好几种的，他们的区别在于如何实现filter和分区基准值的选取。&lt;/p&gt;
+
+&lt;p&gt;快排的时间复杂度是O(nlogn)，空间复杂度是O(logn)&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;4.有一个整数数组，如何只遍历一遍就实现让该数组奇数都在前面，偶数都在后面？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;5.假设你正在爬楼梯。需要 n 阶你才能到达楼顶。每次你可以爬 1 或 2 个台阶。你有多少种不同的方法可以爬到楼顶呢？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;6.给出一个 32 位的有符号整数，你需要将这个整数中每位上的数字进行反转。leetcode 7&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;7.有红. 黄. 蓝三种颜色的气球。在牛客王国，1个红气球+1个黄气球+1个蓝气球可以兑换一张彩票。
+2个红气球+1个黄气球可以兑换1个蓝气球。
+2个黄气球+1个蓝气球可以兑换1个红气球。
+2个蓝气球+1个红气球可以兑换1个黄气球。
+现在牛牛有a个红气球，b个黄气球， c个蓝气球，牛牛想知道自己最多可以兑换多少张彩票。&lt;/strong&gt;&lt;/p&gt;
+</description>
+        <pubDate>Thu, 17 Sep 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/09/iOS%E9%AB%98%E7%BA%A7%E9%9D%A2%E8%AF%95%E9%A2%98/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/iOS%E9%AB%98%E7%BA%A7%E9%9D%A2%E8%AF%95%E9%A2%98/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
     
       <item>
         <title>CoreAnimation详解</title>
@@ -1662,105 +2341,6 @@ SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据�
         <guid isPermaLink="true">http://localhost:4000/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/</guid>
         
         <category>BLE</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>在腾讯云上搭建jekyll静态博客</title>
-        <description>&lt;p&gt;本文旨在帮助小伙伴在腾讯云或阿里云上搭建jekyll环境，有错误还请指正。
-对于一个全新服务器，需要从新开始配置相关依赖环境。&lt;/p&gt;
-
-&lt;h3 id=&quot;安装-nodejs-环境&quot;&gt;安装 Nodejs 环境&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ wget https://nodejs.org/dist/v8.12.0/node-v8.12.0-linux-x64.tar.xz
-$ xz -d node-v8.12.0-linux-x64.tar.xz
-$ tar -xf node-v8.12.0-linux-x64.tar 
-$ ln -s ~/node-v8.12.0-linux-x64/bin/node /usr/bin/node
-$ ln -s ~/node-v8.12.0-linux-x64/bin/npm /usr/bin/npm
-$ node -v 
-$ npm
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;其中nodejs下载地址可以在 &lt;a href=&quot;https://nodejs.org/zh-cn/download/&quot;&gt;这里&lt;/a&gt; 根据系统选择。&lt;/p&gt;
-
-&lt;h3 id=&quot;安装ruby环境&quot;&gt;安装ruby环境&lt;/h3&gt;
-&lt;p&gt;这里有3种常用安装方式，个人推荐第一种。&lt;/p&gt;
-&lt;h4 id=&quot;1-通过rvm安装ruby&quot;&gt;1. 通过RVM安装ruby&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;安装GPG 秘钥
-    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ gpg2 --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-  &lt;/li&gt;
-  &lt;li&gt;安装稳定版RVM
-    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ \curl -sSL https://get.rvm.io | bash -s stable
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-  &lt;/li&gt;
-  &lt;li&gt;安装完毕后执行查看rvm版本是否安装成功
-    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ rvm -v 
-rvm 1.29.10 (latest) by Michal Papis, Piotr Kuczynski, Wayne E. Seguin [https://rvm.io]
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-  &lt;/li&gt;
-  &lt;li&gt;查看rvm当前可选ruby版本
-    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ rvm list known
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-    &lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002634646313.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;选择一个想要的版本,例如2.7
-    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ rvm install 2.7
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-  &lt;/li&gt;
-  &lt;li&gt;如果下载很慢，可切换rvm 的安装源
-    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ echo &quot;ruby_url=https://cache.ruby-china.com/pub/ruby&quot; &amp;gt; ~/.rvm/user/db
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-  &lt;/li&gt;
-  &lt;li&gt;安装完成，查看ruby版本
-    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ ruby -v
-ruby 2.0.0p648 (2015-12-16) [x86_64-linux]
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;2通过ruby源码安装&quot;&gt;2.通过ruby源码安装&lt;/h4&gt;
-&lt;ul&gt;
-  &lt;li&gt;下载源码，解压编译安装, 下载地址在&lt;a href=&quot;https://www.ruby-lang.org/zh_cn/downloads/&quot;&gt;这里&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ wget https://cache.ruby-lang.org/pub/ruby/2.4/ruby-2.4.4.tar.gz
-$ mkdir  -p /usr/local/ruby
-$ tar -zxvf ruby-2.4.4.tar.gz 
-$ cd ruby-2.4.4
-$ ./configure --prefix=/usr/local/ruby
-$ make &amp;amp;&amp;amp; make install
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;环境变量配置&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ PATH=/usr/local/ruby/bin:$PATH:$HOME/bin
-$ export PATH
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;3通过yum安装&quot;&gt;3.通过yum安装&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$  sudo yum install ruby
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;安装gcc&quot;&gt;安装gcc&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ yum -y update gcc
-$ yum -y install gcc+ gcc-c++
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;安装jekyll&quot;&gt;安装jekyll&lt;/h3&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ gem update --system
-$ gem install jekyll
-$ jekyll --version
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-</description>
-        <pubDate>Thu, 21 May 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/05/%E5%9C%A8%E8%85%BE%E8%AE%AF%E4%BA%91%E4%B8%8A%E6%90%AD%E5%BB%BAjekyll%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/05/%E5%9C%A8%E8%85%BE%E8%AE%AF%E4%BA%91%E4%B8%8A%E6%90%AD%E5%BB%BAjekyll%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/</guid>
         
         
       </item>

@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <title>iOS高级面试题</title>
+  <meta name="description" content="OC">
+  <meta name="author" content="leopardpan">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="iOS高级面试题">
+  <meta name="twitter:description" content="OC">
+  
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="iOS高级面试题">
+  <meta property="og:description" content="OC">
+  
+  <link rel="icon" type="image/png" href="/images/favicon.png" />
+  <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link rel="canonical" href="http://localhost:4000/2020/09/iOS%E9%AB%98%E7%BA%A7%E9%9D%A2%E8%AF%95%E9%A2%98/">
+  <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
+  
+  <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
+
+  <!-- google 广告代码 -->
+  <script data-ad-client="ca-pub-1488511477321962" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  
+<!-- 站点统计 不蒜子 -->
+  <script 
+  async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>  
+
+<!-- 百度统计 -->
+  
+  <script>
+      var _hmt = _hmt || [];
+      (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?04766feadab5e00060a50dc5959c98e2";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+      })();
+  </script>
+  
+
+<!-- google 统计 -->
+  
+  <!-- <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-177644508-1', 'auto');
+      ga('send', 'pageview');
+  </script> -->
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-177644508-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-177644508-1');
+  </script>
+
+  
+
+  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-9005224472374751",
+    enable_page_level_ads: true
+  });
+</script>
+
+</head>
+
+
+  <body>
+
+    <span class="mobile btn-mobile-menu">        
+      <div class="nav_container">
+         <nav class="nav-menu-item" style = "float:right">
+            <i class="nav-menu-item">
+              <a href="/#blog" title="" class="blog-button">  博客主页
+              </a>
+            </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/archive" title="archive" class="btn-mobile-menu__icon">
+                      所有文章
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/tags" title="tags" class="btn-mobile-menu__icon">
+                      标签
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/about" title="about" class="btn-mobile-menu__icon">
+                      关于我
+                  </a>
+                </i>
+            
+          </nav>
+      </div>
+    </span>
+    
+    <header class="panel-cover panel-cover--collapsed" style="background-image: url('/images/background-cover.jpg')">
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+        <!-- 头像效果-start -->
+        <div class="ih-item circle effect">            
+            <a href="/#blog" title="前往 拜伦的博客 的主页" class="blog-button">
+                <div class="img"><img src="/images/avatar.jpg" alt="img"></div>
+            </a>
+        </div>
+        <!-- 头像效果-end -->
+        <h1 class="panel-cover__title panel-title"><a href="/#blog" title="link to homepage for 拜伦的博客" class="blog-button">拜伦的博客</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">Coder Byron</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">这里有关于iOS,机器学习的笔记心得,欢迎交流</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        
+        
+
+        <div class="navigation-wrapper">
+          <div>
+            <nav class="cover-navigation cover-navigation--primary">
+              <ul class="navigation">
+                <li class="navigation__item"><a href="/#blog" title="" class="blog-button">博客主页</a></li>
+                
+                  <li class="navigation__item"><a href="/archive" title="archive">所有文章</a></li>
+                
+                  <li class="navigation__item"><a href="/tags" title="tags">标签</a></li>
+                
+                  <li class="navigation__item"><a href="/about" title="about">关于我</a></li>
+                
+              </ul>
+            </nav>
+          </div>          
+        </div>
+
+
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class="panel-cover--overlay cover-gray"></div>
+    
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <head>
+  <link rel="stylesheet" href="/css/post.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.0.0/mermaid.min.js"></script>
+<script>
+  var config = {
+    startOnLoad:true,
+    theme: 'forest',
+    flowchart:{
+            useMaxWidth:false,
+            htmlLabels:true
+        }
+  };
+  mermaid.initialize(config);
+  window.mermaid.init(undefined, document.querySelectorAll('.language-mermaid'));
+</script>
+
+</head>
+
+<article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
+  <header class="post-header">
+    <h1 class="post-title">iOS高级面试题</h1>
+    <div class="post-meta">
+      <img src="/images/calendar.png" width="20px"/> 
+      <time datetime="2020-09-17 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-09-17</time>  
+
+      <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
+    </p>
+    </div>
+  </header>
+
+  
+    <h2 class="post-title">目录</h2>
+    <ul>
+  <li><a href="#oc">OC</a>
+    <ul>
+      <li><a href="#引用计数">引用计数</a></li>
+      <li><a href="#runtime">Runtime</a></li>
+      <li><a href="#runloop">Runloop</a></li>
+      <li><a href="#性能优化">性能优化</a></li>
+    </ul>
+  </li>
+  <li><a href="#ui">UI</a></li>
+  <li><a href="#swift">Swift</a></li>
+  <li><a href="#计算机相关">计算机相关</a></li>
+  <li><a href="#其他">其他</a></li>
+  <li><a href="#数据结构与算法">数据结构与算法</a></li>
+</ul>
+
+  
+
+  <section class="post">
+    <h2 id="oc">OC</h2>
+
+<p><strong>1.Block</strong></p>
+
+<p><strong>Block的本质是什么？</strong></p>
+
+<p>block本质是对象，底层是用结构体struct实现</p>
+
+<p><strong>Block对应的数据结构是什么样子的？</strong></p>
+
+<pre><code class="language-C++">struct Block_descriptor {
+    unsigned long int reserved;
+    unsigned long int size;
+    void (*copy)(void *dst, void *src);
+    void (*dispose)(void *);
+};
+
+struct Block_layout {
+    void *isa;
+    int flags;
+    int reserved;
+    void (*invoke)(void *, ...);
+    struct Block_descriptor *descriptor;
+    /* Imported variables. */
+};
+</code></pre>
+<ul>
+  <li>
+    <p>isa 指针，所有对象都有该指针，用于实现对象相关的功能。</p>
+  </li>
+  <li>
+    <p>flags，用于按 bit 位表示一些 block 的附加信息，本文后面介绍 block copy 的实现代码可以看到对该变量的使用。</p>
+  </li>
+  <li>
+    <p>reserved，保留变量。</p>
+  </li>
+  <li>
+    <p>invoke，函数指针，指向具体的 block 实现的函数调用地址。</p>
+  </li>
+  <li>
+    <p>descriptor， 表示该 block 的附加描述信息，主要是 size 大小，以及 copy 和 dispose 函数的指针。</p>
+  </li>
+  <li>
+    <p>variables，capture 过来的变量，block 能够访问它外部的局部变量，就是因为将这些变量（或变量的地址）复制到了结构体中。</p>
+  </li>
+</ul>
+
+<p><strong>__block的作用是什么？它对应的数据结构又是什么样子的？</strong></p>
+
+<p>__block的作用是让block可以捕获该变量，捕获之后的变量会进入到block内部，通过反编译的代码我们可以看到该对象是这样的：</p>
+
+<pre><code class="language-C++">struct __Block_byref_i_0 {
+    void *__isa;
+    __Block_byref_i_0 *__forwarding;
+    int __flags;
+    int __size;
+    int val; //变量名
+};
+/// 对于block的深入了解，可以参考《Objective-C高级编程》
+</code></pre>
+<p><strong>2. GCD中的Block是在堆上还是栈上？</strong></p>
+
+<p>堆上,可以通过block的isa指针确认。</p>
+
+<p><strong>3. NSCoding协议是干什么用的？(初级)</strong></p>
+
+<p>一种编码协议，归档时和解档时需要依赖该协议定义的编码和解码方法。Foundation和Cocoa Touch中的大部分类都遵循了这个协议，一般被NSKeyedArchiver做自定义对象持久化时使用。</p>
+
+<p><strong>4. KVO的实现原理</strong></p>
+
+<p>利用Runtime生成一个中间对象，让原对象的isa指针指向它，然后重写setter方法，插入willChangeValueForKey和didChangeValueForKey方法。当属性变化时会调用，会调用这两个方法通知到外界属性变化。</p>
+
+<p><strong>5. NSOperation有哪些特性比着GCD有哪些优点，它有哪些API？</strong></p>
+
+<p>NSOperation是对GCD的封装，具有面向对象的特点，可以更方便的进行封装，可以设置依赖关系。</p>
+
+<p><strong>6. NSNotificaiton是同步还是异步的，如果发通知时在子线程，接收在哪个线程？</strong>
+同步。子线程。</p>
+
+<h3 id="引用计数">引用计数</h3>
+
+<ol>
+  <li>
+    <p>ARC方案的原理是什么？它是在什么时候做的隐式添加release操作？
+ARC(Automatic Reference Cunting)自动引用计数，意即通过LLVM编译器自动管理对应的引用计数状态。ARC开启时无需再次键入retain或者release代码。<br />
+它是在编译阶段添加retain或者release代码的。</p>
+  </li>
+  <li>
+    <p>循环引用有哪些场景，如何避免？(初级)
+循环引用及两个及以上对象出现引用环，导致对象无法释放的情况。一般在block，delegate，NSTimer时容易出现这个问题。<br />
+解决方案就是让环的其中一环节实现弱引用。</p>
+  </li>
+  <li>
+    <p>为什么当我们在使用block时外面是weak 声明一个weakSelf，还要在block内部使用strong再持有一下？（可扩展提问）
+block外界声明weakSelf是为了实现block方法块内部对obj的弱持有避免循环引用，而里面的storng作用是为了保证在block内部时对象不会随意释放。</p>
+  </li>
+</ol>
+
+<p><strong>Autoreleasepool</strong></p>
+<ol>
+  <li>
+    <p>Autoreleasepool是实现机制是什么？<br />
+Autoreleasepool的原理是一个双向链表，它会对加入其中的对象实现延迟释放。</p>
+  </li>
+  <li>
+    <p>它是什么时候释放内部的对象的？<br />
+当Autoreleasepool调用drain方法时会释放内部标记为autorelease的对象。</p>
+  </li>
+  <li>
+    <p>它内部的数据结构是什么样的？</p>
+
+    <pre><code class="language-C++"> class AutoreleasePoolPage {
+     magic_t const magic;
+     id *next;
+     pthread_t const thread;
+     AutoreleasePoolPage * const parent;
+     AutoreleasePoolPage *child;
+     uint32_t const depth;
+     uint32_t hiwat;
+ };
+</code></pre>
+  </li>
+  <li>
+    <p>哨兵对象的作用是什么，为什么要设计它？<br />
+ 哨兵对象类似一个指针，指向自动释放池的栈顶位置，它的作用就是用于标记当前自动释放池需要释放内部对象时，释放到那个地方结束，每次入栈时它用于确定添加的位置，然后再次移动到栈顶。</p>
+  </li>
+  <li>
+    <p>哪些对象会放入到Autoreleasepool中？</p>
+
+    <ul>
+      <li>非alloc/new/copy/mutablecopy 开始的方式初始化时。</li>
+      <li>id的指针或对象的指针在没有显示指定时</li>
+    </ul>
+  </li>
+  <li>
+    <p>weak的实现原理是什么？当引用对象销毁时它是如何管理内部的Hash表的？（这里要参阅weak源码）
+ runTime会把对weak修饰的对象放到一个全局的哈希表中，用weak修饰的对象的内存地址为key，weak指针为值，在对象进行销毁时，用通过自身地址去哈希表中查找到所有指向此对象的weak指针，并把所有的weak指针置为nil。</p>
+  </li>
+</ol>
+
+<h3 id="runtime">Runtime</h3>
+<p><strong>1.消息发送的流程是怎样的？</strong></p>
+
+<p>OC中的方法调用会转化成给对象发送消息，发送消息会调用这个方法：</p>
+<pre><code class="language-ObjectiveC">objc_msgSend(receiver, @selector(message))
+</code></pre>
+<p>该过程有以下关键步骤：</p>
+<ul>
+  <li>先确定调用方法的类已经都加载完毕，如果没加载完毕的话进行加载</li>
+  <li>从cache中查找方法</li>
+  <li>cache中没有找到对应的方法，则到方法列表中查，查到则缓存</li>
+  <li>如果本类中查询到没有结果，则遍历所有父类重复上面的查找过程，直到NSObject</li>
+</ul>
+
+<p><strong>2.关联对象时什么情况下会导致内存泄露？</strong></p>
+
+<p>关联对象可以理解就是持有了一个对象，如果是retain等方式的持有，而该对象也持有了本类，那就是导致了循环引用。</p>
+
+<p><strong>3.消息转发的流程是什么？</strong></p>
+
+<p>消息转发是发生在接收者（receiver）没有找到对应的方法（method）的时候，该步骤有如下几个关键步骤：</p>
+<ul>
+  <li>消息转发的时候，如果是实例方法会走resolveInstanceMethod:，如果是类方法会走resolveClassMethod:，它们的返回值都是Bool，需要我们确定是否进行转发。</li>
+  <li>如果第一步返回YES，确定转发就会进到下个方法forwardingTargetForSelector，这个方法需要我们指定一个被用receiver。</li>
+  <li>methodSignatureForSelector用于指定方法签名，forwardInvocation用于处理Invocation，进行完整转发。</li>
+  <li>如果消息转发也没有处理即为无法处理，会调用doesNotRecognizeSelector，引发崩溃。</li>
+</ul>
+
+<p>更多了解可以参考iOS开发·runtime原理与实践: 消息转发篇(Message Forwarding) (消息机制，方法未实现+API不兼容奔溃，模拟多继承)[12]</p>
+
+<p><strong>4.category能否添加属性，为什么？能否添加实例变量，为什么？</strong></p>
+
+<p>可以添加属性，这里的属性指@property，但跟类里的@property又不一样。类里的@property为：实例变量Ivar + Setter + Getter 方法，分类里的@property这三者都没有，需要我们手动实现。</p>
+
+<p>分类是运行时被编译的，这时类的结构已经固定了，所以我们无法添加实例变量。</p>
+
+<p>对于分类自定义Setter和Getter方法，我们可以通过关联对象（Associated Object）进行实现。</p>
+
+<p><strong>5.元类的作用是什么？</strong></p>
+
+<p>元类的作用是存储类方法，同时它也是为了让OC的类结构能够形成闭环。</p>
+
+<p>对于为什么设计元类有以下原因；</p>
+
+<ul>
+  <li>
+    <p>在OC的世界里一切皆对象（借鉴于Smalltalk），metaclass的设计就是要为满足这一点。</p>
+  </li>
+  <li>
+    <p>在OC中Class也是一种对象，它对应的类就是metaclass，metaclass也是一种对象，它的类是root metaclass，在往上根元类（root metaclass）指向自己，形成了一个闭环，一个完备的设计。</p>
+  </li>
+</ul>
+
+<p>如果不要metaclass可不可以？也是可以的，在objc_class再加一个类方法指针。但是这样的设计会将消息传递的过程复杂化，所以为了消息传递流程的复用，为了一切皆对象的思想，就有了metaclass。</p>
+
+<p>关于这一话题的深入讨论可以参考这两篇文章：为什么要存在MetaClass[13]；为什么要设计metaclass[14]</p>
+
+<p><strong>6.类方法是存储到什么地方的？类属性呢？</strong> <br />
+    类方法和类属性都是存储到元类中的。</p>
+
+<p>类属性在Swift用的多些，OC中很少有人用到，但其实它也是有的，写法如下：</p>
+<pre><code class="language-ObjectiveC">@interface Person : NSObject
+// 在属性类别中加上class
+@property (class, nonatomic, copy) NSString *name;
+@end
+// 调用方式
+NSString *temp = Person.name;
+</code></pre>
+<p>需要注意的是跟实例属性不一样，类属性不会自动生成实例变量和setter，getter方法，需要我们手动实现。具体实现方法可以参考这个文章：Objective-C Class Properties[15]</p>
+
+<p><strong>7.讲几个runtime的应用场景</strong></p>
+
+<ul>
+  <li>hook系统方法进行方法交换。</li>
+  <li>了解一个类（闭源）的私有属性和方法。</li>
+  <li>关联对象，实现添加分类属性的功能。</li>
+  <li>修改isa指针，自定义KVO。</li>
+</ul>
+
+<h3 id="runloop">Runloop</h3>
+<p><strong>1.讲一下对Runloop的理解？</strong></p>
+
+<p>Runloop就是一个运行循环，它保证了在没有任务的时候线程不退出，有任务的时候即使响应。Runloop跟线程，事件响应，手势识别，页面更新，定时器都有着紧密联系。</p>
+
+<p>深入了解推荐ibireme的这篇深入理解RunLoop[16]</p>
+
+<p><strong>2.可以用Runloop实现什么功能？</strong></p>
+
+<ul>
+  <li>检测卡顿</li>
+  <li>线程保活</li>
+  <li>性能优化，将一些耗时操作放到runloop wait的情况处理。</li>
+</ul>
+
+<h3 id="性能优化">性能优化</h3>
+<p><strong>1.对TableView进行性能优化有哪些方式？</strong></p>
+
+<ul>
+  <li>
+    <p>缓存高度</p>
+  </li>
+  <li>
+    <p>异步渲染</p>
+  </li>
+  <li>
+    <p>减少离屏渲染</p>
+  </li>
+</ul>
+
+<p><strong>2.Xcode的Instruments都有哪些调试的工具？</strong></p>
+
+<ul>
+  <li>
+    <p>Activity Monitor（活动监视器）：监控进程的CPU、内存、磁盘、网络使用情况。是程序在手机运行真正占用内存大小</p>
+  </li>
+  <li>
+    <p>Allocations（内存分配）：跟踪过程的匿名虚拟内存和堆的对象提供类名和可选保留/释放历史</p>
+  </li>
+  <li>
+    <p>Core Animation（图形性能）：显示程序显卡性能以及CPU使用情况</p>
+  </li>
+  <li>
+    <p>Core Data：跟踪Core Data文件系统活动</p>
+  </li>
+  <li>
+    <p>Energy Log：耗电量监控</p>
+  </li>
+  <li>
+    <p>File Activity：检测文件创建、移动、变化、删除等</p>
+  </li>
+  <li>
+    <p>Leaks（泄漏）：一般的措施内存使用情况，检查泄漏的内存，并提供了所有活动的分配和泄漏模块的类对象分配统计信息以及内存地址历史记录</p>
+  </li>
+  <li>
+    <p>Network：用链接工具分析你的程序如何使用TCP/IP和UDP/IP链接</p>
+  </li>
+  <li>
+    <p>System Usage：记录关于文件读写，sockets，I/O系统活动，输入输出</p>
+  </li>
+  <li>
+    <p>Time Profiler（时间探查）：方法执行耗时分析</p>
+  </li>
+  <li>
+    <p>Zombies：测量一般的内存使用，专注于检测过度释放的野指针对象。也提供对象分配统计以及主动分配的内存地址历史</p>
+  </li>
+</ul>
+
+<p><strong>3.讲一下你做过的性能优化的事情。</strong></p>
+
+<p><strong>4.如何检测卡顿，都有哪些方法？</strong></p>
+
+<ul>
+  <li>
+    <p>FPS，通过CADisplayLink计算1s内刷新次数，也可以利用Instruments里的Core Animation。</p>
+  </li>
+  <li>
+    <p>利用Runloop，实时计算 kCFRunLoopBeforeSources 和 kCFRunLoopAfterWaiting 两个状态区域之间的耗时是否超过某个阀值</p>
+  </li>
+  <li>
+    <p>子线程检测，每次检测时设置标记位为YES，然后派发任务到主线程中将标记位设置为NO。接着子线程沉睡超时阙值时长，判断标志位是否成功设置成NO，如果没有说明主线程发生了卡顿。参考ANREye[17]的实现</p>
+  </li>
+</ul>
+
+<p><strong>5.缩小包体积有哪些方案？</strong></p>
+
+<ul>
+  <li>
+    <p>图片压缩，无用图片删除</p>
+  </li>
+  <li>
+    <p>一些大图可以动态下发</p>
+  </li>
+  <li>
+    <p>删除无用类，无用方法</p>
+  </li>
+  <li>
+    <p>减少三方库的依赖</p>
+  </li>
+</ul>
+
+<h2 id="ui">UI</h2>
+<p><strong>1.事件响应链是如何传递的？</strong></p>
+
+<p>手势的点击会发生两个重要事情，事件传递和事件响应。</p>
+
+<p><strong>事件传递</strong>：从UIApplication开始，到window，再逐步往下层（子视图）找，直到找到最深层的子视图，其为first responder。用到的判断方法是<code class="highlighter-rouge">pointInside:withEvent</code>和<code class="highlighter-rouge">hitTest:withEvent</code>。</p>
+
+<p><strong>事件响应</strong>：从识别到的视图（first responder）开始验证能否响应事件，如果不能就交给其上层（父视图）视图，如果能响应将不再往下传递，如果直到找到UIApplication层还没有响应，那就忽略该次点击。用到的判断方法是<code class="highlighter-rouge">touchesBegan:withEvent</code>、<code class="highlighter-rouge">touchesMoved:withEvent</code>等。</p>
+
+<p>这两个过程大致的相反的。</p>
+
+<p><strong>2.什么是异步渲染？</strong></p>
+
+<p>异步渲染就是在子线程进行绘制，然后拿到主线程显示。</p>
+
+<p>UIView的显示是通过CALayer实现的，CALayer的显示则是通过contents进行的。异步渲染的实现原理是当我们改变UIView的frame时，会调用layer的setNeedsDisplay，然后调用layer的display方法。我们不能在非主线程将内容绘制到layer的context上，但我们单独开一个子线程通过CGBitmapContextCreateImage()绘制内容，绘制完成之后切回主线程，将内容赋值到contents上。</p>
+
+<p>这个步骤可以参照YYText中YYTextAsyncLayer.m[6]文件中的实现方式。</p>
+
+<p><strong>3.layoutsubviews是在什么时机调用的？</strong></p>
+
+<ul>
+  <li>
+    <p>init初始化不会触发。</p>
+  </li>
+  <li>
+    <p>addSubview时。</p>
+  </li>
+  <li>
+    <p>设置frame且前后值变化，frame为zero且不添加到指定视图不会触发。</p>
+  </li>
+  <li>
+    <p>旋转Screen会触发父视图的layoutSubviews。</p>
+  </li>
+  <li>
+    <p>滚动UIScrollView引起View重新布局时会触发layoutSubviews。</p>
+  </li>
+</ul>
+
+<p><strong>4.一张图片的展示经历了哪些步骤？</strong></p>
+
+<p><strong>5.什么是离屏渲染，什么情况会导致离屏渲染？</strong>
+如果要在显示屏上显示内容，我们至少需要一块与屏幕像素数据量一样大的frame buffer，作为像素数据存储区域。如果有时因为面临一些限制，无法把渲染结果直接写入frame buffer，而是先暂存在另外的内存区域，之后再写入frame buffer，那么这个过程被称之为离屏渲染。
+以阴影为例，为什么它会导致离屏渲染。因为GPU的渲染是遵循“画家算法”，一层一层绘制的，但阴影很特殊，它需要全部内容绘制完成，再根据外轮廓进行绘制。这就导致了，阴影这一层要一直占据一块内存区域，这就导致了离屏渲染。</p>
+
+<p>类似导致离屏渲染的情况还有：</p>
+
+<ul>
+  <li>cornerRadius+clipsToBounds</li>
+  <li>group opacity 组透明度</li>
+  <li>mask 遮罩</li>
+  <li>UIBlurEffect 毛玻璃效果</li>
+</ul>
+
+<p><strong>6.CoreAnimation这个框架的作用什么，它跟UIKit的关系是什么？</strong></p>
+
+<p>CoreAnimation虽然直译是核心动画，但它其实是一个图像渲染框架，动画实现只是它的一部分功能。</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20200917/16003308335042.png" alt="Core Animation" /></p>
+
+<p>看这张图我们可以知道，它是UIKit和AppKit的底层实现，位于Metal、Core Graphics和GPU之上之上。</p>
+
+<p>苹果官方文档：About Core Animation[9]</p>
+
+<h2 id="swift">Swift</h2>
+<ol>
+  <li>Swift中struct和class有什么区别？
+struct是值引用，更轻量，存放于栈区，class是类型引用，存放于堆区。struct无法继承，class可继承。</li>
+  <li>Swift中的方法调用有哪些形式？
+直接派发、函数表派发、消息机制派发。派发方式受声明位置，引用类型，特定行为的影响。为什么Swift有这么多派发形式？为了效率。</li>
+  <li>Swift和OC有什么区别？
+Swift和OC的区别有很多，这里简要总结这几条：</li>
+</ol>
+
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>Swift</th>
+      <th>Objective-C</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>语言特性</td>
+      <td>静态语言，更加安全</td>
+      <td>动态语言不那么安全</td>
+    </tr>
+    <tr>
+      <td>语法</td>
+      <td>更精简</td>
+      <td>冗长</td>
+    </tr>
+    <tr>
+      <td>命名空间</td>
+      <td>有</td>
+      <td>无</td>
+    </tr>
+    <tr>
+      <td>方法调用</td>
+      <td>直接调用，函数表调用，消息转发</td>
+      <td>消息转发</td>
+    </tr>
+    <tr>
+      <td>泛型/元组/高阶函数</td>
+      <td>有</td>
+      <td>无</td>
+    </tr>
+    <tr>
+      <td>语言效率</td>
+      <td>性能更高，速度更快</td>
+      <td>略低</td>
+    </tr>
+    <tr>
+      <td>文件特性</td>
+      <td>.swift 单文件</td>
+      <td>.h/.m包含头文件</td>
+    </tr>
+    <tr>
+      <td>编程特性</td>
+      <td>可以更好的实现函数式编程/响应式编程</td>
+      <td>面向对象编程</td>
+    </tr>
+  </tbody>
+</table>
+
+<ol>
+  <li>从OC向Swift迁移的时候遇到过什么问题？
+可以参考这篇文章：OC项目转Swift指南[3] 里的混编注意事项。</li>
+  <li>怎么理解面向协议编程？
+面向对象是以对象的视角观察整体结构，万物皆为对象。
+面向协议则是用协议的方式组织各个类的关系，Swift底层几乎所有类都构建在协议之上。
+面向协议能够解决面向对象的菱形继承，横切关注点和动态派发的安全性等问题。
+参考喵神的面向协议编程与 Cocoa 的邂逅 (上)[4]</li>
+</ol>
+
+<h2 id="计算机相关">计算机相关</h2>
+<p><strong>1.项目编译的流程是什么？手机上的应用程序自点击图标开始到首屏内容展示都经历了哪些步骤？</strong></p>
+
+<p><strong>编译流程：</strong></p>
+
+<ul>
+  <li>
+    <p>预处理：处理宏定义，删除注释，展开头文件。</p>
+  </li>
+  <li>
+    <p>词法分析：把代码切成一个个token，比如大小括号等于号还有字符串</p>
+  </li>
+  <li>
+    <p>语法分析：验证语法是否正确，合成抽象语法树AST</p>
+  </li>
+  <li>
+    <p>静态分析：查找代码错误</p>
+  </li>
+  <li>
+    <p>类型检查：动态和静态</p>
+  </li>
+  <li>
+    <p>目标代码的生成与优化，包括删除多余指令，选择合适的寻址方式，如果开启了bitcode，会做进一步的优化</p>
+  </li>
+  <li>
+    <p>汇编：由汇编器生成汇编语言</p>
+  </li>
+  <li>
+    <p>机器码：由汇编语言转成机器码，生成.o文件</p>
+  </li>
+</ul>
+
+<p><strong>应用启动的流程：</strong></p>
+
+<p>启动的前提是完成编译，运行程序即运行编译过后的目标程序，它分为main函数前和main函数后：</p>
+
+<p><strong>main前</strong></p>
+
+<ul>
+  <li>
+    <p>加载可执行文件（App的.o文件集合）</p>
+  </li>
+  <li>
+    <p>加载动态链接库（系统和应用的动态链接库），进行rebase指针调整和bind符号绑定</p>
+  </li>
+  <li>
+    <p>Objc运行时的初始处理，包括Objc相关类的注册，category注册，selector唯一性检查</p>
+  </li>
+  <li>
+    <p>初始化，包括执行+load()、attribute(constructor)修饰的函数的调用、创建C++静态全局变量</p>
+  </li>
+</ul>
+
+<p><strong>main后</strong></p>
+
+<ul>
+  <li>
+    <p>首页初始化所需要配置文件的读写操作</p>
+  </li>
+  <li>
+    <p>首页界面渲染</p>
+  </li>
+</ul>
+
+<p><strong>2.对于基本数据类型，一般是存储到栈中的，它有没有可能存在堆上，什么情况下会存储到堆上？</strong></p>
+
+<p>栈和堆都是同属一块内存，只不过一个是高地址往低地址存储，一个从低地址往高地址存储，他们并没有严格的界限说一个值只能放在堆上或者栈上。所以基本数据类型也是可以存储到堆上的。</p>
+
+<p><strong>3.数据库中的事务是什么意思？</strong></p>
+
+<p>事务就是访问并操作各种数据项的一个数据库操作序列，这些操作要么全部执行，要么全部不执行。如果其中一个步骤出错就要撤销整个操作，回滚到进入事务之前的状态。</p>
+
+<p><strong>4.使用过什么数据库（我回答的Sqlite，Realm），Realm在使用时有哪些注意事项，如何实现批量操作？</strong></p>
+
+<p><strong>Realm需要注意</strong>的主要就是不能直接跨线程访问同一对象。</p>
+
+<p><strong>批量操作</strong>可以在一个单独的事务中执行多个数据库的修改。</p>
+
+<p><strong>5.LRU算法是否了解，如何实现一套LRU算法？</strong></p>
+
+<p>LRU（Least recently used 最近最少使用）算法是一个缓存淘汰算法，其作用就是当缓存很多时，该淘汰哪些内容，见名知意，它的核心思想是淘汰最近使用最少的内容。实现它的关键步骤是：</p>
+
+<ul>
+  <li>
+    <p>新数据插入到链表的头部</p>
+  </li>
+  <li>
+    <p>每当缓存命中时，则将数据移动到链表头部</p>
+  </li>
+  <li>
+    <p>链表满时，将尾部数据清除</p>
+  </li>
+</ul>
+
+<p><img src="http://image.smartjames.cn/mweb/20200917/16003308538183.png" alt="LRU算法图解" /></p>
+
+<p><strong>6.知道哪些设计模式，怎么理解设计模式的作用？</strong></p>
+
+<p>工厂模式、观察者模式、中介者模式、单例模式。这个根据实际情况说吧。
+<a href="https://github.com/huang303513/Design-Pattern-For-iOS">设计模式</a></p>
+
+<p><strong>7.如果有1000万个Int类型的数字，如何对他们排序？</strong></p>
+
+<p>这里的隐藏含义是，内存不够用时如何排序，还有一个隐藏含义是硬盘足够大。这是可以采用分而治之的方法，将数据分成若干块，使每一小块满足当前内容大小，然后对每块内容单独排序，最后采用归并排序对所有块进行排序，就得到了一个有序序列。</p>
+
+<p><strong>8.设计一套数据库方案，实现类似微信的搜索关键词能快速检索出包含该字符串的聊天信息，并展示对应数量（聊天记录的数据量较大）。</strong></p>
+
+<p>可以对聊天记录的文本值加上索引。正常情况下数据库搜索都是全量检索的，加上索引之后只会检索满足条件的记录，大大降低检索量。</p>
+
+<h2 id="其他">其他</h2>
+
+<p><strong>1.MVVM和MVC有什么区别？</strong></p>
+
+<p>对比架构时，可以从是否职责分离，可测试性，可易维护性三个维度对比</p>
+
+<p><strong>2. 静态库和动态库的区别是什么？</strong></p>
+
+<p>静态库：链接时被完整复制到可执行文件中，多次使用就多份拷贝。</p>
+
+<p>动态库：链接时不复制，而是由系统动态加载到内存，内存中只会有一份该动态库。</p>
+
+<p><strong>3. 了解Flutter吗？它有没有使用UIKit？它是如何渲染UI的？</strong></p>
+
+<p>UIKit是基于CoreAnimation渲染的，而Flutter并没有用到它，而是自己基于C++实现了一套渲染框架。</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20200917/16003309243619.png" alt="FlutterUI渲染" /></p>
+
+<p><strong>4. 二进制重排的核心依据是什么？</strong></p>
+
+<p>修改链接顺序，减少启动时的缺页中断。</p>
+
+<p>实践步骤可以参考李斌同学的这篇iOS 优化篇 - 启动优化之Clang插桩实现二进制重排</p>
+
+<p><strong>5. 如何设计一套切换主题的方案？</strong></p>
+
+<p>核心思路是观察者模式+协议（通知），当获取到主题切换时，通知各个实现了主题协议的类进行更新。</p>
+
+<p><strong>6. AVPlayer和IJKPlayer有什么区别？用IJKPlayer如何实现一个缓存视频列表每条视频前1s的内容？</strong></p>
+
+<p><strong>7. 类似微博的短视频列表，滑动停留播放，如何实现？</strong></p>
+
+<p>这个主要就是监测contentOffset和屏幕中间位置，设置一些边界条件，处理滑动过程中的切换行为。</p>
+
+<p><strong>8. 使用python做过哪些事？如何理解脚本语言？</strong></p>
+
+<ul>
+  <li>多语言管理，csv多语言文件读取，然后写入到项目Localizable.strings中；抓取项目中的多语言字符串。</li>
+  <li>Icon剪裁</li>
+</ul>
+
+<p>脚本（script） 其实就是一系列指令，计算机看了指令就知道自己该做什么事情。像常见的Python，Shell，Ruby都是脚本语言，他们通常不需要编译，通过解释器运行。</p>
+
+<p>我们常见的打包流程</p>
+
+<h2 id="数据结构与算法">数据结构与算法</h2>
+<p><strong>1.什么是Hash表，什么是Hash碰撞，解决Hash碰撞有什么方法？</strong></p>
+
+<p>哈希表（Hash Table，也叫散列表），是根据关键码值 (Key-Value) 而直接进行访问的数据结构。也就是说，它通过把关键码值映射到表中一个位置来访问记录，以加快查找的速度。我们常用的Dictionary就是一种Hash表。</p>
+
+<p>那什么是Hash碰撞呢，我们知道Hash表的查找是通过键值进行定位的，当两个不同的输入对应一个输出时，即为Hash碰撞，也被称为Hash冲突。</p>
+
+<p>如果使用字典的例子你可能联想不到冲突的情况，我们假设另一种情况：假设hash表的大小为9（即有9个槽），现在要把一串数据存到表里：5,28,19,15,20,33,12,17,10。我们使用的hash函数是对9取余。这样的话会出现hash(5)=5，hash(28)=1，hash(19)=1。28和19都对应一个地址，这就出现了Hash冲突。</p>
+
+<p>解决Hash冲突的方式有开放定址法和链地址法。</p>
+
+<p><strong>2.给出二叉树【10，6，14，4，8，12，16】进行前序、中序、后续遍历？</strong></p>
+
+<p>前序遍历：根节点 &gt; 左子节点 &gt; 右子节点。</p>
+
+<p>10，6，4，8，14，12，16</p>
+
+<p>中序遍历：左子节点 &gt; 根节点 &gt; 右子节点。</p>
+
+<p>4，6，8，10，12，14，16</p>
+
+<p>后序遍历：左子节点 &gt; 右子节点 &gt; 根节点。</p>
+
+<p>4，8，6，12，16，14，10</p>
+
+<p><strong>3.简述下快速排序的过程，时间复杂度是多少？</strong></p>
+
+<p>快排的思想是通过一趟排序将要排序的数据分割成独立的两部分，其中一部分的所有数据都比另外一部分的所有数据都要小，然后再按此方法对这两部分数据分别进行快速排序，整个排序过程可以递归进行。</p>
+
+<p>一个简单的Swift实现方式如下：</p>
+<pre><code class="language-Swift">func quicksort&lt;T: Comparable&gt;(_ a: [T]) -&gt; [T] {
+  guard a.count &gt; 1 else { return a }
+
+  let pivot = a[a.count/2]
+  let less = a.filter { $0 &lt; pivot }
+  let equal = a.filter { $0 == pivot }
+  let greater = a.filter { $0 &gt; pivot }
+
+  return quicksort(less) + equal + quicksort(greater)
+}
+
+</code></pre>
+<p>快速排序是有好几种的，他们的区别在于如何实现filter和分区基准值的选取。</p>
+
+<p>快排的时间复杂度是O(nlogn)，空间复杂度是O(logn)</p>
+
+<p><strong>4.有一个整数数组，如何只遍历一遍就实现让该数组奇数都在前面，偶数都在后面？</strong></p>
+
+<p><strong>5.假设你正在爬楼梯。需要 n 阶你才能到达楼顶。每次你可以爬 1 或 2 个台阶。你有多少种不同的方法可以爬到楼顶呢？</strong></p>
+
+<p><strong>6.给出一个 32 位的有符号整数，你需要将这个整数中每位上的数字进行反转。leetcode 7</strong></p>
+
+<p><strong>7.有红. 黄. 蓝三种颜色的气球。在牛客王国，1个红气球+1个黄气球+1个蓝气球可以兑换一张彩票。
+2个红气球+1个黄气球可以兑换1个蓝气球。
+2个黄气球+1个蓝气球可以兑换1个红气球。
+2个蓝气球+1个红气球可以兑换1个黄气球。
+现在牛牛有a个红气球，b个黄气球， c个蓝气球，牛牛想知道自己最多可以兑换多少张彩票。</strong></p>
+
+  </section>
+
+</article>
+
+<section>
+
+            <div class="content-play">
+              <!-- <p><a href="javascript:void(0)" onclick="dashangToggle()" class="dashang" title="打赏，支持一下">打赏一个呗</a></p> -->
+              <div class="hide_box-play"></div>
+              <div class="shang_box-play">
+                <a class="shang_close-play" href="javascript:void(0)" onclick="dashangToggle()" title="关闭"><img src="/images/payimg/close.jpg" alt="取消" /></a>
+                <div class="shang_tit-play">
+                  <p>感谢您的支持，我会继续努力的!</p>
+                </div>
+                <div class="shang_payimg">
+                    <img src="/images/payimg/alipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+              <div class="shang_payimg">    
+                    <img src="/images/payimg/weipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+                <div class="pay_explain">扫码打赏，你说多少就多少</div>
+                <div class="shang_payselect">
+                  <div class="pay_item checked" data-id="alipay">
+                    <span class="pay_logo"><img src="/images/payimg/alipay.jpg" alt="支付宝" /></span>
+                  </div>
+                  <div class="pay_item" data-id="weipay">
+                    <span class="pay_logo"><img src="/images/payimg/wechat.jpg" alt="微信" /></span>
+                  </div>
+                </div>
+                <div class="shang_info-play">
+                  <p>打开<span id="shang_pay_txt">支付宝</span>扫一扫，即可进行扫码打赏哦</p>
+                </div>
+              </div>
+            </div>
+            <script type="text/javascript">
+            function dashangToggle(){
+              $(".hide_box-play").fadeToggle();
+              $(".shang_box-play").fadeToggle();
+            }
+            </script>
+
+            <div style="text-align:center;margin:50px 0; font:normal 14px/24px 'MicroSoft YaHei';"></div>
+
+            <style type="text/css">
+              .content-play{width:80%;margin-top: 20px;margin-bottom: 10px;height:40px;}
+              .hide_box-play{z-index:999;filter:alpha(opacity=50);background:#666;opacity: 0.5;-moz-opacity: 0.5;left:0;top:0;height:99%;width:100%;position:fixed;display:none;}
+              .shang_box-play{width:540px;height:540px;padding:10px;background-color:#fff;border-radius:10px;position:fixed;z-index:1000;left:50%;top:50%;margin-left:-280px;margin-top:-280px;border:1px dotted #dedede;display:none;}
+              .shang_box-play img{border:none;border-width:0;}
+              .dashang{display:block;width:100px;margin:5px auto;height:25px;line-height:25px;padding:10px;background-color:#E74851;color:#fff;text-align:center;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;transition: all 0.3s;}
+              .dashang:hover{opacity:0.8;padding:15px;font-size:18px;}
+              .shang_close-play{float:right;display:inline-block;
+                margin-right: 10px;margin-top: 20px;
+              }
+              .shang_logo{display:block;text-align:center;margin:20px auto;}
+              .shang_tit-play{width: 100%;height: 75px;text-align: center;line-height: 66px;color: #a3a3a3;font-size: 16px;background: url('/images/payimg/cy-reward-title-bg.jpg');font-family: 'Microsoft YaHei';margin-top: 7px;margin-right:2px;}
+              .shang_tit-play p{color:#a3a3a3;text-align:center;font-size:16px;}
+              .shang_payimg{width:140px;padding:10px;padding-left: 80px; /*border:6px solid #EA5F00;**/margin:0 auto;border-radius:3px;height:140px;display:inline-block;}
+              .shang_payimg img{display:inline-block;margin-right:10px;float:left;text-align:center;width:140px;height:140px; }
+              .pay_explain{text-align:center;margin:10px auto;font-size:12px;color:#545454;}
+              .shang_payselect{text-align:center;margin:0 auto;margin-top:40px;cursor:pointer;height:60px;width:500px;margin-left:110px;}
+              .shang_payselect .pay_item{display:inline-block;margin-right:140px;float:left;}
+              .shang_info-play{clear:both;}
+              .shang_info-play p,.shang_info-play a{color:#C3C3C3;text-align:center;font-size:12px;text-decoration:none;line-height:2em;}
+            </style>
+
+       <ul class="pager">
+        
+        <li class="previous">
+            <a href="/2020/09/CoreAnimation/" data-toggle="tooltip" data-placement="top" title="CoreAnimation详解">上一篇：  <span>CoreAnimation详解</span>
+            </a>
+        </li>
+        
+        
+    </ul>
+</section>
+
+<section class="post-comments">
+
+  
+  
+</section>
+
+
+            <section class="footer">
+    <footer>
+        <div class = "footer_div">  
+        <nav class="cover-navigation navigation--social">
+          <ul class="navigation">
+
+          
+          <!-- Github -->
+          <li class="navigation__item_social">
+            <a href="https://github.com/ByronJia" title="@ByronJia 的 Github" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/github.png);"></div>
+            </a>
+          </li>
+          
+
+          
+          <!-- Zhihu -->
+          <li class="navigation__item_social">
+            <a href="https://www.zhihu.com/people/byronjia" title="@byronjia" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/zhihu.png);"></div>
+            </a>
+          </li>
+
+          
+
+          
+
+          
+
+          
+
+          
+          
+
+
+          
+          <!-- Email -->
+          <li class="navigation__item_social">
+            <a href="mailto:jiachaoning@163.com" title="Contact me">
+              <div class="footer-social-icon" style="background:url(/images/email.png);"></div>
+            </a>
+          </li>
+          
+          
+          <!-- RSS -->
+          <!-- <li class="navigation__item_social">
+            <a href="/feed.xml" rel="author" title="RSS" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/rss.png);"></div>
+              <span class="label">RSS</span>
+            </a>
+          </li> -->
+
+          </ul>
+        </nav>
+
+        </div>
+
+        <div class = "footer_div">  
+           <p class="copyright text-muted">
+            Copyright &copy; 拜伦的博客 2020 Theme by <a href="https://github.com/ByronJia/ByronJia.github.io">Byron</a> |
+            <iframe
+                style="margin-left: 2px; margin-bottom:-5px;"
+                frameborder="0" scrolling="0" width="91px" height="20px"
+                src="https://ghbtns.com/github-btn.html?user=ByronJia&repo=ByronJia.github.io&type=star&count=true" >
+            </iframe>
+            </p>
+        	<!-- <div align="right">
+    			<link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.3.0/css/font-awesome.min.css"> -->
+
+          <!-- 访问统计 -->
+          <!-- <span id="busuanzi_container_site_pv">
+            本站总访问量
+            <span id="busuanzi_value_site_pv"></span>次
+          </span> -->
+
+        </div>
+        <div>
+    </footer>
+</section>
+
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="/js/main.js"></script>
+
+<script type="text/javascript" src="/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+  </body>
+
+</html>
