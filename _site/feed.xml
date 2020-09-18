@@ -5,8 +5,8 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 18 Sep 2020 10:08:35 +0800</pubDate>
-    <lastBuildDate>Fri, 18 Sep 2020 10:08:35 +0800</lastBuildDate>
+    <pubDate>Fri, 18 Sep 2020 11:24:20 +0800</pubDate>
+    <lastBuildDate>Fri, 18 Sep 2020 11:24:20 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -235,8 +235,6 @@ NSString *temp = Person.name;
 
 &lt;p&gt;Runloop就是一个运行循环，它保证了在没有任务的时候线程不退出，有任务的时候即使响应。Runloop跟线程，事件响应，手势识别，页面更新，定时器都有着紧密联系。&lt;/p&gt;
 
-&lt;p&gt;深入了解推荐ibireme的这篇深入理解RunLoop[16]&lt;/p&gt;
-
 &lt;p&gt;&lt;strong&gt;2.可以用Runloop实现什么功能？&lt;/strong&gt;&lt;/p&gt;
 
 &lt;ul&gt;
@@ -245,7 +243,76 @@ NSString *temp = Person.name;
   &lt;li&gt;性能优化，将一些耗时操作放到runloop wait的情况处理。&lt;/li&gt;
 &lt;/ul&gt;
 
+&lt;h3 id=&quot;kvc--kvo&quot;&gt;KVC &amp;amp; KVO&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;1：谈谈你对KVC的理解&lt;/strong&gt;
+KVC可以通过key直接访问对象的属性，或者给对象的属性赋值，这样可以在运行时动态的访问或修改对象的属性&lt;/p&gt;
+
+&lt;p&gt;当调用 &lt;strong&gt;setValue：&lt;/strong&gt;属性值 forKey：@”name“ 的代码时，&lt;strong&gt;底层的执行机制如下&lt;/strong&gt;：&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;程序优先调用set&lt;Key&gt;:属性值方法，代码通过setter方法完成设置。注意，这里的&lt;key&gt;是指成员变量名，首字母大小写要符合KVC的命名规则，下同&lt;/key&gt;&lt;/Key&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;如果没有找到 setName：方法，KVC机制会检查+ (BOOL)accessInstanceVariablesDirectly 方法有没有返回YES，默认该方法会返回YES，如果你重写了该方法让其返回NO的话，那么在这一步KVC会执行setValue：forUndefinedKey：方法，不过一般开发者不会这么做。所以KVC机制会搜索该类里面有没有名为&lt;key&gt;的成员变量，无论该变量是在类接口处定义，还是在类实现处定义，也无论用了什么样的访问修饰符，只在存在以&lt;key&gt;命名的变量，KVC都可以对该成员变量赋值。&lt;/key&gt;&lt;/key&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;如果该类即没有set&lt;key&gt;：方法，也没有_&lt;key&gt;成员变量，KVC机制会搜索_is&lt;Key&gt;的成员变量。&lt;/Key&gt;&lt;/key&gt;&lt;/key&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;和上面一样，如果该类即没有set：方法，也没有_和_is成员变量，KVC机制再会继续搜索和is的成员变量。再给它们赋值。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;如果上面列出的方法或者成员变量都不存在，系统将会执行该对象的setValue：forUndefinedKey：方法，默认是抛出异常。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;如果想禁用KVC，重写+ (BOOL)accessInstanceVariablesDirectly方法让其返回NO即可，这样的话如果KVC没有找到 set&lt;Key&gt;: 属性名时，会直接用 setValue：forUndefinedKey：方法。&lt;/Key&gt;&lt;/p&gt;
+
+&lt;p&gt;当调用 valueForKey：@”name“ 的代码时，KVC对key的搜索方式不同于setValue：属性值 forKey：@”name“，&lt;strong&gt;其搜索方式如下&lt;/strong&gt;：&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;首先按get&lt;Key&gt;,&lt;key&gt;,is&lt;Key&gt;的顺序方法查找getter方法，找到的话会直接调用。如果是BOOL或者Int等值类型， 会将其包装成一个NSNumber对象&lt;/Key&gt;&lt;/key&gt;&lt;/Key&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;如果上面的getter没有找到，KVC则会查找countOf&lt;Key&gt;,objectIn&lt;Key&gt;AtIndex或&lt;Key&gt;AtIndexes格式的方法。如果countOf&lt;Key&gt;方法和另外两个方法中的一个被找到，那么就会返回一个可以响应NSArray所有方法的代理集合(它是NSKeyValueArray，是NSArray的子类)，调用这个代理集合的方法，或者说给这个代理集合发送属于NSArray的方法，就会以countOf&lt;Key&gt;,objectIn&lt;Key&gt;AtIndex或&lt;Key&gt;AtIndexes这几个方法组合的形式调用。还有一个可选的get&lt;Key&gt;:range:方法。所以你想重新定义KVC的一些功能，你可以添加这些方法，需要注意的是你的方法名要符合KVC的标准命名方法，包括方法签名。&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;如果上面的方法没有找到，那么会同时查找 countOf&lt;Key&gt;，enumeratorOf&lt;Key&gt;,memberOf&lt;Key&gt; 格式的方法。如果这三个方法都找到，那么就返回一个可以响应NSSet所的方法的代理集合，和上面一样，给这个代理集合发NSSet的消息，就会以 countOf&lt;Key&gt;，enumeratorOf&lt;Key&gt;,memberOf&lt;Key&gt; 组合的形式调用。&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;如果还没有找到，再检查类方法 + (BOOL)accessInstanceVariablesDirectly,如果返回 YES (默认行为)，那么和先前的设值一样，会按 _&lt;key&gt;,_is&lt;Key&gt;,&lt;key&gt;,is&lt;Key&gt; 的顺序搜索成员变量名，这里不推荐这么做，因为这样直接访问实例变量破坏了封装性，使代码更脆弱。如果重写了类方法 + (BOOL)accessInstanceVariablesDirectly 返回 NO 的话，那么会直接调用 valueForUndefinedKey: 方法，默认是抛出异常&lt;/Key&gt;&lt;/key&gt;&lt;/Key&gt;&lt;/key&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;2.讲一下atomic的实现机制；为什么不能保证绝对的线程安全（最好可以结合场景来说）？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;atomic的实现机制&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;atomic是property的修饰词之一，表示是原子性的，使用方式为@property(atomic)int age;此时编译器会自动生成 getter/setter 方法，最终会调用objc_getProperty和objc_setProperty方法来进行存取属性。&lt;/p&gt;
+
+&lt;p&gt;若此时属性用atomic修饰的话，在这两个方法内部使用os_unfair_lock 来进行加锁，来保证读写的原子性。锁都在PropertyLocks 中保存着（在iOS平台会初始化8个，mac平台64个），在用之前，会把锁都初始化好，在需要用到时，用对象的地址加上成员变量的偏移量为key，去PropertyLocks中去取。因此存取时用的是同一个锁，所以atomic能保证属性的存取时是线程安全的。&lt;/p&gt;
+
+&lt;p&gt;注：由于锁是有限的，不用对象，不同属性的读取用的也可能是同一个锁&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;atomic为什么不能保证绝对的线程安全？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;atomic在getter/setter方法中加锁，仅保证了存取时的线程安全，假设我们的属性是@property(atomic)NSMutableArray *array;可变的容器时,无法保证对容器的修改是线程安全的.&lt;/p&gt;
+
+&lt;p&gt;在编译器自动生产的getter/setter方法，最终会调用objc_getProperty和objc_setProperty方法存取属性，在此方法内部保证了读写时的线程安全的，当我们重写getter/setter方法时，就只能依靠自己在getter/setter中保证线程安全&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3. setvalue和setobject的区别&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setObject:ForKey&lt;/code&gt;：是&lt;code class=&quot;highlighter-rouge&quot;&gt;NSMutableDictionary&lt;/code&gt;特有的。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setValue:ForKey&lt;/code&gt;：是&lt;code class=&quot;highlighter-rouge&quot;&gt;KVC&lt;/code&gt;的主要方法。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setobject&lt;/code&gt;中的&lt;code class=&quot;highlighter-rouge&quot;&gt;key&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;value&lt;/code&gt;可以为nil以外的任何对象。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setValue&lt;/code&gt;中的key只能为字符串，value可以为&lt;code class=&quot;highlighter-rouge&quot;&gt;nil&lt;/code&gt;也可以为空对象&lt;code class=&quot;highlighter-rouge&quot;&gt;[NSNull null]&lt;/code&gt;以及全部对象&lt;/li&gt;
+&lt;/ul&gt;
+
 &lt;h3 id=&quot;性能优化&quot;&gt;性能优化&lt;/h3&gt;
+
 &lt;p&gt;&lt;strong&gt;1.对TableView进行性能优化有哪些方式？&lt;/strong&gt;&lt;/p&gt;
 
 &lt;ul&gt;
@@ -580,13 +647,64 @@ Swift和OC的区别有很多，这里简要总结这几条：&lt;/li&gt;
 
 &lt;p&gt;&lt;strong&gt;1.MVVM和MVC有什么区别？&lt;/strong&gt;&lt;/p&gt;
 
-&lt;p&gt;对比架构时，可以从是否职责分离，可测试性，可易维护性三个维度对比&lt;/p&gt;
+&lt;p&gt;MVC：&lt;/p&gt;
 
-&lt;p&gt;&lt;strong&gt;2. 静态库和动态库的区别是什么？&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;M&lt;/strong&gt; 是数据模型&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;，负责处理数据，以及数据改变时发出通知(&lt;code class=&quot;highlighter-rouge&quot;&gt;Notification、KVO&lt;/code&gt;)，&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;不能直接进行通信，这样会违背MVC设计模式；&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;V&lt;/strong&gt; 是视图&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;，用来展示界面，和用户进行交互，为了解耦合一般不会直接持有 或者 操作数据层中的数据模型(可以通过&lt;code class=&quot;highlighter-rouge&quot;&gt;action-target&lt;/code&gt;、&lt;code class=&quot;highlighter-rouge&quot;&gt;delegate&lt;/code&gt;、&lt;code class=&quot;highlighter-rouge&quot;&gt;block&lt;/code&gt;等方式解耦)；&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;C&lt;/strong&gt; 是控制器&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;用来调节&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;之间的交互，可以直接与Model还有View进行通信，操作Model进行数据更新，刷新View。&lt;/p&gt;
 
-&lt;p&gt;静态库：链接时被完整复制到可执行文件中，多次使用就多份拷贝。&lt;/p&gt;
+    &lt;p&gt;&lt;strong&gt;优点：&lt;/strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;、&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;低耦合、高复用、容易维护。&lt;/p&gt;
 
-&lt;p&gt;动态库：链接时不复制，而是由系统动态加载到内存，内存中只会有一份该动态库。&lt;/p&gt;
+    &lt;p&gt;&lt;strong&gt;缺点：&lt;/strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;的代码过于臃肿，如果&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;与&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;直接交互会导致&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;之间的耦合性比较大、网络逻辑会加重&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;的臃肿。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;MVVM：&lt;code class=&quot;highlighter-rouge&quot;&gt;Model - View - ViewModel&lt;/code&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;MVVM&lt;/strong&gt;衍生于&lt;strong&gt;MVC&lt;/strong&gt;，是MVC的一种演进，促进了UI代码和业务逻辑的分离，抽取&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;中的展示逻辑放到&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;里边。&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;M：&lt;/strong&gt; 数据模型&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;。&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;V：&lt;/strong&gt; 就是&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;联系到一起，视为是一个组件&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;。View和Controller都不能直接引用模型Model，可以引用视图模型ViewModel。ViewController 尽量不涉及业务逻辑，让 ViewModel 去做这些事情。ViewController 只是一个中间人，负责接收 View 的事件、调用 ViewModel 的方法、响应 ViewModel 的变化。&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;VM：&lt;/strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;负责封装业务逻辑、网络处理和数据缓存。使用ViewModel会轻微的增加代码量，但是总体上减少了代码的复杂性。&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;之间可以有依赖。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;注意事项：&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;引用&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;，但反过来不行，因为如果VM跟V产生了耦合，不方便复用。即不要在&lt;code class=&quot;highlighter-rouge&quot;&gt;viewModel&lt;/code&gt;中引入&lt;code class=&quot;highlighter-rouge&quot;&gt;#import UIKit.h&lt;/code&gt;，任何视图本身的引用都不应该放在&lt;code class=&quot;highlighter-rouge&quot;&gt;viewModel&lt;/code&gt;中 (&lt;strong&gt;注意：基本要求，必须满足&lt;/strong&gt;)。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;可以引用&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;，但反过来不行。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;优点：&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;低耦合、可复用、数据流向清晰、而且兼容MVC，便于代码的移植、并且ViewModel可以拆出来独立开发、方便测试。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;缺点：&lt;/strong&gt; 类会增多、&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;会越来越庞大、调用复杂度增加、双向绑定数据会导致问题调试变得困难。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;总结：&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;MVVM&lt;/strong&gt;其实是MVC的变种。&lt;code class=&quot;highlighter-rouge&quot;&gt;MVVM&lt;/code&gt;只是帮&lt;code class=&quot;highlighter-rouge&quot;&gt;MVC&lt;/code&gt;中的&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;瘦身，把一些逻辑代码和网络请求分离出去。不让Controller处理更多的东西，不会变得臃肿，&lt;code class=&quot;highlighter-rouge&quot;&gt;MVVM&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;MVC&lt;/code&gt;可以根据实际需求进行灵活选择。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;MVVM&lt;/strong&gt; 在使用当中，通常还会利用双向绑定技术，使得&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt; 变化时，&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;会自动更新，而&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;变化时，&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt; 也会自动变化。OC中可以用&lt;strong&gt;RAC(ReactiveCocoa)&lt;/strong&gt;函数响应式框架来实现响应式编程。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;2. 静态链接了解吗？静态库和动态库的区别是什么？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;静态链接是指将多个目标文件合并为一个可执行文件，直观感觉就是将所有目标文件的段合并。需要注意的是可执行文件与目标文件的结构基本一致，不同的是是否“可执行”。&lt;/p&gt;
+
+&lt;p&gt;静态库：链接时被完整复制到可执行文件中&lt;/p&gt;
+
+&lt;p&gt;动态库：由系统动态加载到内存，内存中只会有一份该动态库。&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;3. 了解Flutter吗？它有没有使用UIKit？它是如何渲染UI的？&lt;/strong&gt;&lt;/p&gt;
 
@@ -597,8 +715,6 @@ Swift和OC的区别有很多，这里简要总结这几条：&lt;/li&gt;
 &lt;p&gt;&lt;strong&gt;4. 二进制重排的核心依据是什么？&lt;/strong&gt;&lt;/p&gt;
 
 &lt;p&gt;修改链接顺序，减少启动时的缺页中断。&lt;/p&gt;
-
-&lt;p&gt;实践步骤可以参考李斌同学的这篇iOS 优化篇 - 启动优化之Clang插桩实现二进制重排&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;5. 如何设计一套切换主题的方案？&lt;/strong&gt;&lt;/p&gt;
 
@@ -621,7 +737,61 @@ Swift和OC的区别有很多，这里简要总结这几条：&lt;/li&gt;
 
 &lt;p&gt;我们常见的打包流程&lt;/p&gt;
 
-&lt;h2 id=&quot;数据结构与算法&quot;&gt;数据结构与算法&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;9. TCP为什么要三次握手，四次挥手？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;三次握手：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;客户端向服务端发起请求链接，首先发送&lt;code class=&quot;highlighter-rouge&quot;&gt;SYN&lt;/code&gt;报文，&lt;code class=&quot;highlighter-rouge&quot;&gt;SYN=1，seq=x&lt;/code&gt;,并且客户端进入&lt;code class=&quot;highlighter-rouge&quot;&gt;SYN_SENT&lt;/code&gt;状态&lt;/li&gt;
+  &lt;li&gt;服务端收到请求链接，服务端向客户端进行回复，并发送响应报文，&lt;code class=&quot;highlighter-rouge&quot;&gt;SYN=1，seq=y,ACK=1,ack=x+1&lt;/code&gt;,并且服务端进入到&lt;code class=&quot;highlighter-rouge&quot;&gt;SYN_RCVD&lt;/code&gt;状态&lt;/li&gt;
+  &lt;li&gt;客户端收到确认报文后，向服务端发送确认报文，&lt;code class=&quot;highlighter-rouge&quot;&gt;ACK=1，ack=y+1&lt;/code&gt;，此时客户端进入到&lt;code class=&quot;highlighter-rouge&quot;&gt;ESTABLISHED&lt;/code&gt;，服务端收到用户端发送过来的确认报文后，也进入到&lt;code class=&quot;highlighter-rouge&quot;&gt;ESTABLISHED&lt;/code&gt;状态，此时链接创建成功&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;四次挥手：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;客户端向服务端发起关闭链接，并停止发送数据&lt;/li&gt;
+  &lt;li&gt;服务端收到关闭链接的请求时，向客户端发送回应，我知道了，然后停止接收数据&lt;/li&gt;
+  &lt;li&gt;当服务端发送数据结束之后，向客户端发起关闭链接，并停止发送数据&lt;/li&gt;
+  &lt;li&gt;客户端收到关闭链接的请求时，向服务端发送回应，我知道了，然后停止接收数据&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;为什么需要三次握手：&lt;/p&gt;
+
+&lt;p&gt;为了防止已失效的连接请求报文段突然又传送到了服务端，因而产生错误，假设这是一个早已失效的报文段。但&lt;code class=&quot;highlighter-rouge&quot;&gt;server&lt;/code&gt;收到此失效的连接请求报文段后，就误认为是&lt;code class=&quot;highlighter-rouge&quot;&gt;client&lt;/code&gt;再次发出的一个新的连接请求。于是就向&lt;code class=&quot;highlighter-rouge&quot;&gt;client&lt;/code&gt;发出确认报文段，同意建立连接。假设不采用“三次握手”，那么只要server发出确认，新的连接就建立了。由于现在&lt;code class=&quot;highlighter-rouge&quot;&gt;client&lt;/code&gt;并没有发出建立连接的请求，因此不会理睬&lt;code class=&quot;highlighter-rouge&quot;&gt;server&lt;/code&gt;的确认，也不会向&lt;code class=&quot;highlighter-rouge&quot;&gt;server&lt;/code&gt;发送数据。但&lt;code class=&quot;highlighter-rouge&quot;&gt;server&lt;/code&gt;却以为新的运输连接已经建立，并一直等待&lt;code class=&quot;highlighter-rouge&quot;&gt;client&lt;/code&gt;发来数据。这样，&lt;code class=&quot;highlighter-rouge&quot;&gt;server&lt;/code&gt;的很多资源就白白浪费掉了。&lt;/p&gt;
+
+&lt;p&gt;为什么需要四次挥手：&lt;/p&gt;
+
+&lt;p&gt;因为TCP是全双工通信的，在接收到客户端的关闭请求时，还可能在向客户端发送着数据，因此不能再回应关闭链接的请求时，同时发送关闭链接的请求&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;10. App签名原理&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;在Mac开发机器上生成一对公钥和私钥，这里称为公钥L，私钥L(L：Local)。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;苹果自己有固定的一对公钥和私钥，私钥在苹果后台，公钥在每个iOS设备上。这里称为公钥A，私钥A(A：Apple)。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;把开发机器上的公钥L传到苹果后台，用苹果后台的私钥A去签名公钥L。得到一个包含公钥L以及其签名数据证书。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;在苹果后台申请AppID，配置好设备ID列表和APP可使用的权限，再加上第③步的证书，组成的数据用私钥A签名，把数据和签名一起组成一个Provisioning Profile描述文件，下载到本地Mac开发机器。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;在开发时，编译完一个APP后，用本地的私钥L对这个APP进行签名，同时把第④步得到的Provisioning Profile描述文件打包进APP里，文件名为embedded.mobileprovision，把 APP安装到手机上。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;在安装时，iOS系统取得证书，通过系统内置的公钥A，去验证embedded.mobileprovision的数字签名是否正确，里面的证书签名也会再验一遍。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;确保了embedded.mobileprovision里的数据都是苹果授权的以后，就可以取出里面的数据，做各种验证，包括用公钥 L 验证APP签名，验证设备 ID 是否在 ID 列表上，AppID 是否对应得上，权限开关是否跟 APP 里的 Entitlements 对应等。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;数据结构与算&quot;&gt;数据结构与算&lt;/h2&gt;
+
 &lt;p&gt;&lt;strong&gt;1.什么是Hash表，什么是Hash碰撞，解决Hash碰撞有什么方法？&lt;/strong&gt;&lt;/p&gt;
 
 &lt;p&gt;哈希表（Hash Table，也叫散列表），是根据关键码值 (Key-Value) 而直接进行访问的数据结构。也就是说，它通过把关键码值映射到表中一个位置来访问记录，以加快查找的速度。我们常用的Dictionary就是一种Hash表。&lt;/p&gt;
@@ -1546,6 +1716,11 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
 
 &lt;h2 id=&quot;how&quot;&gt;How&lt;/h2&gt;
 &lt;h3 id=&quot;如何加密&quot;&gt;如何加密&lt;/h3&gt;
+&lt;h4 id=&quot;哈希加密&quot;&gt;哈希加密&lt;/h4&gt;
+&lt;p&gt;哈希算法加密是通过哈希算法对数据加密，加密后的结果不可逆，即加密后不能再解密。
+特点: 不可逆、算法公开、相同数据加密结果一致。
+作用: 信息摘要，信息“指纹”，用来做数据识别的。如：用户密码加密、文件校验、数字签名、鉴权协议。&lt;/p&gt;
+
 &lt;h4 id=&quot;对称加密&quot;&gt;对称加密&lt;/h4&gt;
 &lt;p&gt;加密和解密同用一个密钥。&lt;strong&gt;没有密钥就无法对密码解密，反过来说，任何人只要持有密钥就能解密了&lt;/strong&gt;。对称加密有很多种算法，常用的有AES, DES。由于它效率很高，所以被广泛使用在很多加密协议的核心当中。&lt;/p&gt;
 &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    encrypt(明文，秘钥) = 密文
@@ -1577,6 +1752,8 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
   &lt;p&gt;网络传输过程中需要经过很多中间节点，虽然数据无法被解密，但可能被篡改，那如何校验数据的完整性呢？—-校验数字签名。&lt;/p&gt;
 &lt;/blockquote&gt;
 
+&lt;p&gt;数字签名是通过HASH算法和RSA加密来实现的。 我们将明文数据加上&lt;strong&gt;通过RSA加密的数据HASH值&lt;/strong&gt;一起传输给对方，对方可以解密拿出HASH值来进行验证。这个通过RSA加密HASH值数据，我们称之为数字签名。&lt;/p&gt;
+
 &lt;p&gt;数字签名有两种功效：&lt;/p&gt;
 &lt;ul&gt;
   &lt;li&gt;能确定消息确实是由发送方签名并发出来的，因为别人假冒不了发送方的签名。&lt;/li&gt;
@@ -1586,12 +1763,12 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
 &lt;p&gt;&lt;strong&gt;数字签名生如何成：&lt;/strong&gt;
 &lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633815147.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;将一段文本先用Hash函数生成消息摘要，然后用发送者的私钥加密生成数字签名，与原文文一起传送给接收者。接下来就是接收者校验数字签名的流程了。&lt;/p&gt;
+&lt;p&gt;将一段文本先用HASH算法生成消息摘要，然后用发送者的私钥RSA加密生成数字签名，与原文文一起传送给接收者。接下来就是接收者校验数字签名的流程了。&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;校验数字签名流程：&lt;/strong&gt;
 &lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002634134529.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;接收者只有用发送者的公钥才能解密被加密的摘要信息，然后用Hash函数对收到的原文产生一个摘要信息，与上一步得到的摘要信息对比。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改，否则说明信息被修改过，因此数字签名能够验证信息的完整性。&lt;/p&gt;
+&lt;p&gt;接收者只有用发送者的公钥才能解密被加密的摘要信息，然后用HASH算法对收到的原文产生一个摘要信息，与上一步得到的摘要信息对比。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改，否则说明信息被修改过，因此数字签名能够验证信息的完整性。&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;上面可行的前提是需要事先拿到可信的公钥，因此引入数字证书&lt;/strong&gt;&lt;/p&gt;
 
@@ -1624,8 +1801,8 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
 &lt;/ul&gt;
 </description>
         <pubDate>Sun, 13 Sep 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/09/HTTPS%E5%8A%A0%E5%AF%86%E8%BF%87%E7%A8%8B/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/09/HTTPS%E5%8A%A0%E5%AF%86%E8%BF%87%E7%A8%8B/</guid>
+        <link>http://localhost:4000/2020/09/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3HTTPS/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3HTTPS/</guid>
         
         
       </item>

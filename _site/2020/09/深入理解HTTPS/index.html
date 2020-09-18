@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/09/HTTPS%E5%8A%A0%E5%AF%86%E8%BF%87%E7%A8%8B/">
+  <link rel="canonical" href="http://localhost:4000/2020/09/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3HTTPS/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -216,6 +216,7 @@
     <ul>
       <li><a href="#如何加密">如何加密</a>
         <ul>
+          <li><a href="#哈希加密">哈希加密</a></li>
           <li><a href="#对称加密">对称加密</a></li>
           <li><a href="#非对称加密">非对称加密</a></li>
         </ul>
@@ -249,6 +250,11 @@
 
 <h2 id="how">How</h2>
 <h3 id="如何加密">如何加密</h3>
+<h4 id="哈希加密">哈希加密</h4>
+<p>哈希算法加密是通过哈希算法对数据加密，加密后的结果不可逆，即加密后不能再解密。
+特点: 不可逆、算法公开、相同数据加密结果一致。
+作用: 信息摘要，信息“指纹”，用来做数据识别的。如：用户密码加密、文件校验、数字签名、鉴权协议。</p>
+
 <h4 id="对称加密">对称加密</h4>
 <p>加密和解密同用一个密钥。<strong>没有密钥就无法对密码解密，反过来说，任何人只要持有密钥就能解密了</strong>。对称加密有很多种算法，常用的有AES, DES。由于它效率很高，所以被广泛使用在很多加密协议的核心当中。</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    encrypt(明文，秘钥) = 密文
@@ -280,6 +286,8 @@
   <p>网络传输过程中需要经过很多中间节点，虽然数据无法被解密，但可能被篡改，那如何校验数据的完整性呢？—-校验数字签名。</p>
 </blockquote>
 
+<p>数字签名是通过HASH算法和RSA加密来实现的。 我们将明文数据加上<strong>通过RSA加密的数据HASH值</strong>一起传输给对方，对方可以解密拿出HASH值来进行验证。这个通过RSA加密HASH值数据，我们称之为数字签名。</p>
+
 <p>数字签名有两种功效：</p>
 <ul>
   <li>能确定消息确实是由发送方签名并发出来的，因为别人假冒不了发送方的签名。</li>
@@ -289,12 +297,12 @@
 <p><strong>数字签名生如何成：</strong>
 <img src="http://image.smartjames.cn/mweb/20200916/16002633815147.png" alt="" /></p>
 
-<p>将一段文本先用Hash函数生成消息摘要，然后用发送者的私钥加密生成数字签名，与原文文一起传送给接收者。接下来就是接收者校验数字签名的流程了。</p>
+<p>将一段文本先用HASH算法生成消息摘要，然后用发送者的私钥RSA加密生成数字签名，与原文文一起传送给接收者。接下来就是接收者校验数字签名的流程了。</p>
 
 <p><strong>校验数字签名流程：</strong>
 <img src="http://image.smartjames.cn/mweb/20200916/16002634134529.png" alt="" /></p>
 
-<p>接收者只有用发送者的公钥才能解密被加密的摘要信息，然后用Hash函数对收到的原文产生一个摘要信息，与上一步得到的摘要信息对比。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改，否则说明信息被修改过，因此数字签名能够验证信息的完整性。</p>
+<p>接收者只有用发送者的公钥才能解密被加密的摘要信息，然后用HASH算法对收到的原文产生一个摘要信息，与上一步得到的摘要信息对比。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改，否则说明信息被修改过，因此数字签名能够验证信息的完整性。</p>
 
 <p><strong>上面可行的前提是需要事先拿到可信的公钥，因此引入数字证书</strong></p>
 

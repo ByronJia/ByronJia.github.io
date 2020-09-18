@@ -210,6 +210,7 @@
       <li><a href="#引用计数">引用计数</a></li>
       <li><a href="#runtime">Runtime</a></li>
       <li><a href="#runloop">Runloop</a></li>
+      <li><a href="#kvc--kvo">KVC &amp; KVO</a></li>
       <li><a href="#性能优化">性能优化</a></li>
     </ul>
   </li>
@@ -217,7 +218,7 @@
   <li><a href="#swift">Swift</a></li>
   <li><a href="#计算机相关">计算机相关</a></li>
   <li><a href="#其他">其他</a></li>
-  <li><a href="#数据结构与算法">数据结构与算法</a></li>
+  <li><a href="#数据结构与算">数据结构与算</a></li>
 </ul>
 
   
@@ -447,8 +448,6 @@ NSString *temp = Person.name;
 
 <p>Runloop就是一个运行循环，它保证了在没有任务的时候线程不退出，有任务的时候即使响应。Runloop跟线程，事件响应，手势识别，页面更新，定时器都有着紧密联系。</p>
 
-<p>深入了解推荐ibireme的这篇深入理解RunLoop[16]</p>
-
 <p><strong>2.可以用Runloop实现什么功能？</strong></p>
 
 <ul>
@@ -457,7 +456,76 @@ NSString *temp = Person.name;
   <li>性能优化，将一些耗时操作放到runloop wait的情况处理。</li>
 </ul>
 
+<h3 id="kvc--kvo">KVC &amp; KVO</h3>
+<p><strong>1：谈谈你对KVC的理解</strong>
+KVC可以通过key直接访问对象的属性，或者给对象的属性赋值，这样可以在运行时动态的访问或修改对象的属性</p>
+
+<p>当调用 <strong>setValue：</strong>属性值 forKey：@”name“ 的代码时，<strong>底层的执行机制如下</strong>：</p>
+
+<ol>
+  <li>
+    <p>程序优先调用set<Key>:属性值方法，代码通过setter方法完成设置。注意，这里的<key>是指成员变量名，首字母大小写要符合KVC的命名规则，下同</key></Key></p>
+  </li>
+  <li>
+    <p>如果没有找到 setName：方法，KVC机制会检查+ (BOOL)accessInstanceVariablesDirectly 方法有没有返回YES，默认该方法会返回YES，如果你重写了该方法让其返回NO的话，那么在这一步KVC会执行setValue：forUndefinedKey：方法，不过一般开发者不会这么做。所以KVC机制会搜索该类里面有没有名为<key>的成员变量，无论该变量是在类接口处定义，还是在类实现处定义，也无论用了什么样的访问修饰符，只在存在以<key>命名的变量，KVC都可以对该成员变量赋值。</key></key></p>
+  </li>
+  <li>
+    <p>如果该类即没有set<key>：方法，也没有_<key>成员变量，KVC机制会搜索_is<Key>的成员变量。</Key></key></key></p>
+  </li>
+  <li>
+    <p>和上面一样，如果该类即没有set：方法，也没有_和_is成员变量，KVC机制再会继续搜索和is的成员变量。再给它们赋值。</p>
+  </li>
+  <li>
+    <p>如果上面列出的方法或者成员变量都不存在，系统将会执行该对象的setValue：forUndefinedKey：方法，默认是抛出异常。</p>
+  </li>
+</ol>
+
+<p>如果想禁用KVC，重写+ (BOOL)accessInstanceVariablesDirectly方法让其返回NO即可，这样的话如果KVC没有找到 set<Key>: 属性名时，会直接用 setValue：forUndefinedKey：方法。</Key></p>
+
+<p>当调用 valueForKey：@”name“ 的代码时，KVC对key的搜索方式不同于setValue：属性值 forKey：@”name“，<strong>其搜索方式如下</strong>：</p>
+
+<ol>
+  <li>
+    <p>首先按get<Key>,<key>,is<Key>的顺序方法查找getter方法，找到的话会直接调用。如果是BOOL或者Int等值类型， 会将其包装成一个NSNumber对象</Key></key></Key></p>
+  </li>
+  <li>
+    <p>如果上面的getter没有找到，KVC则会查找countOf<Key>,objectIn<Key>AtIndex或<Key>AtIndexes格式的方法。如果countOf<Key>方法和另外两个方法中的一个被找到，那么就会返回一个可以响应NSArray所有方法的代理集合(它是NSKeyValueArray，是NSArray的子类)，调用这个代理集合的方法，或者说给这个代理集合发送属于NSArray的方法，就会以countOf<Key>,objectIn<Key>AtIndex或<Key>AtIndexes这几个方法组合的形式调用。还有一个可选的get<Key>:range:方法。所以你想重新定义KVC的一些功能，你可以添加这些方法，需要注意的是你的方法名要符合KVC的标准命名方法，包括方法签名。</Key></Key></Key></Key></Key></Key></Key></Key></p>
+  </li>
+  <li>
+    <p>如果上面的方法没有找到，那么会同时查找 countOf<Key>，enumeratorOf<Key>,memberOf<Key> 格式的方法。如果这三个方法都找到，那么就返回一个可以响应NSSet所的方法的代理集合，和上面一样，给这个代理集合发NSSet的消息，就会以 countOf<Key>，enumeratorOf<Key>,memberOf<Key> 组合的形式调用。</Key></Key></Key></Key></Key></Key></p>
+  </li>
+  <li>
+    <p>如果还没有找到，再检查类方法 + (BOOL)accessInstanceVariablesDirectly,如果返回 YES (默认行为)，那么和先前的设值一样，会按 _<key>,_is<Key>,<key>,is<Key> 的顺序搜索成员变量名，这里不推荐这么做，因为这样直接访问实例变量破坏了封装性，使代码更脆弱。如果重写了类方法 + (BOOL)accessInstanceVariablesDirectly 返回 NO 的话，那么会直接调用 valueForUndefinedKey: 方法，默认是抛出异常</Key></key></Key></key></p>
+  </li>
+</ol>
+
+<p><strong>2.讲一下atomic的实现机制；为什么不能保证绝对的线程安全（最好可以结合场景来说）？</strong></p>
+
+<p><strong>atomic的实现机制</strong></p>
+
+<p>atomic是property的修饰词之一，表示是原子性的，使用方式为@property(atomic)int age;此时编译器会自动生成 getter/setter 方法，最终会调用objc_getProperty和objc_setProperty方法来进行存取属性。</p>
+
+<p>若此时属性用atomic修饰的话，在这两个方法内部使用os_unfair_lock 来进行加锁，来保证读写的原子性。锁都在PropertyLocks 中保存着（在iOS平台会初始化8个，mac平台64个），在用之前，会把锁都初始化好，在需要用到时，用对象的地址加上成员变量的偏移量为key，去PropertyLocks中去取。因此存取时用的是同一个锁，所以atomic能保证属性的存取时是线程安全的。</p>
+
+<p>注：由于锁是有限的，不用对象，不同属性的读取用的也可能是同一个锁</p>
+
+<p><strong>atomic为什么不能保证绝对的线程安全？</strong></p>
+
+<p>atomic在getter/setter方法中加锁，仅保证了存取时的线程安全，假设我们的属性是@property(atomic)NSMutableArray *array;可变的容器时,无法保证对容器的修改是线程安全的.</p>
+
+<p>在编译器自动生产的getter/setter方法，最终会调用objc_getProperty和objc_setProperty方法存取属性，在此方法内部保证了读写时的线程安全的，当我们重写getter/setter方法时，就只能依靠自己在getter/setter中保证线程安全</p>
+
+<p><strong>3. setvalue和setobject的区别</strong></p>
+
+<ul>
+  <li><code class="highlighter-rouge">setObject:ForKey</code>：是<code class="highlighter-rouge">NSMutableDictionary</code>特有的。</li>
+  <li><code class="highlighter-rouge">setValue:ForKey</code>：是<code class="highlighter-rouge">KVC</code>的主要方法。</li>
+  <li><code class="highlighter-rouge">setobject</code>中的<code class="highlighter-rouge">key</code>和<code class="highlighter-rouge">value</code>可以为nil以外的任何对象。</li>
+  <li><code class="highlighter-rouge">setValue</code>中的key只能为字符串，value可以为<code class="highlighter-rouge">nil</code>也可以为空对象<code class="highlighter-rouge">[NSNull null]</code>以及全部对象</li>
+</ul>
+
 <h3 id="性能优化">性能优化</h3>
+
 <p><strong>1.对TableView进行性能优化有哪些方式？</strong></p>
 
 <ul>
@@ -792,13 +860,64 @@ Swift和OC的区别有很多，这里简要总结这几条：</li>
 
 <p><strong>1.MVVM和MVC有什么区别？</strong></p>
 
-<p>对比架构时，可以从是否职责分离，可测试性，可易维护性三个维度对比</p>
+<p>MVC：</p>
 
-<p><strong>2. 静态库和动态库的区别是什么？</strong></p>
+<ul>
+  <li>
+    <p><strong>M</strong> 是数据模型<code class="highlighter-rouge">Model</code>，负责处理数据，以及数据改变时发出通知(<code class="highlighter-rouge">Notification、KVO</code>)，<code class="highlighter-rouge">Model</code>和<code class="highlighter-rouge">View</code>不能直接进行通信，这样会违背MVC设计模式；</p>
+  </li>
+  <li>
+    <p><strong>V</strong> 是视图<code class="highlighter-rouge">View</code>，用来展示界面，和用户进行交互，为了解耦合一般不会直接持有 或者 操作数据层中的数据模型(可以通过<code class="highlighter-rouge">action-target</code>、<code class="highlighter-rouge">delegate</code>、<code class="highlighter-rouge">block</code>等方式解耦)；</p>
+  </li>
+  <li>
+    <p><strong>C</strong> 是控制器<code class="highlighter-rouge">Controller</code>用来调节<code class="highlighter-rouge">Model</code>和<code class="highlighter-rouge">View</code>之间的交互，可以直接与Model还有View进行通信，操作Model进行数据更新，刷新View。</p>
 
-<p>静态库：链接时被完整复制到可执行文件中，多次使用就多份拷贝。</p>
+    <p><strong>优点：</strong><code class="highlighter-rouge">View</code>、<code class="highlighter-rouge">Model</code>低耦合、高复用、容易维护。</p>
 
-<p>动态库：链接时不复制，而是由系统动态加载到内存，内存中只会有一份该动态库。</p>
+    <p><strong>缺点：</strong><code class="highlighter-rouge">Controller</code>的代码过于臃肿，如果<code class="highlighter-rouge">View</code>与<code class="highlighter-rouge">Model</code>直接交互会导致<code class="highlighter-rouge">View</code>和<code class="highlighter-rouge">Model</code>之间的耦合性比较大、网络逻辑会加重<code class="highlighter-rouge">Controller</code>的臃肿。</p>
+  </li>
+</ul>
+
+<p>MVVM：<code class="highlighter-rouge">Model - View - ViewModel</code></p>
+
+<ul>
+  <li><strong>MVVM</strong>衍生于<strong>MVC</strong>，是MVC的一种演进，促进了UI代码和业务逻辑的分离，抽取<code class="highlighter-rouge">Controller</code>中的展示逻辑放到<code class="highlighter-rouge">ViewModel</code>里边。</li>
+  <li><strong>M：</strong> 数据模型<code class="highlighter-rouge">Model</code>。</li>
+  <li><strong>V：</strong> 就是<code class="highlighter-rouge">View</code>和<code class="highlighter-rouge">Controller</code>联系到一起，视为是一个组件<code class="highlighter-rouge">View</code>。View和Controller都不能直接引用模型Model，可以引用视图模型ViewModel。ViewController 尽量不涉及业务逻辑，让 ViewModel 去做这些事情。ViewController 只是一个中间人，负责接收 View 的事件、调用 ViewModel 的方法、响应 ViewModel 的变化。</li>
+  <li><strong>VM：</strong><code class="highlighter-rouge">ViewModel</code>负责封装业务逻辑、网络处理和数据缓存。使用ViewModel会轻微的增加代码量，但是总体上减少了代码的复杂性。<code class="highlighter-rouge">ViewModel</code>之间可以有依赖。</li>
+</ul>
+
+<p><strong>注意事项：</strong></p>
+
+<ul>
+  <li><code class="highlighter-rouge">View</code>引用<code class="highlighter-rouge">ViewModel</code>，但反过来不行，因为如果VM跟V产生了耦合，不方便复用。即不要在<code class="highlighter-rouge">viewModel</code>中引入<code class="highlighter-rouge">#import UIKit.h</code>，任何视图本身的引用都不应该放在<code class="highlighter-rouge">viewModel</code>中 (<strong>注意：基本要求，必须满足</strong>)。</li>
+  <li><code class="highlighter-rouge">ViewModel</code>可以引用<code class="highlighter-rouge">Model</code>，但反过来不行。</li>
+</ul>
+
+<p><strong>优点：</strong></p>
+
+<p>低耦合、可复用、数据流向清晰、而且兼容MVC，便于代码的移植、并且ViewModel可以拆出来独立开发、方便测试。</p>
+
+<p><strong>缺点：</strong> 类会增多、<code class="highlighter-rouge">ViewModel</code>会越来越庞大、调用复杂度增加、双向绑定数据会导致问题调试变得困难。</p>
+
+<p><strong>总结：</strong></p>
+
+<ul>
+  <li>
+    <p><strong>MVVM</strong>其实是MVC的变种。<code class="highlighter-rouge">MVVM</code>只是帮<code class="highlighter-rouge">MVC</code>中的<code class="highlighter-rouge">Controller</code>瘦身，把一些逻辑代码和网络请求分离出去。不让Controller处理更多的东西，不会变得臃肿，<code class="highlighter-rouge">MVVM</code>和<code class="highlighter-rouge">MVC</code>可以根据实际需求进行灵活选择。</p>
+  </li>
+  <li>
+    <p><strong>MVVM</strong> 在使用当中，通常还会利用双向绑定技术，使得<code class="highlighter-rouge">Model</code> 变化时，<code class="highlighter-rouge">ViewModel</code>会自动更新，而<code class="highlighter-rouge">ViewModel</code>变化时，<code class="highlighter-rouge">View</code> 也会自动变化。OC中可以用<strong>RAC(ReactiveCocoa)</strong>函数响应式框架来实现响应式编程。</p>
+  </li>
+</ul>
+
+<p><strong>2. 静态链接了解吗？静态库和动态库的区别是什么？</strong></p>
+
+<p>静态链接是指将多个目标文件合并为一个可执行文件，直观感觉就是将所有目标文件的段合并。需要注意的是可执行文件与目标文件的结构基本一致，不同的是是否“可执行”。</p>
+
+<p>静态库：链接时被完整复制到可执行文件中</p>
+
+<p>动态库：由系统动态加载到内存，内存中只会有一份该动态库。</p>
 
 <p><strong>3. 了解Flutter吗？它有没有使用UIKit？它是如何渲染UI的？</strong></p>
 
@@ -809,8 +928,6 @@ Swift和OC的区别有很多，这里简要总结这几条：</li>
 <p><strong>4. 二进制重排的核心依据是什么？</strong></p>
 
 <p>修改链接顺序，减少启动时的缺页中断。</p>
-
-<p>实践步骤可以参考李斌同学的这篇iOS 优化篇 - 启动优化之Clang插桩实现二进制重排</p>
 
 <p><strong>5. 如何设计一套切换主题的方案？</strong></p>
 
@@ -833,7 +950,61 @@ Swift和OC的区别有很多，这里简要总结这几条：</li>
 
 <p>我们常见的打包流程</p>
 
-<h2 id="数据结构与算法">数据结构与算法</h2>
+<p><strong>9. TCP为什么要三次握手，四次挥手？</strong></p>
+
+<p>三次握手：</p>
+
+<ul>
+  <li>客户端向服务端发起请求链接，首先发送<code class="highlighter-rouge">SYN</code>报文，<code class="highlighter-rouge">SYN=1，seq=x</code>,并且客户端进入<code class="highlighter-rouge">SYN_SENT</code>状态</li>
+  <li>服务端收到请求链接，服务端向客户端进行回复，并发送响应报文，<code class="highlighter-rouge">SYN=1，seq=y,ACK=1,ack=x+1</code>,并且服务端进入到<code class="highlighter-rouge">SYN_RCVD</code>状态</li>
+  <li>客户端收到确认报文后，向服务端发送确认报文，<code class="highlighter-rouge">ACK=1，ack=y+1</code>，此时客户端进入到<code class="highlighter-rouge">ESTABLISHED</code>，服务端收到用户端发送过来的确认报文后，也进入到<code class="highlighter-rouge">ESTABLISHED</code>状态，此时链接创建成功</li>
+</ul>
+
+<p>四次挥手：</p>
+
+<ul>
+  <li>客户端向服务端发起关闭链接，并停止发送数据</li>
+  <li>服务端收到关闭链接的请求时，向客户端发送回应，我知道了，然后停止接收数据</li>
+  <li>当服务端发送数据结束之后，向客户端发起关闭链接，并停止发送数据</li>
+  <li>客户端收到关闭链接的请求时，向服务端发送回应，我知道了，然后停止接收数据</li>
+</ul>
+
+<p>为什么需要三次握手：</p>
+
+<p>为了防止已失效的连接请求报文段突然又传送到了服务端，因而产生错误，假设这是一个早已失效的报文段。但<code class="highlighter-rouge">server</code>收到此失效的连接请求报文段后，就误认为是<code class="highlighter-rouge">client</code>再次发出的一个新的连接请求。于是就向<code class="highlighter-rouge">client</code>发出确认报文段，同意建立连接。假设不采用“三次握手”，那么只要server发出确认，新的连接就建立了。由于现在<code class="highlighter-rouge">client</code>并没有发出建立连接的请求，因此不会理睬<code class="highlighter-rouge">server</code>的确认，也不会向<code class="highlighter-rouge">server</code>发送数据。但<code class="highlighter-rouge">server</code>却以为新的运输连接已经建立，并一直等待<code class="highlighter-rouge">client</code>发来数据。这样，<code class="highlighter-rouge">server</code>的很多资源就白白浪费掉了。</p>
+
+<p>为什么需要四次挥手：</p>
+
+<p>因为TCP是全双工通信的，在接收到客户端的关闭请求时，还可能在向客户端发送着数据，因此不能再回应关闭链接的请求时，同时发送关闭链接的请求</p>
+
+<p><strong>10. App签名原理</strong></p>
+
+<ol>
+  <li>
+    <p>在Mac开发机器上生成一对公钥和私钥，这里称为公钥L，私钥L(L：Local)。</p>
+  </li>
+  <li>
+    <p>苹果自己有固定的一对公钥和私钥，私钥在苹果后台，公钥在每个iOS设备上。这里称为公钥A，私钥A(A：Apple)。</p>
+  </li>
+  <li>
+    <p>把开发机器上的公钥L传到苹果后台，用苹果后台的私钥A去签名公钥L。得到一个包含公钥L以及其签名数据证书。</p>
+  </li>
+  <li>
+    <p>在苹果后台申请AppID，配置好设备ID列表和APP可使用的权限，再加上第③步的证书，组成的数据用私钥A签名，把数据和签名一起组成一个Provisioning Profile描述文件，下载到本地Mac开发机器。</p>
+  </li>
+  <li>
+    <p>在开发时，编译完一个APP后，用本地的私钥L对这个APP进行签名，同时把第④步得到的Provisioning Profile描述文件打包进APP里，文件名为embedded.mobileprovision，把 APP安装到手机上。</p>
+  </li>
+  <li>
+    <p>在安装时，iOS系统取得证书，通过系统内置的公钥A，去验证embedded.mobileprovision的数字签名是否正确，里面的证书签名也会再验一遍。</p>
+  </li>
+  <li>
+    <p>确保了embedded.mobileprovision里的数据都是苹果授权的以后，就可以取出里面的数据，做各种验证，包括用公钥 L 验证APP签名，验证设备 ID 是否在 ID 列表上，AppID 是否对应得上，权限开关是否跟 APP 里的 Entitlements 对应等。</p>
+  </li>
+</ol>
+
+<h2 id="数据结构与算">数据结构与算</h2>
+
 <p><strong>1.什么是Hash表，什么是Hash碰撞，解决Hash碰撞有什么方法？</strong></p>
 
 <p>哈希表（Hash Table，也叫散列表），是根据关键码值 (Key-Value) 而直接进行访问的数据结构。也就是说，它通过把关键码值映射到表中一个位置来访问记录，以加快查找的速度。我们常用的Dictionary就是一种Hash表。</p>
