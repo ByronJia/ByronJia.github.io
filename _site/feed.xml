@@ -5,12 +5,12 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 18 Sep 2020 12:24:57 +0800</pubDate>
-    <lastBuildDate>Fri, 18 Sep 2020 12:24:57 +0800</lastBuildDate>
+    <pubDate>Sat, 19 Sep 2020 09:34:42 +0800</pubDate>
+    <lastBuildDate>Sat, 19 Sep 2020 09:34:42 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
-        <title>iOS高级面试题</title>
+        <title>iOS高级面试题(超全)</title>
         <description>&lt;h2 id=&quot;oc&quot;&gt;OC&lt;/h2&gt;
 
 &lt;p&gt;&lt;strong&gt;1.Block&lt;/strong&gt;&lt;/p&gt;
@@ -775,10 +775,12 @@ Swift和OC的区别有很多，这里简要总结这几条：&lt;/li&gt;
   &lt;/li&gt;
   &lt;li&gt;
     &lt;p&gt;确保了embedded.mobileprovision里的数据都是苹果授权的以后，就可以取出里面的数据，做各种验证，包括用公钥 L 验证APP签名，验证设备 ID 是否在 ID 列表上，AppID 是否对应得上，权限开关是否跟 APP 里的 Entitlements 对应等。&lt;/p&gt;
+
+    &lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200918/16004181558605.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
   &lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;h2 id=&quot;数据结构与算&quot;&gt;数据结构与算&lt;/h2&gt;
+&lt;h2 id=&quot;数据结构与算法&quot;&gt;数据结构与算法&lt;/h2&gt;
 
 &lt;p&gt;&lt;strong&gt;1.什么是Hash表，什么是Hash碰撞，解决Hash碰撞有什么方法？&lt;/strong&gt;&lt;/p&gt;
 
@@ -837,9 +839,9 @@ Swift和OC的区别有很多，这里简要总结这几条：&lt;/li&gt;
 2个蓝气球+1个红气球可以兑换1个黄气球。
 现在牛牛有a个红气球，b个黄气球， c个蓝气球，牛牛想知道自己最多可以兑换多少张彩票。&lt;/strong&gt;&lt;/p&gt;
 </description>
-        <pubDate>Thu, 17 Sep 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/09/iOS%E9%AB%98%E7%BA%A7%E9%9D%A2%E8%AF%95%E9%A2%98/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/09/iOS%E9%AB%98%E7%BA%A7%E9%9D%A2%E8%AF%95%E9%A2%98/</guid>
+        <pubDate>Wed, 16 Sep 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/09/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/</guid>
         
         <category>iOS</category>
         
@@ -1718,10 +1720,20 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
 缺点: 对于秘钥的管理和分发上比较困难，秘钥管理负担重。&lt;/p&gt;
 
 &lt;h4 id=&quot;非对称加密&quot;&gt;非对称加密&lt;/h4&gt;
-&lt;p&gt;指的是加、解密使用不同的密钥，一把作为公开的公钥，另一把作为私钥。公钥加密的信息，只有私钥才能解密。&lt;strong&gt;私钥只能由一方安全保管，不能外泄，而公钥则可任意发布给需要的人&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;指的是加、解密使用不同的密钥，一把作为公开的公钥，另一把作为私钥。公钥加密的信息，只有私钥才能解密。&lt;strong&gt;私钥只能由一方安全保管，不能外泄，而公钥则可任意发布给需要的人&lt;/strong&gt;。
+非对称RSA有2种用法：&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;加解密
+ 公钥加密，私钥解密是普通的方式&lt;/li&gt;
+  &lt;li&gt;数字签名
+ 私钥签名(加密)，公钥验证(解密)是数字签名，防止中间人冒充&lt;/li&gt;
+&lt;/ol&gt;
 
 &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    encrypt(明文，公钥) = 密文
     decrypt(密文，私钥) = 明文
+    
+    sign(明文，私钥) = 密文
+    verify(密文，公钥) = 明文
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;优点: 安全性高，私钥自己保存，不需要传输。
 缺点: 加解密消耗高，速度慢。&lt;/p&gt;
