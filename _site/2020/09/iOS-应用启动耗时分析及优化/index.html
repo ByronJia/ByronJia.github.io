@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>Mach-O文件初识</title>
-  <meta name="description" content="Mach-o 文件">
+  <title>iOS 应用启动耗时分析及优化</title>
+  <meta name="description" content="iOS 应用启动耗时分析及优化">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Mach-O文件初识">
-  <meta name="twitter:description" content="Mach-o 文件">
+  <meta name="twitter:title" content="iOS 应用启动耗时分析及优化">
+  <meta name="twitter:description" content="iOS 应用启动耗时分析及优化">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="Mach-O文件初识">
-  <meta property="og:description" content="Mach-o 文件">
+  <meta property="og:title" content="iOS 应用启动耗时分析及优化">
+  <meta property="og:description" content="iOS 应用启动耗时分析及优化">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/09/">
+  <link rel="canonical" href="http://localhost:4000/2020/09/iOS-%E5%BA%94%E7%94%A8%E5%90%AF%E5%8A%A8%E8%80%97%E6%97%B6%E5%88%86%E6%9E%90%E5%8F%8A%E4%BC%98%E5%8C%96/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -192,10 +192,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">Mach-O文件初识</h1>
+    <h1 class="post-title">iOS 应用启动耗时分析及优化</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-09-23 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-09-23</time>  
+      <time datetime="2020-09-24 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-09-24</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -205,14 +205,21 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#mach-o-文件">Mach-o 文件</a>
+  <li><a href="#ios-应用启动耗时分析及优化">iOS 应用启动耗时分析及优化</a>
     <ul>
-      <li><a href="#headers">Headers</a></li>
-      <li><a href="#load-commands">Load Commands</a></li>
-      <li><a href="#data--segment">Data &amp; Segment</a></li>
-      <li><a href="#section">Section</a></li>
-      <li><a href="#了解mach-o的作用">了解Mach-O的作用</a></li>
-      <li><a href="#查看工程中代码量大的库或类">查看工程中代码量大的库或类</a></li>
+      <li><a href="#app启动流程">App启动流程</a></li>
+      <li><a href="#各阶段耗时原因">各阶段耗时原因</a>
+        <ul>
+          <li><a href="#main函数之前阶段">Main函数之前阶段</a></li>
+          <li><a href="#main函数之后">Main函数之后</a></li>
+        </ul>
+      </li>
+      <li><a href="#分析app耗时分析方法">分析app耗时分析方法</a>
+        <ul>
+          <li><a href="#app启动过程中的耗时分析">app启动过程中的耗时分析</a></li>
+          <li><a href="#app启动后各个方法耗时">app启动后各个方法耗时</a></li>
+        </ul>
+      </li>
     </ul>
   </li>
 </ul>
@@ -220,87 +227,200 @@
   
 
   <section class="post">
-    <h2 id="mach-o-文件">Mach-o 文件</h2>
+    <h2 id="ios-应用启动耗时分析及优化">iOS 应用启动耗时分析及优化</h2>
 
-<blockquote>
-  <p>Mach-O格式全称为Mach Object文件格式的缩写，是mac上可执行文件的格式</p>
-</blockquote>
+<h3 id="app启动流程">App启动流程</h3>
 
-<p>Mach-O 文件构成如下
-<img src="http://image.smartjames.cn/mweb/20200922/16007690041824.png" alt="" /></p>
+<ol>
+  <li>
+    <p>main函数之前</p>
 
-<h3 id="headers">Headers</h3>
-<p>保存了一些基本信息，包括了该文件运行的平台、文件类型、LoadCommands的个数等等。Headers的主要作用就是帮助系统迅速的定位Mach-O文件的运行环境，文件类型，保存了一些dyld重要的加载参数。
-Mach-O 文件的头部定义如下：</p>
-
-<p><img src="http://image.smartjames.cn/mweb/20200922/16007696930694.png" alt="" /></p>
-
-<ul>
-  <li>magic 标志符 0xfeedface 是 32 位， 0xfeedfacf 是 64 位。</li>
-  <li>cputype 和 cpusubtype 确定 cpu 类型、平台</li>
-  <li>filetype 文件类型，可执行文件、符号文件（DSYM）、内核扩展等</li>
-  <li>ncmds 加载 Load Commands 的数量</li>
-  <li>flags dyld 加载的标志
     <ul>
-      <li><code class="highlighter-rouge">MH_NOUNDEFS</code> 目标文件没有未定义的符号，</li>
       <li>
-        <p><code class="highlighter-rouge">MH_DYLDLINK</code> 目标文件是动态链接输入文件，不能被再次静态链接</p>
+        <p>1.iOS系统<strong>首先会加载解析该APP的Info.plist文件</strong>，因为Info.plist文件中包含了支持APP加载运行所需要的众多Key，value配置信息，例如APP的运行条件(Required device capabilities)，是否全屏，APP启动图信息等。</p>
       </li>
-      <li><code class="highlighter-rouge">MH_SPLIT_SEGS</code> 只读 segments 和 可读写 segments 分离</li>
-      <li><code class="highlighter-rouge">MH_NO_HEAP_EXECUTION</code> 堆内存不可执行</li>
+      <li>
+        <p>2.<strong>创建沙盒</strong>(iOS8后，每次启动APP都会生成一个新的沙盒路径)</p>
+      </li>
+      <li>
+        <p>3.根据Info.plist的配置<strong>检查相应权限状态</strong></p>
+      </li>
+      <li>
+        <p>4.<strong>加载Mach-O文件</strong>读取dyld路径并<strong>运行dyld动态连接器</strong>(内核加载了主程序，dyld只会负责动态库的加载)</p>
+
+        <ul>
+          <li>4.1 首先dyld会寻找合适的CPU运行环境</li>
+          <li>4.2 然后加载程序运行所需的依赖库和我们自己写的.h.m文件编译成的.o可执行文件，并对这些库进行链接。</li>
+          <li>4.3 加载所有方法(runtime就是在这个时候被初始化的)</li>
+          <li>4.4 加载C函数</li>
+          <li>4.5 加载category的扩展(此时runtime会对所有类结构进行初始化)</li>
+          <li>4.6 加载C++静态函数，加载OC+load</li>
+          <li>4.7 最后dyld返回main函数地址，main函数被调用</li>
+        </ul>
+      </li>
     </ul>
   </li>
-</ul>
+  <li>
+    <p>main函数执行</p>
+  </li>
+  <li>
+    <p>首屏渲染完成</p>
 
-<p>header的作用是保存Mach-O可执行文件需要的环境和合法性。</p>
+    <ul>
+      <li>
+        <p>执行UIApplicationMain</p>
 
-<h3 id="load-commands">Load Commands</h3>
-<p>可以理解为加载命令，在加载Mach-O文件时会使用这里的数据来确定内存的分布以及相关的加载命令。比如我们的main函数的加载地址，程序所需的dyld的文件路径，以及相关依赖库的文件路径。
-<img src="http://image.smartjames.cn/mweb/20200922/16007699427007.png" alt="" /></p>
+        <ul>
+          <li>
+            <p>创建UIApplication对象</p>
+          </li>
+          <li>
+            <p>创建UIApplication的delegate对象</p>
+          </li>
+          <li>
+            <p>创建MainRunloop</p>
+          </li>
+          <li>
+            <p>delegate对象开始处理(监听)系统事件(没有storyboard)</p>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <p>根据Info.plist获得最主要storyboard的文件名,加载最主要的storyboard(有storyboard)</p>
+      </li>
+      <li>
+        <p>程序启动完毕的时候, 就会调用代理的application:didFinishLaunchingWithOptions:方法
+ 在application:didFinishLaunchingWithOptions:中创建UIWindow
+ 创建和设置UIWindow的rootViewController</p>
+      </li>
+      <li>
+        <p>显示第一个窗口</p>
+      </li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="各阶段耗时原因">各阶段耗时原因</h3>
+<h4 id="main函数之前阶段">Main函数之前阶段</h4>
+
+<ol>
+  <li>
+    <p>动态库加载越多，启动越慢。</p>
+
+    <blockquote>
+      <p>减少非系统库的依赖</p>
+
+      <p>合并非系统库</p>
+
+      <p>使用静态资源，比如把代码加入主程序</p>
+    </blockquote>
+  </li>
+  <li>
+    <p>ObjC类越多，启动越慢</p>
+
+    <blockquote>
+      <p>减少Objc类数量， 减少selector数量</p>
+    </blockquote>
+  </li>
+  <li>
+    <p>C的<code class="highlighter-rouge">constructor</code>函数越多，启动越慢</p>
+
+    <blockquote>
+      <p>减少C++虚函数数量</p>
+    </blockquote>
+  </li>
+  <li>
+    <p>C++静态对象越多，启动越慢</p>
+
+    <blockquote>
+      <p>使用 struct（其实本质上就是为了减少符号的数量）</p>
+    </blockquote>
+  </li>
+  <li>
+    <p>ObjC的<code class="highlighter-rouge">+load</code>越多，启动越慢</p>
+
+    <blockquote>
+      <p>减少load方法内的逻辑，在swift中已经拒绝开发者使用+load方法，推荐initializer</p>
+    </blockquote>
+  </li>
+  <li>
+    <p>冷启动时cache hit越少，启动越慢</p>
+
+    <blockquote>
+      <p>二进制重排</p>
+    </blockquote>
+  </li>
+</ol>
+
+<h4 id="main函数之后">Main函数之后</h4>
+
+<ol>
+  <li>
+    <p>执行<code class="highlighter-rouge">applicationWillFinishLaunching</code>的耗时，内容越多越慢</p>
+
+    <blockquote>
+      <p>使用<code class="highlighter-rouge">延后任务管理</code>解决</p>
+    </blockquote>
+  </li>
+  <li>
+    <p>第一屏渲染速度</p>
+
+    <blockquote>
+      <p>延后和第一屏显示无关的业务逻辑</p>
+    </blockquote>
+  </li>
+</ol>
+
+<blockquote>
+  <p>延后任务管理：监听主线程 runloop，在kCFRunloopBeforeWaiting 时执行， KCFRunloopAfterWaiting时停止（闲时主线程队列），或者异步线程执行。</p>
+</blockquote>
+
+<h3 id="分析app耗时分析方法">分析app耗时分析方法</h3>
+
+<h4 id="app启动过程中的耗时分析">app启动过程中的耗时分析</h4>
+
+<p><strong>方法1：</strong></p>
+
+<p>在<code class="highlighter-rouge">Xcode</code>的菜单中选择<code class="highlighter-rouge">Project</code>→<code class="highlighter-rouge">Scheme</code>→<code class="highlighter-rouge">Edit Scheme...</code>，然后找到 <code class="highlighter-rouge">Run</code> → <code class="highlighter-rouge">Environment Variables</code> →<code class="highlighter-rouge">+</code>，添加<code class="highlighter-rouge">name</code>为<code class="highlighter-rouge">DYLD_PRINT_STATISTICS</code> <code class="highlighter-rouge">value</code>为<code class="highlighter-rouge">1</code>的环境变量。</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20200924/16009335233132.png" style="zoom=50%" /></p>
+
+<p>了解main函数之前各个阶段的方法耗时，就能针对耗时大的阶段使用相应前面提到的解决方案。</p>
+
+<p><code class="highlighter-rouge">main()</code>函数之前总共使用了<code class="highlighter-rouge">165.85ms</code> 中，加载动态库用了<code class="highlighter-rouge">120.63ms</code>，<code class="highlighter-rouge">指针重定位</code>使用了<code class="highlighter-rouge">4.74ms</code>，<code class="highlighter-rouge">ObjC类</code>初始化使用了<code class="highlighter-rouge">8.00ms</code>，各种初始化可执行文件使用了<code class="highlighter-rouge">32.74ms</code>,用时最多的几个初始化是<code class="highlighter-rouge">libSystem.B.dylib</code>、<code class="highlighter-rouge">libBacktraceRecording.dylib</code>、<code class="highlighter-rouge">libMainThreadChecker.dylib</code>以及<code class="highlighter-rouge">Module</code>。</p>
+
+<p>可以看到在加载动态库中用时最多。</p>
+
+<p><strong>方法2:</strong></p>
+
+<p>上图中<code class="highlighter-rouge">Module</code>模块是主程序的可执行文件，如果这个阶段用时很多，可以查看<strong><code class="highlighter-rouge">缺页中断(Page Fault)</code></strong>发生的次数，因为<strong><code class="highlighter-rouge">缺页中断(Page Fault)</code></strong>相对来说会耗费大量时间，这需要了解<strong>虚拟内存</strong>的工作原理。</p>
+
+<p>如果想查看真实 <strong>Page Fault</strong> 次数 , 应该将应用卸载 , 查看第一次应用安装后的效果 , 或者先打开很多个其他应用 .</p>
+
+<p>因为之前运行过 <code class="highlighter-rouge">app</code> , 应用其中一部分已经被加载到物理内存并做好映射表映射 , 这时再启动就会少触发一部分缺页中断 , 并且杀掉应用再打开也是如此 .</p>
+
+<p>其实就是希望将物理内存中之前加载的覆盖/清理掉 , 减少误差 .</p>
+
 <ul>
-  <li><code class="highlighter-rouge">cmd</code> 字段表示command 类型</li>
-  <li><code class="highlighter-rouge">cmdsize</code> 字段标识command占用地址长度，即到下一个command的偏移量</li>
+  <li>打开Instruments 工具中是 System Trace.</li>
+  <li>选择真机和工程，点击左侧启动，当工程首页加载完成后点击停止。最好是将应用杀掉重新安装 , 因为冷热启动的界定其实由于进程的原因并不一定后台杀掉应用重新打开就是冷启动 .
+<img src="http://image.smartjames.cn/mweb/20200924/16009354232018.png" style="zoom=50%" /></li>
+  <li>等分析完成，查看缺页次数</li>
 </ul>
 
-<h3 id="data--segment">Data &amp; Segment</h3>
-<p>每一个segment的具体数据都保存在这里，这里包含了具体的代码、数据等</p>
+<p><img src="http://image.smartjames.cn/mweb/20200924/16009354255236.png" style="zoom=50%" /></p>
 
-<p><img src="http://image.smartjames.cn/mweb/20200923/16008271150398.png" alt="截屏2020-09-23 上午10.10.27" />
-数据页的概念，<code class="highlighter-rouge">segname</code> 是数据页类型</p>
-<ul>
-  <li>#define SEG_PAGEZERO “__PAGEZERO” // 可执行文件捕获空指针的段</li>
-  <li>#define SEG_TEXT “__TEXT” // 代码段，只读数据段</li>
-  <li>#define SEG_DATA “__DATA” // 数据段</li>
-  <li>#define SEG_LINKEDIT “__LINKEDIT” // 包含动态链接器所需的符号、字符串表等数据</li>
-</ul>
+<p>这次缺页发生了1509次，耗时200ms，占总耗时的93%。如果缓存命中1955次只耗时6.42ms，可见缺页造成的耗时很大。</p>
 
-<h3 id="section">Section</h3>
-<p><img src="http://image.smartjames.cn/mweb/20200923/16008271101120.png" alt="截屏2020-09-23 上午10.11.03" />
-数据页中的子分区。<code class="highlighter-rouge">sectname</code>表示自己所在分区名称</p>
-<ul>
-  <li>Text.__text 主程序代码</li>
-  <li>Text.__cstring c 字符串</li>
-  <li>Text.__stubs 桩代码</li>
-  <li>Text.__stub_helper</li>
-  <li>Data.__data 初始化可变的数据</li>
-  <li>Data.__objc_imageinfo 镜像信息 ，在运行时初始化时 objc_init，调用 load_images 加载新的镜像到 infolist 中</li>
-  <li>Data.__la_symbol_ptr</li>
-  <li>Data.__nl_symbol_ptr</li>
-  <li>Data.__objc_classlist 类列表</li>
-  <li>Data.__objc_classrefs 引用的类</li>
-</ul>
+<p>这里需要用到二进制重排去优化。详见<a href="https://juejin.im/post/6844904097338884104#heading-7">iOS 优化篇 - 启动优化之Clang插桩实现二进制重排
+</a></p>
 
-<h3 id="了解mach-o的作用">了解Mach-O的作用</h3>
-<p>分析可执行文件结构，对于逆向砸壳、调取堆栈信息、分析代码组成等有重要帮助。这里介绍分析代码组成减少安装包大小。</p>
+<h4 id="app启动后各个方法耗时">app启动后各个方法耗时</h4>
 
-<p>由于 OC 的动态特性，编译器会对所有的源文件进行编译，并连接进可执行文件中，增大了安装包的大小。
-上文中提到了 __objc_classlist 和 __objc_classrefs，它们分别表示项目中全部类列表和项目中被引用的类列表，那么取两者之差，就能删除一些项目中没使用的类文件。但是在删除过程中记住要在项目中全局搜索确认下，看看有没有通过字符串调用无引用的类的方法，原因还是 OC 是动态语言。</p>
+<p>OC中每个方法的调用最终都是会走到<code class="highlighter-rouge">objc_msgSend</code>中，所以如果我们Hook了<code class="highlighter-rouge">objc_msgSend</code>则能以最小改动计算每个方法的耗时。</p>
 
-<p>详细过程见<a href="https://juejin.im/post/6844903921169727496">iOS删除无用的类</a>、<a href="https://xiaolit.com/posts/ed92dfd0/index.html">iOS项目优化</a>、<a href="https://juejin.im/post/6844903925309505550">iOS删除无用的方法</a></p>
+<p>详细可见这篇介绍<a href="https://juejin.im/post/6844904138048831496#heading-7">iOS底层探索 - 通过objc_msgSend实现iOS方法耗时监控</a></p>
 
-<h3 id="查看工程中代码量大的库或类">查看工程中代码量大的库或类</h3>
-<p>通过linkMap文件，可分析出各个类和库占用的大小，用来优化库或代码的数量。
-在build setting中打开 link map的开关，在drivedata中找到编译产生的link map文件。</p>
 
   </section>
 
@@ -370,15 +490,10 @@ Mach-O 文件的头部定义如下：</p>
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/09/" data-toggle="tooltip" data-placement="top" title="iOS高级面试题(超全)">上一篇：  <span>iOS高级面试题(超全)</span>
+            <a href="/2020/09/" data-toggle="tooltip" data-placement="top" title="Mach-O文件初识">上一篇：  <span>Mach-O文件初识</span>
             </a>
         </li>
         
-        
-        <li class="next">
-            <a href="/2020/09/iOS-%E5%BA%94%E7%94%A8%E5%90%AF%E5%8A%A8%E8%80%97%E6%97%B6%E5%88%86%E6%9E%90%E5%8F%8A%E4%BC%98%E5%8C%96/" data-toggle="tooltip" data-placement="top" title="iOS 应用启动耗时分析及优化">下一篇：  <span>iOS 应用启动耗时分析及优化</span>
-            </a>
-        </li>
         
     </ul>
 </section>

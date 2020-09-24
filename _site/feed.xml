@@ -5,9 +5,308 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 19 Sep 2020 09:34:42 +0800</pubDate>
-    <lastBuildDate>Sat, 19 Sep 2020 09:34:42 +0800</lastBuildDate>
+    <pubDate>Thu, 24 Sep 2020 16:46:55 +0800</pubDate>
+    <lastBuildDate>Thu, 24 Sep 2020 16:46:55 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>iOS 应用启动耗时分析及优化</title>
+        <description>&lt;h2 id=&quot;ios-应用启动耗时分析及优化&quot;&gt;iOS 应用启动耗时分析及优化&lt;/h2&gt;
+
+&lt;h3 id=&quot;app启动流程&quot;&gt;App启动流程&lt;/h3&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;main函数之前&lt;/p&gt;
+
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;p&gt;1.iOS系统&lt;strong&gt;首先会加载解析该APP的Info.plist文件&lt;/strong&gt;，因为Info.plist文件中包含了支持APP加载运行所需要的众多Key，value配置信息，例如APP的运行条件(Required device capabilities)，是否全屏，APP启动图信息等。&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;2.&lt;strong&gt;创建沙盒&lt;/strong&gt;(iOS8后，每次启动APP都会生成一个新的沙盒路径)&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;3.根据Info.plist的配置&lt;strong&gt;检查相应权限状态&lt;/strong&gt;&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;4.&lt;strong&gt;加载Mach-O文件&lt;/strong&gt;读取dyld路径并&lt;strong&gt;运行dyld动态连接器&lt;/strong&gt;(内核加载了主程序，dyld只会负责动态库的加载)&lt;/p&gt;
+
+        &lt;ul&gt;
+          &lt;li&gt;4.1 首先dyld会寻找合适的CPU运行环境&lt;/li&gt;
+          &lt;li&gt;4.2 然后加载程序运行所需的依赖库和我们自己写的.h.m文件编译成的.o可执行文件，并对这些库进行链接。&lt;/li&gt;
+          &lt;li&gt;4.3 加载所有方法(runtime就是在这个时候被初始化的)&lt;/li&gt;
+          &lt;li&gt;4.4 加载C函数&lt;/li&gt;
+          &lt;li&gt;4.5 加载category的扩展(此时runtime会对所有类结构进行初始化)&lt;/li&gt;
+          &lt;li&gt;4.6 加载C++静态函数，加载OC+load&lt;/li&gt;
+          &lt;li&gt;4.7 最后dyld返回main函数地址，main函数被调用&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;main函数执行&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;首屏渲染完成&lt;/p&gt;
+
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;p&gt;执行UIApplicationMain&lt;/p&gt;
+
+        &lt;ul&gt;
+          &lt;li&gt;
+            &lt;p&gt;创建UIApplication对象&lt;/p&gt;
+          &lt;/li&gt;
+          &lt;li&gt;
+            &lt;p&gt;创建UIApplication的delegate对象&lt;/p&gt;
+          &lt;/li&gt;
+          &lt;li&gt;
+            &lt;p&gt;创建MainRunloop&lt;/p&gt;
+          &lt;/li&gt;
+          &lt;li&gt;
+            &lt;p&gt;delegate对象开始处理(监听)系统事件(没有storyboard)&lt;/p&gt;
+          &lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;根据Info.plist获得最主要storyboard的文件名,加载最主要的storyboard(有storyboard)&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;程序启动完毕的时候, 就会调用代理的application:didFinishLaunchingWithOptions:方法
+ 在application:didFinishLaunchingWithOptions:中创建UIWindow
+ 创建和设置UIWindow的rootViewController&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;显示第一个窗口&lt;/p&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;各阶段耗时原因&quot;&gt;各阶段耗时原因&lt;/h3&gt;
+&lt;h4 id=&quot;main函数之前阶段&quot;&gt;Main函数之前阶段&lt;/h4&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;动态库加载越多，启动越慢。&lt;/p&gt;
+
+    &lt;blockquote&gt;
+      &lt;p&gt;减少非系统库的依赖&lt;/p&gt;
+
+      &lt;p&gt;合并非系统库&lt;/p&gt;
+
+      &lt;p&gt;使用静态资源，比如把代码加入主程序&lt;/p&gt;
+    &lt;/blockquote&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;ObjC类越多，启动越慢&lt;/p&gt;
+
+    &lt;blockquote&gt;
+      &lt;p&gt;减少Objc类数量， 减少selector数量&lt;/p&gt;
+    &lt;/blockquote&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;C的&lt;code class=&quot;highlighter-rouge&quot;&gt;constructor&lt;/code&gt;函数越多，启动越慢&lt;/p&gt;
+
+    &lt;blockquote&gt;
+      &lt;p&gt;减少C++虚函数数量&lt;/p&gt;
+    &lt;/blockquote&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;C++静态对象越多，启动越慢&lt;/p&gt;
+
+    &lt;blockquote&gt;
+      &lt;p&gt;使用 struct（其实本质上就是为了减少符号的数量）&lt;/p&gt;
+    &lt;/blockquote&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;ObjC的&lt;code class=&quot;highlighter-rouge&quot;&gt;+load&lt;/code&gt;越多，启动越慢&lt;/p&gt;
+
+    &lt;blockquote&gt;
+      &lt;p&gt;减少load方法内的逻辑，在swift中已经拒绝开发者使用+load方法，推荐initializer&lt;/p&gt;
+    &lt;/blockquote&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;冷启动时cache hit越少，启动越慢&lt;/p&gt;
+
+    &lt;blockquote&gt;
+      &lt;p&gt;二进制重排&lt;/p&gt;
+    &lt;/blockquote&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h4 id=&quot;main函数之后&quot;&gt;Main函数之后&lt;/h4&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;执行&lt;code class=&quot;highlighter-rouge&quot;&gt;applicationWillFinishLaunching&lt;/code&gt;的耗时，内容越多越慢&lt;/p&gt;
+
+    &lt;blockquote&gt;
+      &lt;p&gt;使用&lt;code class=&quot;highlighter-rouge&quot;&gt;延后任务管理&lt;/code&gt;解决&lt;/p&gt;
+    &lt;/blockquote&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;第一屏渲染速度&lt;/p&gt;
+
+    &lt;blockquote&gt;
+      &lt;p&gt;延后和第一屏显示无关的业务逻辑&lt;/p&gt;
+    &lt;/blockquote&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;延后任务管理：监听主线程 runloop，在kCFRunloopBeforeWaiting 时执行， KCFRunloopAfterWaiting时停止（闲时主线程队列），或者异步线程执行。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&quot;分析app耗时分析方法&quot;&gt;分析app耗时分析方法&lt;/h3&gt;
+
+&lt;h4 id=&quot;app启动过程中的耗时分析&quot;&gt;app启动过程中的耗时分析&lt;/h4&gt;
+
+&lt;p&gt;&lt;strong&gt;方法1：&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;在&lt;code class=&quot;highlighter-rouge&quot;&gt;Xcode&lt;/code&gt;的菜单中选择&lt;code class=&quot;highlighter-rouge&quot;&gt;Project&lt;/code&gt;→&lt;code class=&quot;highlighter-rouge&quot;&gt;Scheme&lt;/code&gt;→&lt;code class=&quot;highlighter-rouge&quot;&gt;Edit Scheme...&lt;/code&gt;，然后找到 &lt;code class=&quot;highlighter-rouge&quot;&gt;Run&lt;/code&gt; → &lt;code class=&quot;highlighter-rouge&quot;&gt;Environment Variables&lt;/code&gt; →&lt;code class=&quot;highlighter-rouge&quot;&gt;+&lt;/code&gt;，添加&lt;code class=&quot;highlighter-rouge&quot;&gt;name&lt;/code&gt;为&lt;code class=&quot;highlighter-rouge&quot;&gt;DYLD_PRINT_STATISTICS&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;value&lt;/code&gt;为&lt;code class=&quot;highlighter-rouge&quot;&gt;1&lt;/code&gt;的环境变量。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200924/16009335233132.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;了解main函数之前各个阶段的方法耗时，就能针对耗时大的阶段使用相应前面提到的解决方案。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;main()&lt;/code&gt;函数之前总共使用了&lt;code class=&quot;highlighter-rouge&quot;&gt;165.85ms&lt;/code&gt; 中，加载动态库用了&lt;code class=&quot;highlighter-rouge&quot;&gt;120.63ms&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;指针重定位&lt;/code&gt;使用了&lt;code class=&quot;highlighter-rouge&quot;&gt;4.74ms&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;ObjC类&lt;/code&gt;初始化使用了&lt;code class=&quot;highlighter-rouge&quot;&gt;8.00ms&lt;/code&gt;，各种初始化可执行文件使用了&lt;code class=&quot;highlighter-rouge&quot;&gt;32.74ms&lt;/code&gt;,用时最多的几个初始化是&lt;code class=&quot;highlighter-rouge&quot;&gt;libSystem.B.dylib&lt;/code&gt;、&lt;code class=&quot;highlighter-rouge&quot;&gt;libBacktraceRecording.dylib&lt;/code&gt;、&lt;code class=&quot;highlighter-rouge&quot;&gt;libMainThreadChecker.dylib&lt;/code&gt;以及&lt;code class=&quot;highlighter-rouge&quot;&gt;Module&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;可以看到在加载动态库中用时最多。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;方法2:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;上图中&lt;code class=&quot;highlighter-rouge&quot;&gt;Module&lt;/code&gt;模块是主程序的可执行文件，如果这个阶段用时很多，可以查看&lt;strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;缺页中断(Page Fault)&lt;/code&gt;&lt;/strong&gt;发生的次数，因为&lt;strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;缺页中断(Page Fault)&lt;/code&gt;&lt;/strong&gt;相对来说会耗费大量时间，这需要了解&lt;strong&gt;虚拟内存&lt;/strong&gt;的工作原理。&lt;/p&gt;
+
+&lt;p&gt;如果想查看真实 &lt;strong&gt;Page Fault&lt;/strong&gt; 次数 , 应该将应用卸载 , 查看第一次应用安装后的效果 , 或者先打开很多个其他应用 .&lt;/p&gt;
+
+&lt;p&gt;因为之前运行过 &lt;code class=&quot;highlighter-rouge&quot;&gt;app&lt;/code&gt; , 应用其中一部分已经被加载到物理内存并做好映射表映射 , 这时再启动就会少触发一部分缺页中断 , 并且杀掉应用再打开也是如此 .&lt;/p&gt;
+
+&lt;p&gt;其实就是希望将物理内存中之前加载的覆盖/清理掉 , 减少误差 .&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;打开Instruments 工具中是 System Trace.&lt;/li&gt;
+  &lt;li&gt;选择真机和工程，点击左侧启动，当工程首页加载完成后点击停止。最好是将应用杀掉重新安装 , 因为冷热启动的界定其实由于进程的原因并不一定后台杀掉应用重新打开就是冷启动 .
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200924/16009354232018.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;等分析完成，查看缺页次数&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200924/16009354255236.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这次缺页发生了1509次，耗时200ms，占总耗时的93%。如果缓存命中1955次只耗时6.42ms，可见缺页造成的耗时很大。&lt;/p&gt;
+
+&lt;p&gt;这里需要用到二进制重排去优化。详见&lt;a href=&quot;https://juejin.im/post/6844904097338884104#heading-7&quot;&gt;iOS 优化篇 - 启动优化之Clang插桩实现二进制重排
+&lt;/a&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;app启动后各个方法耗时&quot;&gt;app启动后各个方法耗时&lt;/h4&gt;
+
+&lt;p&gt;OC中每个方法的调用最终都是会走到&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSend&lt;/code&gt;中，所以如果我们Hook了&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSend&lt;/code&gt;则能以最小改动计算每个方法的耗时。&lt;/p&gt;
+
+&lt;p&gt;详细可见这篇介绍&lt;a href=&quot;https://juejin.im/post/6844904138048831496#heading-7&quot;&gt;iOS底层探索 - 通过objc_msgSend实现iOS方法耗时监控&lt;/a&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Thu, 24 Sep 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/09/iOS-%E5%BA%94%E7%94%A8%E5%90%AF%E5%8A%A8%E8%80%97%E6%97%B6%E5%88%86%E6%9E%90%E5%8F%8A%E4%BC%98%E5%8C%96/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/iOS-%E5%BA%94%E7%94%A8%E5%90%AF%E5%8A%A8%E8%80%97%E6%97%B6%E5%88%86%E6%9E%90%E5%8F%8A%E4%BC%98%E5%8C%96/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Mach-O文件初识</title>
+        <description>&lt;h2 id=&quot;mach-o-文件&quot;&gt;Mach-o 文件&lt;/h2&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Mach-O格式全称为Mach Object文件格式的缩写，是mac上可执行文件的格式&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Mach-O 文件构成如下
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200922/16007690041824.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;headers&quot;&gt;Headers&lt;/h3&gt;
+&lt;p&gt;保存了一些基本信息，包括了该文件运行的平台、文件类型、LoadCommands的个数等等。Headers的主要作用就是帮助系统迅速的定位Mach-O文件的运行环境，文件类型，保存了一些dyld重要的加载参数。
+Mach-O 文件的头部定义如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200922/16007696930694.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;magic 标志符 0xfeedface 是 32 位， 0xfeedfacf 是 64 位。&lt;/li&gt;
+  &lt;li&gt;cputype 和 cpusubtype 确定 cpu 类型、平台&lt;/li&gt;
+  &lt;li&gt;filetype 文件类型，可执行文件、符号文件（DSYM）、内核扩展等&lt;/li&gt;
+  &lt;li&gt;ncmds 加载 Load Commands 的数量&lt;/li&gt;
+  &lt;li&gt;flags dyld 加载的标志
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MH_NOUNDEFS&lt;/code&gt; 目标文件没有未定义的符号，&lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MH_DYLDLINK&lt;/code&gt; 目标文件是动态链接输入文件，不能被再次静态链接&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MH_SPLIT_SEGS&lt;/code&gt; 只读 segments 和 可读写 segments 分离&lt;/li&gt;
+      &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MH_NO_HEAP_EXECUTION&lt;/code&gt; 堆内存不可执行&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;header的作用是保存Mach-O可执行文件需要的环境和合法性。&lt;/p&gt;
+
+&lt;h3 id=&quot;load-commands&quot;&gt;Load Commands&lt;/h3&gt;
+&lt;p&gt;可以理解为加载命令，在加载Mach-O文件时会使用这里的数据来确定内存的分布以及相关的加载命令。比如我们的main函数的加载地址，程序所需的dyld的文件路径，以及相关依赖库的文件路径。
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200922/16007699427007.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;cmd&lt;/code&gt; 字段表示command 类型&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;cmdsize&lt;/code&gt; 字段标识command占用地址长度，即到下一个command的偏移量&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;data--segment&quot;&gt;Data &amp;amp; Segment&lt;/h3&gt;
+&lt;p&gt;每一个segment的具体数据都保存在这里，这里包含了具体的代码、数据等&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200923/16008271150398.png&quot; alt=&quot;截屏2020-09-23 上午10.10.27&quot; /&gt;
+数据页的概念，&lt;code class=&quot;highlighter-rouge&quot;&gt;segname&lt;/code&gt; 是数据页类型&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;#define SEG_PAGEZERO “__PAGEZERO” // 可执行文件捕获空指针的段&lt;/li&gt;
+  &lt;li&gt;#define SEG_TEXT “__TEXT” // 代码段，只读数据段&lt;/li&gt;
+  &lt;li&gt;#define SEG_DATA “__DATA” // 数据段&lt;/li&gt;
+  &lt;li&gt;#define SEG_LINKEDIT “__LINKEDIT” // 包含动态链接器所需的符号、字符串表等数据&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;section&quot;&gt;Section&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200923/16008271101120.png&quot; alt=&quot;截屏2020-09-23 上午10.11.03&quot; /&gt;
+数据页中的子分区。&lt;code class=&quot;highlighter-rouge&quot;&gt;sectname&lt;/code&gt;表示自己所在分区名称&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Text.__text 主程序代码&lt;/li&gt;
+  &lt;li&gt;Text.__cstring c 字符串&lt;/li&gt;
+  &lt;li&gt;Text.__stubs 桩代码&lt;/li&gt;
+  &lt;li&gt;Text.__stub_helper&lt;/li&gt;
+  &lt;li&gt;Data.__data 初始化可变的数据&lt;/li&gt;
+  &lt;li&gt;Data.__objc_imageinfo 镜像信息 ，在运行时初始化时 objc_init，调用 load_images 加载新的镜像到 infolist 中&lt;/li&gt;
+  &lt;li&gt;Data.__la_symbol_ptr&lt;/li&gt;
+  &lt;li&gt;Data.__nl_symbol_ptr&lt;/li&gt;
+  &lt;li&gt;Data.__objc_classlist 类列表&lt;/li&gt;
+  &lt;li&gt;Data.__objc_classrefs 引用的类&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;了解mach-o的作用&quot;&gt;了解Mach-O的作用&lt;/h3&gt;
+&lt;p&gt;分析可执行文件结构，对于逆向砸壳、调取堆栈信息、分析代码组成等有重要帮助。这里介绍分析代码组成减少安装包大小。&lt;/p&gt;
+
+&lt;p&gt;由于 OC 的动态特性，编译器会对所有的源文件进行编译，并连接进可执行文件中，增大了安装包的大小。
+上文中提到了 __objc_classlist 和 __objc_classrefs，它们分别表示项目中全部类列表和项目中被引用的类列表，那么取两者之差，就能删除一些项目中没使用的类文件。但是在删除过程中记住要在项目中全局搜索确认下，看看有没有通过字符串调用无引用的类的方法，原因还是 OC 是动态语言。&lt;/p&gt;
+
+&lt;p&gt;详细过程见&lt;a href=&quot;https://juejin.im/post/6844903921169727496&quot;&gt;iOS删除无用的类&lt;/a&gt;、&lt;a href=&quot;https://xiaolit.com/posts/ed92dfd0/index.html&quot;&gt;iOS项目优化&lt;/a&gt;、&lt;a href=&quot;https://juejin.im/post/6844903925309505550&quot;&gt;iOS删除无用的方法&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;查看工程中代码量大的库或类&quot;&gt;查看工程中代码量大的库或类&lt;/h3&gt;
+&lt;p&gt;通过linkMap文件，可分析出各个类和库占用的大小，用来优化库或代码的数量。
+在build setting中打开 link map的开关，在drivedata中找到编译产生的link map文件。&lt;/p&gt;
+</description>
+        <pubDate>Wed, 23 Sep 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/09/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
     
       <item>
         <title>iOS高级面试题(超全)</title>
@@ -839,7 +1138,7 @@ Swift和OC的区别有很多，这里简要总结这几条：&lt;/li&gt;
 2个蓝气球+1个红气球可以兑换1个黄气球。
 现在牛牛有a个红气球，b个黄气球， c个蓝气球，牛牛想知道自己最多可以兑换多少张彩票。&lt;/strong&gt;&lt;/p&gt;
 </description>
-        <pubDate>Wed, 16 Sep 2020 00:00:00 +0800</pubDate>
+        <pubDate>Thu, 17 Sep 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/09/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/09/</guid>
         
@@ -1760,10 +2059,10 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
   &lt;li&gt;数字签名能确定消息的完整性,证明数据是否未被篡改过。&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;&lt;strong&gt;数字签名生如何成：&lt;/strong&gt;
+&lt;p&gt;&lt;strong&gt;数字签名如何生成：&lt;/strong&gt;
 &lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633815147.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;将一段文本先用HASH算法生成消息摘要，然后用发送者的私钥RSA加密生成数字签名，与原文文一起传送给接收者。接下来就是接收者校验数字签名的流程了。&lt;/p&gt;
+&lt;p&gt;将一段文本先用HASH算法生成消息摘要，然后用发送者的私钥RSA加密生成数字签名，与原文一起传送给接收者。接下来就是接收者校验数字签名的流程了。&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;校验数字签名流程：&lt;/strong&gt;
 &lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002634134529.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
@@ -2346,178 +2645,6 @@ ssthresh: slow start threshold 慢启动阈值
         <guid isPermaLink="true">http://localhost:4000/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</guid>
         
         <category>webRTC</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>SIG蓝牙协议5.2版本更新内容</title>
-        <description>&lt;h4 id=&quot;主要是3块新特性&quot;&gt;主要是3块新特性&lt;/h4&gt;
-&lt;ul&gt;
-  &lt;li&gt;Enhanced Attribute Protocol&lt;/li&gt;
-  &lt;li&gt;LE Power Control&lt;/li&gt;
-  &lt;li&gt;LE Isochronous Channels&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h5 id=&quot;背景介绍&quot;&gt;背景介绍&lt;/h5&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PUD: Protocol Data Unit 协议数据单元 被某一层处理为指定数据格式的数据。
-
-SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据，比如输入的数据，叫SDU,封装成PDU通过层与层之间的管道传输给下一层。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;本层的PDU是下一层的SDU,本层的SDU是上一层的PDU&lt;/p&gt;
-
-&lt;hr /&gt;
-&lt;h4 id=&quot;一enhanced-att&quot;&gt;一、Enhanced ATT&lt;/h4&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002632642584.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;ATT: 定义了不同服务的属性参数和可使用的命令，用来作为主从设备间的信息交换个协商。&lt;/p&gt;
-
-&lt;p&gt;MTU(Maximum Transmission Unit) 是不同协议的最大数据处理能力，决定不同层协议处理最大PUD/SDU的尺寸。ATT中定义了服务的MTU,在L2CAP根据上下层不同的MTU来分割/组合数据，来适配整体数据通路的PDU/SDU。&lt;/p&gt;
-
-&lt;p&gt;LE5.1之前：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;ATT与L2CAP之间的MTU是固定的，建立连接后不能改。&lt;/li&gt;
-  &lt;li&gt;数据处理是串行的，不同业务MTU必须在上一个PDU/SDU完成后才能执行。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;LE5.2:&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;MTU在ATT和L2CAP之间不再一一对应，可以互相独立配置，即ATT和L2CAP之间的MTU和PDU大小动态配置。&lt;/li&gt;
-  &lt;li&gt;不同业务PDU可以交叉处理，减小数据延迟&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;EATT相比ATT的影响：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;新的PDU只能再EATT上使用&lt;/li&gt;
-  &lt;li&gt;某些ATT PDU只能用在ATT上&lt;/li&gt;
-  &lt;li&gt;一些PDU的定义或流程被细化或优化&lt;/li&gt;
-  &lt;li&gt;EATT只能加密连接使用，ATT可以通过未加密、加密连接&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;hr /&gt;
-&lt;h4 id=&quot;二le-power-control&quot;&gt;二、LE Power Control&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;在蓝牙接收错误率BER超过0.1%时，连接被认为是质量不好连接 增加了发射功率的动态管理，通过信号响度RSSI的监控，通知发射方增加或减少发射功率。使接收器的信号强度落在不太强也不太弱的区域，刚好满足应用又省电。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;hr /&gt;
-&lt;h4 id=&quot;三le-isochronous-channels&quot;&gt;三、LE Isochronous Channels&lt;/h4&gt;
-&lt;p&gt;定义了一个有时间依赖的数据传输通道和传输策略。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;增加对于一对多接收方同步获取数据的机制&lt;/li&gt;
-  &lt;li&gt;允许发送方在指定时间外丢弃数据，保证接收方数据满足时效要求&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;该通道支持链接模式和广播模式.
-俩种模式下 ISO异同点：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;每个BIG CIG最多包含31个BIS CIS&lt;/li&gt;
-  &lt;li&gt;CIS中从设备对主设备有信息反馈，BIS没有&lt;/li&gt;
-  &lt;li&gt;BIS重传是通过接收方信息反馈决定， CIS是强制的&lt;/li&gt;
-  &lt;li&gt;CIG中CIS同步通过CIG的时间以及CIS时间参数实现，BIG中的BIS通过周期广播的PDU实现&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;能实现多重串流音频（Multi-Stream Audio）和音频分享（Audio Sharing）&lt;/p&gt;
-
-&lt;h5 id=&quot;链接模式&quot;&gt;链接模式&lt;/h5&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;称作CIS (LE Connected Isochronous Stream)逻辑传输通道，可将延迟数据丢弃。 不同的CIS组成CIG ( Connected Isochronous Groups ),同一个CIG内的CIS有相同的时间戳，保证同一个group内数据同步。例如一对TWS耳机
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002632747277.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;h5 id=&quot;广播模式&quot;&gt;广播模式&lt;/h5&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;称作BIS (Broadcast Isochronous Stream)。 多个BIS 可组成BIG (Broadcast Isochronous Groups).通过一个周期广播的PUD实现。 该PDU包含针对每个BIS的时间戳，一旦同步，广播接收者变成同步接收者。例如，广场舞大妈蓝牙耳机听同一音源歌曲。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633057507.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-</description>
-        <pubDate>Fri, 05 Jun 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/</guid>
-        
-        <category>BLE</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>蓝牙协议栈</title>
-        <description>&lt;h3 id=&quot;协议栈内容&quot;&gt;协议栈内容&lt;/h3&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002632222709.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;h4 id=&quot;phy层&quot;&gt;PHY层&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Physical layer 用来指定BLE所用的无线频段，调试解调方式和方法等。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;ll层&quot;&gt;LL层&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;link layer 是协议栈的核心，选择使用哪个射频通道进行通信，怎么识别inflight数据包，在哪个时间点发送数据包，哪个时间点接收数据包，怎么保证数据完整性，ACK接收，如何重传，链路管理控制等。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;hci层&quot;&gt;HCI层&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Host controller interface  HCI是可选的，主要用于2颗芯片实现BLE协议栈的场合，规范两者之间的通信协议和通信命令等
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;gap层&quot;&gt;GAP层&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Generic access profile 对LL层payload 如何进行解析的一种方式，最简单。GAP对payload进行一些规范和定义，因此功能有限，主要用来广播，扫描和发起连接等。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;l2cap层&quot;&gt;L2CAP层&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Logic link control and adaption protocol 对LL进行简单封装，LL只关心传输的数据本身，L2CAP区分是加密通道还是普通通道，同时对连接间隔进行管理
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;smp&quot;&gt;SMP&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Security manager protocol 管理BLE连接的加密和安全
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;att&quot;&gt;ATT&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Attribute protocol ATT层用来定义用户命令以及命令操作的数据，比如读、写、通知等。Attribute定义数据和数据可以使用的命令。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;gatt&quot;&gt;GATT&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Generic attribute profile 用来规范attribute 中的数据内容，运用group来对attribute进行分类管理。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;设备连接&quot;&gt;设备连接&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;连接指设备A和B 一对一‘同步’成功 连接成功包含以下几点： - 设备A和B对接下来要使用的物理信道达成一致 - 设备A和B双方建立一个共同的时间锚点，把时间原点变成同一个点 - 设备A和B时钟同步成功，明确双方什么时候发数据，什么时候接收数据
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002632477431.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;上图表示连接成功后，A将以CI为周期向B发送数据包，B将以CI (connection interval)为周期打开射频接收窗口来接收A的数据包。在B接收A数据包后150us后，切换为发送状态，把数据发送给A，A切换为接收状态接收B的数据。&lt;/p&gt;
-
-&lt;p&gt;以发送0x53为例，看看不同协议层做了些什么&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;对开发者来说，很简单，他只需要调用send(0x53)&lt;/li&gt;
-  &lt;li&gt;GATT层定义数据的类型和分组，方便起见，我们用0x0013表示电量这种数据类型，这样- GATT层把数据打包成130053（小端模式！）&lt;/li&gt;
-  &lt;li&gt;ATT层用来选择具体的通信命令，比如读/写/notify/indicate等，这里选择notify命令0x1B，这样数据包变成了：1B130053&lt;/li&gt;
-  &lt;li&gt;L2CAP用来指定connection interval（连接间隔），比如每10ms同步一次（CI不体现在数据包中），同时指定逻辑通道编号0004（表示ATT命令），最后把ATT数据长度0x0004加在包头，这样数据就变为：040004001B130053&lt;/li&gt;
-  &lt;li&gt;LL层要做的工作很多，首先LL层需要指定用哪个物理信道进行传输（物理信道不体现在数据包中），然后再给此连接分配一个Access address（0x50655DAB）以标识此连接只为设备A和设备B直连服务，然后加上LL header和payload length字段，LL header标识此packet为数据packet，而不是control packet等，payload length为整个L2CAP字段的长度，最后加上CRC24字段，以保证整个packet的数据完整性，所以数据包最后变成：
-    &lt;ul&gt;
-      &lt;li&gt;AAAB5D65501E08040004001B130053D550F6&lt;/li&gt;
-      &lt;li&gt;AA – 前导帧(preamble)&lt;/li&gt;
-      &lt;li&gt;0x50655DAB – 访问地址(access address)&lt;/li&gt;
-      &lt;li&gt;1E – LL帧头字段(LL header)&lt;/li&gt;
-      &lt;li&gt;08 – 有效数据包长度(payload length)&lt;/li&gt;
-      &lt;li&gt;04000400 – ATT数据长度，以及L2CAP通道编号&lt;/li&gt;
-      &lt;li&gt;1B – notify command&lt;/li&gt;
-      &lt;li&gt;0x0013 – 电量数据handle&lt;/li&gt;
-      &lt;li&gt;0x53 – 真正要发送的电量数据&lt;/li&gt;
-      &lt;li&gt;0xF650D5 – CRC24值&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-</description>
-        <pubDate>Mon, 01 Jun 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/</guid>
-        
-        <category>BLE</category>
         
         
       </item>
