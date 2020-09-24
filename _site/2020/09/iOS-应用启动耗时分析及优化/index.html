@@ -403,25 +403,27 @@
 
 <ul>
   <li>打开Instruments 工具中是 System Trace.</li>
-  <li>
-    <p>选择真机和工程，点击左侧启动，当工程首页加载完成后点击停止。最好是将应用杀掉重新安装 , 因为冷热启动的界定其实由于进程的原因并不一定后台杀掉应用重新打开就是冷启动 .
-<img src="http://image.smartjames.cn/mweb/20200924/16009354232018.png" style="zoom=50%" /></p>
-  </li>
+  <li>选择真机和工程，点击左侧启动，当工程首页加载完成后点击停止。最好是将应用杀掉重新安装 , 因为冷热启动的界定其实由于进程的原因并不一定后台杀掉应用重新打开就是冷启动 .</li>
+</ul>
+
+<p><img src="http://image.smartjames.cn/mweb/20200924/16009354232018.png" style="zoom:70%" /></p>
+
+<ul>
   <li>等分析完成，查看缺页次数</li>
 </ul>
 
-<p><img src="http://image.smartjames.cn/mweb/20200924/16009354255236.png" style="zoom=50%" /></p>
+<p><img src="http://image.smartjames.cn/mweb/20200924/16009354255236.png" style="zoom:70%" /></p>
 
 <p>这次缺页发生了1509次，耗时200ms，占总耗时的93%。缓存命中1955次只耗时6.42ms，可见缺页造成的耗时很大。</p>
 
-<p>这里需要用到二进制重排去优化。详见<a href="https://juejin.im/post/6844904097338884104#heading-7">iOS 优化篇 - 启动优化之Clang插桩实现二进制重排
+<p>这里需要用到二进制重排去优化。详见<a href="https://juejin.im/post/6844904130406793224#heading-0">iOS 优化篇 - 启动优化之Clang插桩实现二进制重排
 </a></p>
 
 <h4 id="app启动后各个方法耗时">app启动后各个方法耗时</h4>
 
 <p>OC中每个方法的调用最终都是会走到<code class="highlighter-rouge">objc_msgSend</code>中，所以如果我们Hook了<code class="highlighter-rouge">objc_msgSend</code>则能以最小改动计算每个方法的耗时。</p>
 
-<p>详细可见这篇介绍<a href="https://juejin.im/post/6844904138048831496#heading-7">iOS底层探索 - 通过objc_msgSend实现iOS方法耗时监控</a></p>
+<p>详细可见这篇介绍<a href="https://juejin.im/post/6844904097338884104#heading-7">iOS底层探索 - 通过objc_msgSend实现iOS方法耗时监控</a></p>
 
 
   </section>
