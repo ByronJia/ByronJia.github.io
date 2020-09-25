@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <title>LeetCode刷题笔记</title>
+  <meta name="description" content="链表和数组多见链表的全反转，K个一组反转链表   head 等表示指定Node,不是index也不是指针   head.next = node1 表示该Node的后继节点是node1   node2 = node1.next, 表示将node1的后继节点node赋值给 node2">
+  <meta name="author" content="leopardpan">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="LeetCode刷题笔记">
+  <meta name="twitter:description" content="链表和数组多见链表的全反转，K个一组反转链表   head 等表示指定Node,不是index也不是指针   head.next = node1 表示该Node的后继节点是node1   node2 = node1.next, 表示将node1的后继节点node赋值给 node2">
+  
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="LeetCode刷题笔记">
+  <meta property="og:description" content="链表和数组多见链表的全反转，K个一组反转链表   head 等表示指定Node,不是index也不是指针   head.next = node1 表示该Node的后继节点是node1   node2 = node1.next, 表示将node1的后继节点node赋值给 node2">
+  
+  <link rel="icon" type="image/png" href="/images/favicon.png" />
+  <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link rel="canonical" href="http://localhost:4000/2020/09/LeetCode%E5%88%B7%E9%A2%98%E7%AC%94%E8%AE%B0/">
+  <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
+  
+  <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
+
+  <!-- google 广告代码 -->
+  <script data-ad-client="ca-pub-1488511477321962" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  
+<!-- 站点统计 不蒜子 -->
+  <script 
+  async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>  
+
+<!-- 百度统计 -->
+  
+  <script>
+      var _hmt = _hmt || [];
+      (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?04766feadab5e00060a50dc5959c98e2";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+      })();
+  </script>
+  
+
+<!-- google 统计 -->
+  
+  <!-- <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-177644508-1', 'auto');
+      ga('send', 'pageview');
+  </script> -->
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-177644508-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-177644508-1');
+  </script>
+
+  
+
+  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-9005224472374751",
+    enable_page_level_ads: true
+  });
+</script>
+
+</head>
+
+
+  <body>
+
+    <span class="mobile btn-mobile-menu">        
+      <div class="nav_container">
+         <nav class="nav-menu-item" style = "float:right">
+            <i class="nav-menu-item">
+              <a href="/#blog" title="" class="blog-button">  博客主页
+              </a>
+            </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/archive" title="archive" class="btn-mobile-menu__icon">
+                      所有文章
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/tags" title="tags" class="btn-mobile-menu__icon">
+                      标签
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/about" title="about" class="btn-mobile-menu__icon">
+                      关于我
+                  </a>
+                </i>
+            
+          </nav>
+      </div>
+    </span>
+    
+    <header class="panel-cover panel-cover--collapsed" style="background-image: url('/images/background-cover.jpg')">
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+        <!-- 头像效果-start -->
+        <div class="ih-item circle effect">            
+            <a href="/#blog" title="前往 拜伦的博客 的主页" class="blog-button">
+                <div class="img"><img src="/images/avatar.jpg" alt="img"></div>
+            </a>
+        </div>
+        <!-- 头像效果-end -->
+        <h1 class="panel-cover__title panel-title"><a href="/#blog" title="link to homepage for 拜伦的博客" class="blog-button">拜伦的博客</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">Coder Byron</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">这里有关于iOS,机器学习的笔记心得,欢迎交流</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        
+        
+
+        <div class="navigation-wrapper">
+          <div>
+            <nav class="cover-navigation cover-navigation--primary">
+              <ul class="navigation">
+                <li class="navigation__item"><a href="/#blog" title="" class="blog-button">博客主页</a></li>
+                
+                  <li class="navigation__item"><a href="/archive" title="archive">所有文章</a></li>
+                
+                  <li class="navigation__item"><a href="/tags" title="tags">标签</a></li>
+                
+                  <li class="navigation__item"><a href="/about" title="about">关于我</a></li>
+                
+              </ul>
+            </nav>
+          </div>          
+        </div>
+
+
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class="panel-cover--overlay cover-gray"></div>
+    
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <head>
+  <link rel="stylesheet" href="/css/post.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.0.0/mermaid.min.js"></script>
+<script>
+  var config = {
+    startOnLoad:true,
+    theme: 'forest',
+    flowchart:{
+            useMaxWidth:false,
+            htmlLabels:true
+        }
+  };
+  mermaid.initialize(config);
+  window.mermaid.init(undefined, document.querySelectorAll('.language-mermaid'));
+</script>
+
+</head>
+
+<article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
+  <header class="post-header">
+    <h1 class="post-title">LeetCode刷题笔记</h1>
+    <div class="post-meta">
+      <img src="/images/calendar.png" width="20px"/> 
+      <time datetime="2020-09-25 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-09-25</time>  
+
+      <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
+    </p>
+    </div>
+  </header>
+
+  
+    <h2 class="post-title">目录</h2>
+    <ul>
+  <li><a href="#链表和数组">链表和数组</a></li>
+  <li><a href="#0-交换链表节点">0. 交换链表节点</a>
+    <ul>
+      <li><a href="#剑指-offer-反转链表"><a href="https://leetcode-cn.com/problems/fan-zhuan-lian-biao-lcof/">剑指 Offer 反转链表</a></a></li>
+      <li><a href="#两两交换链表中的节点"><a href="https://leetcode-cn.com/problems/swap-nodes-in-pairs/">两两交换链表中的节点</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#1-判断链表是否有环">1. 判断链表是否有环</a>
+    <ul>
+      <li><a href="#环形链表"><a href="https://leetcode-cn.com/problems/linked-list-cycle/">环形链表</a></a></li>
+      <li><a href="#环形链表-ii"><a href="https://leetcode-cn.com/problems/linked-list-cycle-ii/">环形链表 II</a></a></li>
+      <li><a href="#k-个一组翻转链表"><a href="https://leetcode-cn.com/problems/reverse-nodes-in-k-group/">K 个一组翻转链表</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#2-判断括号字符串是否有效">2. 判断括号字符串是否有效</a>
+    <ul>
+      <li><a href="#有效的括号"><a href="https://leetcode-cn.com/problems/valid-parentheses/">有效的括号</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#3-用队列实现栈用栈实现队列">3. 用队列实现栈&amp;用栈实现队列</a>
+    <ul>
+      <li><a href="#用队列实现栈"><a href="https://leetcode-cn.com/problems/implement-stack-using-queues/">用队列实现栈</a></a></li>
+      <li><a href="#用栈实现队列"><a href="https://leetcode-cn.com/problems/implement-queue-using-stacks/">用栈实现队列</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#4-返回数据流中的第k大元素">4. 返回数据流中的第K大元素</a></li>
+  <li><a href="#5-返回滑动窗口中的最大值">5. 返回滑动窗口中的最大值</a></li>
+  <li><a href="#6-有效的字母异位词">6. 有效的字母异位词</a>
+    <ul>
+      <li><a href="#有效的字母异位词"><a href="https://leetcode-cn.com/problems/valid-anagram/">有效的字母异位词</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#7-两数之和">7. 两数之和</a>
+    <ul>
+      <li><a href="#两数之和"><a href="https://leetcode-cn.com/problems/two-sum/">两数之和</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#8-三数之和输出所有三个数字之和为0的组合">8. 三数之和，输出所有三个数字之和为0的组合</a>
+    <ul>
+      <li><a href="#三数之和"><a href="https://leetcode-cn.com/problems/3sum/">三数之和</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#9-验证二叉排序树">9. 验证二叉排序树</a>
+    <ul>
+      <li><a href="#验证二叉搜索树"><a href="https://leetcode-cn.com/problems/validate-binary-search-tree/">验证二叉搜索树</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#10-二叉树二叉搜索树的最近公共祖先">10. 二叉树&amp;二叉搜索树的最近公共祖先</a>
+    <ul>
+      <li><a href="#二叉搜索树的最近公共祖先"><a href="https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-search-tree/">二叉搜索树的最近公共祖先</a></a></li>
+      <li><a href="#二叉树的最近公共祖先"><a href="https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-tree/">二叉树的最近公共祖先</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#11-powxn--即x的n次方">11. Pow(x,n)  即x的n次方</a>
+    <ul>
+      <li><a href="#powx-n"><a href="https://leetcode-cn.com/problems/powx-n/">Pow(x, n)</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#12-求众数即元素出现次数大于n2">12. 求众数，即元素出现次数大于n/2</a>
+    <ul>
+      <li><a href="#多数元素"><a href="https://leetcode-cn.com/problems/majority-element/">多数元素</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#13-买卖股票的最佳时机">13. 买卖股票的最佳时机</a></li>
+  <li><a href="#14-二叉树层次遍历">14. 二叉树层次遍历</a>
+    <ul>
+      <li><a href="#二叉树的层序遍历"><a href="https://leetcode-cn.com/problems/binary-tree-level-order-traversal/">二叉树的层序遍历</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#15-二叉树的最大和最小深度">15. 二叉树的最大和最小深度</a></li>
+  <li><a href="#16-生成有效括号组合">16. 生成有效括号组合</a></li>
+  <li><a href="#17-n皇后问题">17. N皇后问题</a></li>
+  <li><a href="#18-数独问题">18. 数独问题</a></li>
+  <li><a href="#19-实现一个求解平方根的函数">19. 实现一个求解平方根的函数</a></li>
+  <li><a href="#20-实现一个字典树即trie树-字典树">20. 实现一个字典树即Trie树 字典树</a></li>
+  <li><a href="#21-二维网格中的单词搜索问题">21. 二维网格中的单词搜索问题</a></li>
+  <li><a href="#22-统计位1的个数">22. 统计位1的个数</a></li>
+  <li><a href="#23-2的幂次方问题比特位计数问题">23. 2的幂次方问题&amp;比特位计数问题</a>
+    <ul>
+      <li><a href="#2的幂"><a href="https://leetcode-cn.com/problems/power-of-two/">2的幂</a></a></li>
+    </ul>
+  </li>
+  <li><a href="#24-动态规划">24. 动态规划</a></li>
+  <li><a href="#25-动态规划dp-vs-回溯-vs-贪心">25. 动态规划DP vs 回溯 vs 贪心</a></li>
+  <li><a href="#26-爬楼梯">26. 爬楼梯</a></li>
+  <li><a href="#27-三角形的最小路径和">27. 三角形的最小路径和</a></li>
+  <li><a href="#28-乘积最大子数组">28. 乘积最大子数组</a></li>
+  <li><a href="#29-买卖股票的最佳时机---买卖股票的最佳时机-iii--买卖股票的最佳时机-ii">29. 买卖股票的最佳时机  &amp; 买卖股票的最佳时机 III &amp; 买卖股票的最佳时机 II</a></li>
+  <li><a href="#30-最长上升子序列">30. 最长上升子序列</a></li>
+  <li><a href="#31-零钱兑换">31. 零钱兑换</a></li>
+  <li><a href="#32-编辑距离">32. 编辑距离</a></li>
+  <li><a href="#33-dp套路-三部曲">33. DP套路 三部曲</a></li>
+  <li><a href="#34-并查集">34. 并查集</a></li>
+  <li><a href="#35-岛屿数量">35. 岛屿数量</a></li>
+  <li><a href="#36-布隆过滤器">36. 布隆过滤器</a></li>
+</ul>
+
+  
+
+  <section class="post">
+    <h2 id="链表和数组">链表和数组</h2>
+<p>多见链表的全反转，K个一组反转链表
+   head 等表示指定Node,不是index也不是指针
+   head.next = node1 表示该Node的后继节点是node1
+   node2 = node1.next, 表示将node1的后继节点node赋值给 node2</p>
+
+<h2 id="0-交换链表节点">0. 交换链表节点</h2>
+<h3 id="剑指-offer-反转链表"><a href="https://leetcode-cn.com/problems/fan-zhuan-lian-biao-lcof/">剑指 Offer 反转链表</a></h3>
+<blockquote>
+  <p>定义一个函数，输入一个链表的头节点，反转该链表并输出反转后链表的头节点。
+输入: 1-&gt;2-&gt;3-&gt;4-&gt;5-&gt;NULL
+输出: 5-&gt;4-&gt;3-&gt;2-&gt;1-&gt;NULL</p>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  def reverseList(self, head: ListNode) -&gt; ListNode:
+        cur = head
+        prev = None
+        while cur:
+            cur.next, prev, cur = prev, cur, cur.next
+        return prev
+</code></pre></div></div>
+
+<h3 id="两两交换链表中的节点"><a href="https://leetcode-cn.com/problems/swap-nodes-in-pairs/">两两交换链表中的节点</a></h3>
+<p>给定一个链表，两两交换其中相邻的节点，并返回交换后的链表。
+你不能只是单纯的改变节点内部的值，而是需要实际的进行节点交换。
+给定 1-&gt;2-&gt;3-&gt;4, 你应该返回 2-&gt;1-&gt;4-&gt;3.</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20200925/16010201705371.jpeg" style="zoom:50%" /></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> def swapPairs(self, head):
+        a, a.next = self, head
+        while a.next and a.next.next:
+            b,c = a.next, a.next.next
+            a.next, b.next, c.next = c, c.next, b
+            a = b
+        return self.next
+</code></pre></div></div>
+
+<h2 id="1-判断链表是否有环">1. 判断链表是否有环</h2>
+<p>判断是否有环可用快慢指针， 起点相同，快指针每次走2个步，满指针每次都1步，如果最终快慢指针相遇，则证明此链表中有环。
+用set将路径上每个节点存起来，每走一步判断set中是否有当前节点，若有则证明有环</p>
+
+<h3 id="环形链表"><a href="https://leetcode-cn.com/problems/linked-list-cycle/">环形链表</a></h3>
+
+<blockquote>
+  <p>给定一个链表，判断链表中是否有环</p>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def hasCycle(self, head: ListNode) -&gt; bool:
+    # 快慢指针法
+        fast = slow = head
+        while fast and slow and fast.next:
+            fast = fast.next.next
+            slow = slow.next
+            if (fast == slow):
+                return True
+        return False
+</code></pre></div></div>
+
+<h3 id="环形链表-ii"><a href="https://leetcode-cn.com/problems/linked-list-cycle-ii/">环形链表 II</a></h3>
+
+<blockquote>
+  <p>给定一个链表，返回链表开始入环的第一个节点。 如果链表无环，则返回 null</p>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def detectCycle(self, head: ListNode) -&gt; ListNode:
+    # 快慢指针不好使，快指针可能会跳过那个节点
+    # 所以还是使用的缓存法，把走过的路缓存起来
+        cur = head
+        cache = set()
+        while cur:
+            if cur not in cache:
+                cache.add(cur)
+                cur = cur.next
+            else:
+                return cur
+        return None
+</code></pre></div></div>
+
+<h3 id="k-个一组翻转链表"><a href="https://leetcode-cn.com/problems/reverse-nodes-in-k-group/">K 个一组翻转链表</a></h3>
+
+<blockquote>
+  <p>给你一个链表，每 k 个节点一组进行翻转，请你返回翻转后的链表。
+k 是一个正整数，它的值小于或等于链表的长度。
+如果节点总数不是 k 的整数倍，那么请将最后剩余的节点保持原有顺序。</p>
+</blockquote>
+
+<h2 id="2-判断括号字符串是否有效">2. 判断括号字符串是否有效</h2>
+<p>用堆栈，如果符号是左边，入栈，如果符号是右边则与栈顶符号做匹配。最终堆栈为空则有效
+将字符串中所有{} [] () 替换为空字符串，如果最后又剩余则表示字符串无效</p>
+
+<h3 id="有效的括号"><a href="https://leetcode-cn.com/problems/valid-parentheses/">有效的括号</a></h3>
+
+<blockquote>
+  <p>给定一个只包括 ‘(‘，’)’，’{‘，’}’，’[‘，’]’ 的字符串，判断字符串是否有效。</p>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def isValid(self, s: str) -&gt; bool:
+         #堆栈的方式
+        symbols = {'}':'{',']':'[',')':'('}
+        stack = []
+        for i in s:
+            if i not in symbols:
+                stack.append(i)
+                # if stack为空意思是 如果栈还是空的就来一个右符号，则肯定是无效的
+                # 或者是栈取出来的不一样
+            elif not stack or symbols[i] != stack.pop():
+                return False
+        return not stack
+</code></pre></div></div>
+
+<h2 id="3-用队列实现栈用栈实现队列">3. 用队列实现栈&amp;用栈实现队列</h2>
+<p>队列-&gt; 栈: 每个元素入栈后，将前面n-1个元素pop然后压入栈，保证第n个元素总是位于第一位的。
+栈-&gt;队列： 用2个栈， A为输入栈，B为输出栈。 当pop时将A所有元素依次出栈并压入B栈，形成倒叙的A栈数据。后续若B栈为空，则继续讲A倒叙压入B栈中再执行pop</p>
+
+<h3 id="用队列实现栈"><a href="https://leetcode-cn.com/problems/implement-stack-using-queues/">用队列实现栈</a></h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    def __init__(self):
+        self.q = []
+
+    def push(self, x: int) -&gt; None:
+        self.q.append(x)
+
+    def pop(self) -&gt; int:
+        temp = self.q[-1]
+        del self.q[-1]
+        return temp
+
+    def top(self) -&gt; int:
+        return self.q[-1]
+
+    def empty(self) -&gt; bool:
+        return not len(self.q)
+</code></pre></div></div>
+
+<h3 id="用栈实现队列"><a href="https://leetcode-cn.com/problems/implement-queue-using-stacks/">用栈实现队列</a></h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    def __init__(self):
+        self.s1 = []
+        self.s2 = []
+
+    def push(self, x: int) -&gt; None:
+        self.s1.append(x)
+
+    def pop(self) -&gt; int:
+        if not len(self.s2):
+            for _ in range(len(self.s1)):
+                self.s2.append(self.s1.pop())
+        return self.s2.pop()
+
+    def peek(self) -&gt; int:
+        if not len(self.s2):
+            for _ in range(len(self.s1)):
+                self.s2.append(self.s1.pop())
+        return self.s2[len(self.s2)-1]
+
+    def empty(self) -&gt; bool:
+        return len(self.s1) == 0 and len(self.s2) == 0
+
+</code></pre></div></div>
+
+<h2 id="4-返回数据流中的第k大元素">4. 返回数据流中的第K大元素</h2>
+<p>用最小堆，维护一个大小为K的最小堆，每次比较当前元素与堆顶元素，若当前元素大，则删除堆顶元素，加入当前元素并重新排序，然后继续扫描下一个元素</p>
+<h2 id="5-返回滑动窗口中的最大值">5. 返回滑动窗口中的最大值</h2>
+<p>使用最大堆，同上理
+使用双端队列， 每次窗口扫到一个新元素，则将新元素与窗口中第一个元素比较大小，如果新元素大，则将窗口中前面所有元素删除，新元素成为第一个元素。如果旧窗口中的元素大，则不作处理，新元素加入窗口中。 此举目的是保证窗口中始终把最大元素放在最左边位置即第一位，后续扫描只需要比较一次大小即可。</p>
+<h2 id="6-有效的字母异位词">6. 有效的字母异位词</h2>
+<p>单词中每个字母个数相同，排序不同。
+使用排序，排序后比较是否一致
+使用hashMap, 将每个字母出现的次数统计在map中，最后比较map是否一致</p>
+
+<h3 id="有效的字母异位词"><a href="https://leetcode-cn.com/problems/valid-anagram/">有效的字母异位词</a></h3>
+
+<blockquote>
+  <p>给定两个字符串 s 和 t ，编写一个函数来判断 t 是否是 s 的字母异位词。</p>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># 排序的方式
+def isAnagram(self, s: str, t: str) -&gt; bool:
+        return sorted(s) == sorted(t)
+</code></pre></div></div>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># hashMap 的方式
+    def isAnagram(self, s: str, t: str) -&gt; bool:
+        voc1 = {}
+        voc2 = {}
+        for char in s:
+            voc1[char] = voc1.get(char, 0) + 1
+        for char in t:
+            voc2[char] = voc2.get(char, 0) + 1
+        return voc1 == voc2
+</code></pre></div></div>
+
+<h2 id="7-两数之和">7. 两数之和</h2>
+<p>2个for循环，暴力计算
+用set, 遍历第一层，计算set中是否包含target-item的值</p>
+
+<h3 id="两数之和"><a href="https://leetcode-cn.com/problems/two-sum/">两数之和</a></h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def twoSum(self, nums: List[int], target: int) -&gt; List[int]:
+        res = {}
+        # 遍历nums， 输出index和每个item值, 这里map中存的是数值的index，方便返回
+        for i, item in enumerate(nums):
+            if (target-item) not in res:
+                res[item] = i
+            else:
+                return [res[target-item], i]
+        return []
+</code></pre></div></div>
+
+<h2 id="8-三数之和输出所有三个数字之和为0的组合">8. 三数之和，输出所有三个数字之和为0的组合</h2>
+<p>3层for循环，暴力计算，同上
+用set，2个for循环，计算set中是否包含-item1-item2的值</p>
+
+<h3 id="三数之和"><a href="https://leetcode-cn.com/problems/3sum/">三数之和</a></h3>
+<blockquote>
+  <p>给你一个包含 n 个整数的数组 nums，判断 nums 中是否存在三个元素 a，b，c ，使得 a + b + c = 0 ？请你找出所有满足条件且不重复的三元组。</p>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def threeSum(self, nums):
+    nums.sort()
+    res = set()
+    for i,item in enumerate(nums[:-2]):
+        # 此判断为了能快速判断，若item与前一位值相同则继续循环
+        # 因为如果前面相同值有解，后面item的解一定与前面的相同，要求是答案中是不重复的，所以可以排除不遍历
+​        if i &gt;= 1 and item == nums[i-1]:
+​            continue
+​        d = {}
+​        for item2 in nums[i+1:]:
+​            if item2 not in d:
+
+                # 这里的处理方式同两数之和，前2个数的负数就是第3个解，3数值和为0.
+​                d[-item-item2] = 1
+​            else:
+​                res.add((item, -item-item2, item2))
+​    return map(list, res)
+</code></pre></div></div>
+
+<p><strong>延伸  输出三数之和为0的所有index组合</strong></p>
+<h2 id="9-验证二叉排序树">9. 验证二叉排序树</h2>
+<p>中序遍历整个树，判断是否为有序数组
+递归，每次递归当前节点的左子树，然后判断根节点的值是否比前继节点值大</p>
+<h3 id="验证二叉搜索树"><a href="https://leetcode-cn.com/problems/validate-binary-search-tree/">验证二叉搜索树</a></h3>
+<blockquote>
+  <p>给定一个二叉树，判断其是否是一个有效的二叉搜索树即二叉平衡树</p>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def isValidBST(self, root: TreeNode) -&gt; bool:        
+        self.prve = None
+        def isBST(root):
+            if not root:
+                return True
+            if not isBST(root.left):
+                return False 
+            # 这里为什么要小于 前继节点的值？
+            # 因为这是中序遍历，会把左子树全部走完才会走到每个树的根节点，所以prve一定是比根节点小的值，因为都是左子树嘛
+            # 那么这里一定是更节点 &gt; prve的值
+            if self.prve and self.prve.val &gt;= root.val:
+                return False
+            # 这里赋值的原因是，要拿根节点与右子树比较
+            self.prve = root 
+            return isBST(root.right)
+        return isBST(root)
+</code></pre></div></div>
+
+<h2 id="10-二叉树二叉搜索树的最近公共祖先">10. 二叉树&amp;二叉搜索树的最近公共祖先</h2>
+<p>从链表角度考虑，由子节点往根节点遍历，路径上所有点记录下来，比较2个路径中最后的相同节点。
+递归，分别寻找左子树和右子树中是否包含P 和 Q这2个节点，如果包含返回节点，不包含则继续递归直到子树中出现节点或者到达叶子节点返回空，那么这个树就将单一的P或Q一直往上透传，直到在某个节点中与取到的P或Q组成一对，则返回当前根节点的值即为公共祖先</p>
+<h3 id="二叉搜索树的最近公共祖先"><a href="https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-search-tree/">二叉搜索树的最近公共祖先</a></h3>
+
+<blockquote>
+  <p>给定一个二叉搜索树, 找到该树中两个指定节点的最近公共祖先。</p>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> def lowestCommonAncestor(self, root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -&gt; 'TreeNode':
+        # 简单递归
+        def lower(root, p, q):
+            if not root or root == p or root == q : return root
+            left = lower(root, p,q) # 结果是p 或 q 或叶子节点
+            right = lower(root, p ,q)
+            if not left: return right # 如果左子树没有结果，结果一定在右边
+            if not right: return left # 同理
+            if left and right : return root # 如果左右子树都有值，说明当前节点就是左右子树的共同根节点
+        return lower(root, left, right)
+</code></pre></div></div>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def lowestCommonAncestor(self, root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -&gt; 'TreeNode':
+        # 排序递归
+        if  root.val&lt; p and root.val&lt; q:
+            return lowestCommonAncestor(root.right, p,q)
+        if  root.val&gt; p and root.val&gt; q:
+            return lowestCommonAncestor(root.left, p,q)
+        if  root.val&gt;p and root.val &lt; q:
+            return root
+</code></pre></div></div>
+
+<h3 id="二叉树的最近公共祖先"><a href="https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-tree/">二叉树的最近公共祖先</a></h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># 同上题简单递归，因为此题无序，无法使用排序逻辑
+def lowestCommonAncestor(self, root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -&gt; 'TreeNode':
+        def lowest(root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -&gt; 'TreeNode':
+            # 此处如果root是空，也可以返回，表示后续没找到，走8，9行判断
+            if not root or root == p or root == q: return root
+            left = lowest(root.left, p, q)
+            right = lowest(root.right, p, q)
+            if not left: return right
+            if not right:return left
+            if left and right: return root
+        return lowest(root, p, q)
+</code></pre></div></div>
+
+<h2 id="11-powxn--即x的n次方">11. Pow(x,n)  即x的n次方</h2>
+<p>递归，分治的思想，x的n次方可以拆分为 x的n/2次方*x的n/2次方，  还可以继续往下拆分，有效避免了重复计算，时间复杂度是logn.</p>
+
+<h3 id="powx-n"><a href="https://leetcode-cn.com/problems/powx-n/">Pow(x, n)</a></h3>
+<blockquote>
+  <p>实现 pow(x, n) ，即计算 x 的 n 次幂函数。</p>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> # 使用递归方式,分治
+    def myPow(self, x: float, n: int) -&gt; float:
+        if not n : return 1
+        if n &lt; 0 : return (1 / self.myPow(x, -n))
+        if n %2 : # 奇数
+            return x * self.myPow(x, n-1)
+        return self.myPow(x*x, n/2) # 偶数
+</code></pre></div></div>
+
+<h2 id="12-求众数即元素出现次数大于n2">12. 求众数，即元素出现次数大于n/2</h2>
+<p>暴力计算，2个loop,  O(n²)
+HashMap, 遍历所有元素，把出现次数保存到map中，再查找map中多次数的元素
+排序后获取数组中间位置即为众数
+分治思想，获取左右子集中的众数，如果左右众数一致则得出结果，不一致则继续分治拆分左右子集，统计出所有子集的众数，最多的为众数</p>
+<h3 id="多数元素"><a href="https://leetcode-cn.com/problems/majority-element/">多数元素</a></h3>
+<blockquote>
+  <p>给定一个大小为 n 的数组，找到其中的多数元素。多数元素是指在数组中出现次数大于 ⌊ n/2 ⌋ 的元素。</p>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def majorityElement(self, nums: List[int]) -&gt; int:
+
+    # 摩尔投票法， 当一个数的重复次数超过数组长度的一半，每次将两个不相同的数删除，最终剩下的就是要找的数。
+        res = 0
+        count = 0
+        for item in nums:
+            if count == 0:
+                res = item
+                count = 1
+            elif item == res:
+                count += 1
+            else:
+                count -= 1
+        if count &gt; 0: return res
+
+def majorityElement(self, nums: List[int]) -&gt; int:
+    # 哈希法
+        res = {}
+        maxItem = 0
+        maxNums = 0
+        for item in nums:
+            res[item] = res.get(item, 0) + 1
+        for item, value in res.items():
+            if maxNums &lt; value : 
+                maxItem = item
+                maxNums = value
+        return maxItem
+</code></pre></div></div>
+
+<h2 id="13-买卖股票的最佳时机">13. 买卖股票的最佳时机</h2>
+<p>DFS 深度优先搜索
+贪心算法: 选择局部最优
+动态规划</p>
+<h2 id="14-二叉树层次遍历">14. 二叉树层次遍历</h2>
+<p>BFS, Breadth First Search 广度优先搜索
+DFS, Depth First Search  深度优先搜索</p>
+<h3 id="二叉树的层序遍历"><a href="https://leetcode-cn.com/problems/binary-tree-level-order-traversal/">二叉树的层序遍历</a></h3>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def levelOrder(self, root: TreeNode) -&gt; List[List[int]]:   
+        # BFS 用队列
+        queue = []
+        queue.append(root)
+        result = []
+        while queue:
+            size = len(queue)
+            current_level = []
+            for _ in range(size):
+                node = queue.pop(0)
+                current_level.append(node.val)
+                if node.left:
+                    queue.append(node.left)
+                if node.right:
+                    queue.append(node.right)
+            result.append(current_level)
+        return result
+     
+
+def levelOrder(self, root: TreeNode) -&gt; List[List[int]]:   
+        # DFS用栈
+        result = []
+        def dfs(node, level):
+            if not node: return []
+            if len(result) &lt; level+1:
+                result.append([])
+            result[level].append(node.val)
+            dfs(node.left, level+1)
+            dfs(node.right, level+1)
+        dfs(root,0)
+        return result
+</code></pre></div></div>
+
+<h2 id="15-二叉树的最大和最小深度">15. 二叉树的最大和最小深度</h2>
+<p>同上，可以使用BFS 和 DFS方法解决。
+BFS则是使用 while循环遍历当前层级的queue中所有对象，（最小）如果其中一个节点是叶子节点，则结束遍历，输出当前层级即为最小深度。（最大）一直遍历整棵树，输出最后的层级即为最大深度
+DFS则使用递归，递归每层的左右节点，结束条件是若当前节点是空返回0.</p>
+<h2 id="16-生成有效括号组合">16. 生成有效括号组合</h2>
+<p>同上，使用DFS递归来解决，注意2个递归条件，已使用的右括号必须小于左括号，才可继续增加右括号，否则没有多于的左括号去配对。当左右括号全部使用完毕将字符串添加到结果list中</p>
+<h2 id="17-n皇后问题">17. N皇后问题</h2>
+<p>使用DFS递归， 思想是类似围棋或象棋算法每一步都会产生一个分支，每个分支下一步棋又会产生一个分支，每条分支的每一步都会有成功或者失败的判断即剪枝的条件，如剪枝成立则此分支结束，回溯到上一分支继续走其他步。上上一步也可回溯继续走下去。只要某个条件下能够走将N个皇后走完，则代表前面的每一步都是成立的，且路径都会有记录。
+使用DFS+位运算， 太复杂， 后续再研究</p>
+<h2 id="18-数独问题">18. 数独问题</h2>
+<p>依然使用DFS递归然后回溯去搜索解，剪枝的条件是横竖现有值不能重复，3<em>3的9宫格中数字不能重复。除此判断条件外，直接递归回溯直到走完所有9</em>9输出答案</p>
+<h2 id="19-实现一个求解平方根的函数">19. 实现一个求解平方根的函数</h2>
+<p>用二分查找法，因为y=x²是单调递增，所以是有序有界的，可以通过mid*mid来逼近真实的x	
+用牛顿迭代法，有数学公式</p>
+
+<h2 id="20-实现一个字典树即trie树-字典树">20. 实现一个字典树即Trie树 字典树</h2>
+<p>字典里面套字典，表示每个节点有多个边相对应，穿起来所有路径即为最终的单词，Trie树如下图，
+例如insert  “apple” ，则生成Trie树为 {‘a’: {‘p’: {‘p’: {‘l’: {‘e’: {‘#’: ‘#’}}}}}}
+最后一个字母e的分支只有结束标识符”#”
+在上面的基础上insert “app”，  则树为 {‘a’: {‘p’: {‘p’: {‘l’: {‘e’: {‘#’: ‘#’}}, ‘#’: ‘#’}}}}
+在p的分支有2个，一个是”l”, 一个是结束符”#” ,代表app可以结束，也可以只是前缀</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20200925/16010192691189.png" style="zoom:50%" /></p>
+
+<h2 id="21-二维网格中的单词搜索问题">21. 二维网格中的单词搜索问题</h2>
+<p>在二维网格中搜索单词，可以用DFS，去递归+回溯。 也可用DFS+Trie树+回溯。把单词编制成Trie树，遍历网格中每个单词，若是树中的首字母，则接着递归首字母附件的4个字母是否存在于树中，不存在则回溯</p>
+<h2 id="22-统计位1的个数">22. 统计位1的个数</h2>
+<p>先学习一下常见的位运算
+x&amp;1 == 1 or == 0 判断奇偶性
+x = x &amp; (x-1)  清除x最低位的1
+x&amp;-x 拿到最低位的1</p>
+<h2 id="23-2的幂次方问题比特位计数问题">23. 2的幂次方问题&amp;比特位计数问题</h2>
+<p>2的幂次方有个特点，2进制只有1位是1，其他全是0，可以用上面的位运算解决
+比特位计数问题如果用上面的暴力算法是可以解决的，问题是每个数字都要计算一遍浪费时间，最好的方式是前面计算的结果，后面直接使用，公式是count[x] = count[x&amp;(x-1)] +1 ,就是 x比x小1位的数字的个数+1. 这个一个循环得到结果，很巧妙</p>
+<h3 id="2的幂"><a href="https://leetcode-cn.com/problems/power-of-two/">2的幂</a></h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># 2的幂次方 只有一位是1，其他全是0， 所以打掉1之后 就是0了
+def isPowerOfTwo(self, n: int) -&gt; bool:
+        if n != 0 and n&amp;(n-1) == 0:
+            return True
+        else:
+            return False
+</code></pre></div></div>
+<h2 id="24-动态规划">24. 动态规划</h2>
+<ol>
+  <li>递推 （递归+记忆化）</li>
+  <li>状态的定义： opt[n], dp[n]…</li>
+  <li>状态转移方程： opt[n] = best_of(opt[n-1] ,opt[n-2] …)</li>
+  <li>最优子结构： 最终的结果是由最优的每一步得到的，每一步的最优结果都得到保存，所以如果问子结构中最优结果就可以直接得到
+例如斐波拉切数列，F[n] = F[n-1] + F[n-2], 直接递归会有很多重复计算，例如F[4]=F[3]+F[2] = F[2]+F[1]+F[2],重复计算了F[2],如果将F[2]结果保存起来，就节省很多时间。</li>
+</ol>
+
+<h2 id="25-动态规划dp-vs-回溯-vs-贪心">25. 动态规划DP vs 回溯 vs 贪心</h2>
+<p>回溯(递归)  -&gt; 重复计算， 可以做到总体最优，但是计算量大，性能低下
+贪心 -&gt; 永远局部最优,如果简单的每步局部最优就是总体最优，这样是可以的，但是往往没这么简单
+DP -&gt; 记录局部最优子结构， 
+其实如果能够递归的问题，一般都可通过DP解决</p>
+
+<h2 id="26-爬楼梯">26. 爬楼梯</h2>
+<p>递推公式同 斐波拉切 F[n] = F[n-1] + F[n-2]
+因为最后一步有多少种方法等于 前一步的方法 加上前2步的方法， 因为可以一次可以1个台阶或者2个台阶
+DP定义：到第n层有多少种方法</p>
+<h2 id="27-三角形的最小路径和">27. 三角形的最小路径和</h2>
+<p>一种递归+回溯，能解决，只是时间很长，重复计算
+动态规划，从底层开始，往上遍历，上层每次都选择下面2个其中小的一个， 推导出的DP转移方程为F[j]= min(F[j], F[j+1]) + t[i][j]
+F[j]为指定层第j个位置到达底部最小路径，以此类推，顶部只需要计算下一层到他的最小路径即可。
+DP定义：到第j层最小路径</p>
+<h2 id="28-乘积最大子数组">28. 乘积最大子数组</h2>
+<p>动态规划，计算连续的子数组积的最大值， 由于元素可能有正，有负， 如果始终只保留正数，可能后续元素出现负数积就变小了，可能之前的负数与负数的积是最大值。所以需要保留之前的最大值和最小值，乘后续数组元素后再覆盖最大值最小值
+DP定义：到第i位最大值和最小值</p>
+<h2 id="29-买卖股票的最佳时机---买卖股票的最佳时机-iii--买卖股票的最佳时机-ii">29. 买卖股票的最佳时机  &amp; 买卖股票的最佳时机 III &amp; 买卖股票的最佳时机 II</h2>
+<p>用3维数组，分别代表0~n-1天， 0/1是否持股， 0~k次交易 能够满足大部分股票买卖的状态定义</p>
+<h2 id="30-最长上升子序列">30. 最长上升子序列</h2>
+<p>dp[i]状态为 在i点包含i的最长上升子序列， 不是i点的最长上升子序列，所以最后的结果是选择数组中最大的，而不是指定位置的</p>
+<h2 id="31-零钱兑换">31. 零钱兑换</h2>
+<p>dp[i] 为凑成当前金额最少的硬币数，则dp方程为 dp[i] = min{dp[i-conins[j] ]} +1, 例如银币金额是[1,2,5], 则dp[11] = min{ dp[10], dp[9], dp[6]} +1
+可以把此题当成爬楼梯，到达11层，一次可以跨1步，2步，5步，最少需要多少步一样。</p>
+<h2 id="32-编辑距离">32. 编辑距离</h2>
+<p>把A单词转换成B单词最少需要多少步， 可以插入，删除，替换。dp[i][j] 表示从A单词的 i 位置到B单词 j 位置需要的最小操作数。
+dp方程为dp[i][j] = if A[i] ==B[j] : dp[i-1][j-1] else:  min{dp[i-1][j], dp[i][j-1], dp[i-1][j-1]}+1
+如果当前ij字符相等，则dp[i][j]就等于上一步的结果，不需要变动。如果不等，则等于插入，删除，替换其中一个的最小步数+1</p>
+<h2 id="33-dp套路-三部曲">33. DP套路 三部曲</h2>
+<ol>
+  <li>套路步骤1， 创建dp状态定义</li>
+  <li>套路步骤2， 初始化dp首位状态</li>
+  <li>套路步骤3， 大循环开始写递推公式，并赋值给dp状态</li>
+</ol>
+
+<h2 id="34-并查集">34. 并查集</h2>
+<p>几个重要方法， 初始化，查找父类，合并。 查找父类可以做路径压缩的优化。</p>
+<h2 id="35-岛屿数量">35. 岛屿数量</h2>
+<p>染色法：遍历节点，把节点为“1”的相邻节点赋值为“0”， 并记录为一个岛。可用DFS也可BFS。
+并查集：对为“1”的节点初始化，把相邻的合并，最后遍历有多少个roots</p>
+<h2 id="36-布隆过滤器">36. 布隆过滤器</h2>
+<p>是一个很长的二进制向量和一个映射函数，用于检索一个元素是否在集合中，如果判断不在集合中，那一定不在集合中。如果判断在集合中，不一定再
+特点： 空间效率和查询时间远远超过一般算法，但是有一定误识别率和删除困难。</p>
+
+  </section>
+
+</article>
+
+<section>
+
+            <div class="content-play">
+              <!-- <p><a href="javascript:void(0)" onclick="dashangToggle()" class="dashang" title="打赏，支持一下">打赏一个呗</a></p> -->
+              <div class="hide_box-play"></div>
+              <div class="shang_box-play">
+                <a class="shang_close-play" href="javascript:void(0)" onclick="dashangToggle()" title="关闭"><img src="/images/payimg/close.jpg" alt="取消" /></a>
+                <div class="shang_tit-play">
+                  <p>感谢您的支持，我会继续努力的!</p>
+                </div>
+                <div class="shang_payimg">
+                    <img src="/images/payimg/alipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+              <div class="shang_payimg">    
+                    <img src="/images/payimg/weipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+                <div class="pay_explain">扫码打赏，你说多少就多少</div>
+                <div class="shang_payselect">
+                  <div class="pay_item checked" data-id="alipay">
+                    <span class="pay_logo"><img src="/images/payimg/alipay.jpg" alt="支付宝" /></span>
+                  </div>
+                  <div class="pay_item" data-id="weipay">
+                    <span class="pay_logo"><img src="/images/payimg/wechat.jpg" alt="微信" /></span>
+                  </div>
+                </div>
+                <div class="shang_info-play">
+                  <p>打开<span id="shang_pay_txt">支付宝</span>扫一扫，即可进行扫码打赏哦</p>
+                </div>
+              </div>
+            </div>
+            <script type="text/javascript">
+            function dashangToggle(){
+              $(".hide_box-play").fadeToggle();
+              $(".shang_box-play").fadeToggle();
+            }
+            </script>
+
+            <div style="text-align:center;margin:50px 0; font:normal 14px/24px 'MicroSoft YaHei';"></div>
+
+            <style type="text/css">
+              .content-play{width:80%;margin-top: 20px;margin-bottom: 10px;height:40px;}
+              .hide_box-play{z-index:999;filter:alpha(opacity=50);background:#666;opacity: 0.5;-moz-opacity: 0.5;left:0;top:0;height:99%;width:100%;position:fixed;display:none;}
+              .shang_box-play{width:540px;height:540px;padding:10px;background-color:#fff;border-radius:10px;position:fixed;z-index:1000;left:50%;top:50%;margin-left:-280px;margin-top:-280px;border:1px dotted #dedede;display:none;}
+              .shang_box-play img{border:none;border-width:0;}
+              .dashang{display:block;width:100px;margin:5px auto;height:25px;line-height:25px;padding:10px;background-color:#E74851;color:#fff;text-align:center;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;transition: all 0.3s;}
+              .dashang:hover{opacity:0.8;padding:15px;font-size:18px;}
+              .shang_close-play{float:right;display:inline-block;
+                margin-right: 10px;margin-top: 20px;
+              }
+              .shang_logo{display:block;text-align:center;margin:20px auto;}
+              .shang_tit-play{width: 100%;height: 75px;text-align: center;line-height: 66px;color: #a3a3a3;font-size: 16px;background: url('/images/payimg/cy-reward-title-bg.jpg');font-family: 'Microsoft YaHei';margin-top: 7px;margin-right:2px;}
+              .shang_tit-play p{color:#a3a3a3;text-align:center;font-size:16px;}
+              .shang_payimg{width:140px;padding:10px;padding-left: 80px; /*border:6px solid #EA5F00;**/margin:0 auto;border-radius:3px;height:140px;display:inline-block;}
+              .shang_payimg img{display:inline-block;margin-right:10px;float:left;text-align:center;width:140px;height:140px; }
+              .pay_explain{text-align:center;margin:10px auto;font-size:12px;color:#545454;}
+              .shang_payselect{text-align:center;margin:0 auto;margin-top:40px;cursor:pointer;height:60px;width:500px;margin-left:110px;}
+              .shang_payselect .pay_item{display:inline-block;margin-right:140px;float:left;}
+              .shang_info-play{clear:both;}
+              .shang_info-play p,.shang_info-play a{color:#C3C3C3;text-align:center;font-size:12px;text-decoration:none;line-height:2em;}
+            </style>
+
+       <ul class="pager">
+        
+        <li class="previous">
+            <a href="/2020/09/iOS-%E5%BA%94%E7%94%A8%E5%90%AF%E5%8A%A8%E8%80%97%E6%97%B6%E5%88%86%E6%9E%90%E5%8F%8A%E4%BC%98%E5%8C%96/" data-toggle="tooltip" data-placement="top" title="iOS 应用启动耗时分析及优化">上一篇：  <span>iOS 应用启动耗时分析及优化</span>
+            </a>
+        </li>
+        
+        
+    </ul>
+</section>
+
+<section class="post-comments">
+
+  
+  
+</section>
+
+
+            <section class="footer">
+    <footer>
+        <div class = "footer_div">  
+        <nav class="cover-navigation navigation--social">
+          <ul class="navigation">
+
+          
+          <!-- Github -->
+          <li class="navigation__item_social">
+            <a href="https://github.com/ByronJia" title="@ByronJia 的 Github" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/github.png);"></div>
+            </a>
+          </li>
+          
+
+          
+          <!-- Zhihu -->
+          <li class="navigation__item_social">
+            <a href="https://www.zhihu.com/people/byronjia" title="@byronjia" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/zhihu.png);"></div>
+            </a>
+          </li>
+
+          
+
+          
+
+          
+
+          
+
+          
+          
+
+
+          
+          <!-- Email -->
+          <li class="navigation__item_social">
+            <a href="mailto:jiachaoning@163.com" title="Contact me">
+              <div class="footer-social-icon" style="background:url(/images/email.png);"></div>
+            </a>
+          </li>
+          
+          
+          <!-- RSS -->
+          <!-- <li class="navigation__item_social">
+            <a href="/feed.xml" rel="author" title="RSS" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/rss.png);"></div>
+              <span class="label">RSS</span>
+            </a>
+          </li> -->
+
+          </ul>
+        </nav>
+
+        </div>
+
+        <div class = "footer_div">  
+           <p class="copyright text-muted">
+            Copyright &copy; 拜伦的博客 2020 Theme by <a href="https://github.com/ByronJia/ByronJia.github.io">Byron</a> |
+            <iframe
+                style="margin-left: 2px; margin-bottom:-5px;"
+                frameborder="0" scrolling="0" width="91px" height="20px"
+                src="https://ghbtns.com/github-btn.html?user=ByronJia&repo=ByronJia.github.io&type=star&count=true" >
+            </iframe>
+            </p>
+        	<!-- <div align="right">
+    			<link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.3.0/css/font-awesome.min.css"> -->
+
+          <!-- 访问统计 -->
+          <!-- <span id="busuanzi_container_site_pv">
+            本站总访问量
+            <span id="busuanzi_value_site_pv"></span>次
+          </span> -->
+
+        </div>
+        <div>
+    </footer>
+</section>
+
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="/js/main.js"></script>
+
+<script type="text/javascript" src="/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+  </body>
+
+</html>

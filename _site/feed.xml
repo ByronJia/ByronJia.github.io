@@ -5,9 +5,523 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 24 Sep 2020 22:02:35 +0800</pubDate>
-    <lastBuildDate>Thu, 24 Sep 2020 22:02:35 +0800</lastBuildDate>
+    <pubDate>Fri, 25 Sep 2020 15:51:56 +0800</pubDate>
+    <lastBuildDate>Fri, 25 Sep 2020 15:51:56 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>LeetCode刷题笔记</title>
+        <description>&lt;h2 id=&quot;链表和数组&quot;&gt;链表和数组&lt;/h2&gt;
+&lt;p&gt;多见链表的全反转，K个一组反转链表
+   head 等表示指定Node,不是index也不是指针
+   head.next = node1 表示该Node的后继节点是node1
+   node2 = node1.next, 表示将node1的后继节点node赋值给 node2&lt;/p&gt;
+
+&lt;h2 id=&quot;0-交换链表节点&quot;&gt;0. 交换链表节点&lt;/h2&gt;
+&lt;h3 id=&quot;剑指-offer-反转链表&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/fan-zhuan-lian-biao-lcof/&quot;&gt;剑指 Offer 反转链表&lt;/a&gt;&lt;/h3&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;定义一个函数，输入一个链表的头节点，反转该链表并输出反转后链表的头节点。
+输入: 1-&amp;gt;2-&amp;gt;3-&amp;gt;4-&amp;gt;5-&amp;gt;NULL
+输出: 5-&amp;gt;4-&amp;gt;3-&amp;gt;2-&amp;gt;1-&amp;gt;NULL&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  def reverseList(self, head: ListNode) -&amp;gt; ListNode:
+        cur = head
+        prev = None
+        while cur:
+            cur.next, prev, cur = prev, cur, cur.next
+        return prev
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;两两交换链表中的节点&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/swap-nodes-in-pairs/&quot;&gt;两两交换链表中的节点&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;给定一个链表，两两交换其中相邻的节点，并返回交换后的链表。
+你不能只是单纯的改变节点内部的值，而是需要实际的进行节点交换。
+给定 1-&amp;gt;2-&amp;gt;3-&amp;gt;4, 你应该返回 2-&amp;gt;1-&amp;gt;4-&amp;gt;3.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200925/16010201705371.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; def swapPairs(self, head):
+        a, a.next = self, head
+        while a.next and a.next.next:
+            b,c = a.next, a.next.next
+            a.next, b.next, c.next = c, c.next, b
+            a = b
+        return self.next
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;1-判断链表是否有环&quot;&gt;1. 判断链表是否有环&lt;/h2&gt;
+&lt;p&gt;判断是否有环可用快慢指针， 起点相同，快指针每次走2个步，满指针每次都1步，如果最终快慢指针相遇，则证明此链表中有环。
+用set将路径上每个节点存起来，每走一步判断set中是否有当前节点，若有则证明有环&lt;/p&gt;
+
+&lt;h3 id=&quot;环形链表&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/linked-list-cycle/&quot;&gt;环形链表&lt;/a&gt;&lt;/h3&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;给定一个链表，判断链表中是否有环&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def hasCycle(self, head: ListNode) -&amp;gt; bool:
+    # 快慢指针法
+        fast = slow = head
+        while fast and slow and fast.next:
+            fast = fast.next.next
+            slow = slow.next
+            if (fast == slow):
+                return True
+        return False
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;环形链表-ii&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/linked-list-cycle-ii/&quot;&gt;环形链表 II&lt;/a&gt;&lt;/h3&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;给定一个链表，返回链表开始入环的第一个节点。 如果链表无环，则返回 null&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def detectCycle(self, head: ListNode) -&amp;gt; ListNode:
+    # 快慢指针不好使，快指针可能会跳过那个节点
+    # 所以还是使用的缓存法，把走过的路缓存起来
+        cur = head
+        cache = set()
+        while cur:
+            if cur not in cache:
+                cache.add(cur)
+                cur = cur.next
+            else:
+                return cur
+        return None
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;k-个一组翻转链表&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/reverse-nodes-in-k-group/&quot;&gt;K 个一组翻转链表&lt;/a&gt;&lt;/h3&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;给你一个链表，每 k 个节点一组进行翻转，请你返回翻转后的链表。
+k 是一个正整数，它的值小于或等于链表的长度。
+如果节点总数不是 k 的整数倍，那么请将最后剩余的节点保持原有顺序。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;2-判断括号字符串是否有效&quot;&gt;2. 判断括号字符串是否有效&lt;/h2&gt;
+&lt;p&gt;用堆栈，如果符号是左边，入栈，如果符号是右边则与栈顶符号做匹配。最终堆栈为空则有效
+将字符串中所有{} [] () 替换为空字符串，如果最后又剩余则表示字符串无效&lt;/p&gt;
+
+&lt;h3 id=&quot;有效的括号&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/valid-parentheses/&quot;&gt;有效的括号&lt;/a&gt;&lt;/h3&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;给定一个只包括 ‘(‘，’)’，’{‘，’}’，’[‘，’]’ 的字符串，判断字符串是否有效。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def isValid(self, s: str) -&amp;gt; bool:
+         #堆栈的方式
+        symbols = {'}':'{',']':'[',')':'('}
+        stack = []
+        for i in s:
+            if i not in symbols:
+                stack.append(i)
+                # if stack为空意思是 如果栈还是空的就来一个右符号，则肯定是无效的
+                # 或者是栈取出来的不一样
+            elif not stack or symbols[i] != stack.pop():
+                return False
+        return not stack
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;3-用队列实现栈用栈实现队列&quot;&gt;3. 用队列实现栈&amp;amp;用栈实现队列&lt;/h2&gt;
+&lt;p&gt;队列-&amp;gt; 栈: 每个元素入栈后，将前面n-1个元素pop然后压入栈，保证第n个元素总是位于第一位的。
+栈-&amp;gt;队列： 用2个栈， A为输入栈，B为输出栈。 当pop时将A所有元素依次出栈并压入B栈，形成倒叙的A栈数据。后续若B栈为空，则继续讲A倒叙压入B栈中再执行pop&lt;/p&gt;
+
+&lt;h3 id=&quot;用队列实现栈&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/implement-stack-using-queues/&quot;&gt;用队列实现栈&lt;/a&gt;&lt;/h3&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    def __init__(self):
+        self.q = []
+
+    def push(self, x: int) -&amp;gt; None:
+        self.q.append(x)
+
+    def pop(self) -&amp;gt; int:
+        temp = self.q[-1]
+        del self.q[-1]
+        return temp
+
+    def top(self) -&amp;gt; int:
+        return self.q[-1]
+
+    def empty(self) -&amp;gt; bool:
+        return not len(self.q)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;用栈实现队列&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/implement-queue-using-stacks/&quot;&gt;用栈实现队列&lt;/a&gt;&lt;/h3&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    def __init__(self):
+        self.s1 = []
+        self.s2 = []
+
+    def push(self, x: int) -&amp;gt; None:
+        self.s1.append(x)
+
+    def pop(self) -&amp;gt; int:
+        if not len(self.s2):
+            for _ in range(len(self.s1)):
+                self.s2.append(self.s1.pop())
+        return self.s2.pop()
+
+    def peek(self) -&amp;gt; int:
+        if not len(self.s2):
+            for _ in range(len(self.s1)):
+                self.s2.append(self.s1.pop())
+        return self.s2[len(self.s2)-1]
+
+    def empty(self) -&amp;gt; bool:
+        return len(self.s1) == 0 and len(self.s2) == 0
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;4-返回数据流中的第k大元素&quot;&gt;4. 返回数据流中的第K大元素&lt;/h2&gt;
+&lt;p&gt;用最小堆，维护一个大小为K的最小堆，每次比较当前元素与堆顶元素，若当前元素大，则删除堆顶元素，加入当前元素并重新排序，然后继续扫描下一个元素&lt;/p&gt;
+&lt;h2 id=&quot;5-返回滑动窗口中的最大值&quot;&gt;5. 返回滑动窗口中的最大值&lt;/h2&gt;
+&lt;p&gt;使用最大堆，同上理
+使用双端队列， 每次窗口扫到一个新元素，则将新元素与窗口中第一个元素比较大小，如果新元素大，则将窗口中前面所有元素删除，新元素成为第一个元素。如果旧窗口中的元素大，则不作处理，新元素加入窗口中。 此举目的是保证窗口中始终把最大元素放在最左边位置即第一位，后续扫描只需要比较一次大小即可。&lt;/p&gt;
+&lt;h2 id=&quot;6-有效的字母异位词&quot;&gt;6. 有效的字母异位词&lt;/h2&gt;
+&lt;p&gt;单词中每个字母个数相同，排序不同。
+使用排序，排序后比较是否一致
+使用hashMap, 将每个字母出现的次数统计在map中，最后比较map是否一致&lt;/p&gt;
+
+&lt;h3 id=&quot;有效的字母异位词&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/valid-anagram/&quot;&gt;有效的字母异位词&lt;/a&gt;&lt;/h3&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;给定两个字符串 s 和 t ，编写一个函数来判断 t 是否是 s 的字母异位词。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# 排序的方式
+def isAnagram(self, s: str, t: str) -&amp;gt; bool:
+        return sorted(s) == sorted(t)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# hashMap 的方式
+    def isAnagram(self, s: str, t: str) -&amp;gt; bool:
+        voc1 = {}
+        voc2 = {}
+        for char in s:
+            voc1[char] = voc1.get(char, 0) + 1
+        for char in t:
+            voc2[char] = voc2.get(char, 0) + 1
+        return voc1 == voc2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;7-两数之和&quot;&gt;7. 两数之和&lt;/h2&gt;
+&lt;p&gt;2个for循环，暴力计算
+用set, 遍历第一层，计算set中是否包含target-item的值&lt;/p&gt;
+
+&lt;h3 id=&quot;两数之和&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/two-sum/&quot;&gt;两数之和&lt;/a&gt;&lt;/h3&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def twoSum(self, nums: List[int], target: int) -&amp;gt; List[int]:
+        res = {}
+        # 遍历nums， 输出index和每个item值, 这里map中存的是数值的index，方便返回
+        for i, item in enumerate(nums):
+            if (target-item) not in res:
+                res[item] = i
+            else:
+                return [res[target-item], i]
+        return []
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;8-三数之和输出所有三个数字之和为0的组合&quot;&gt;8. 三数之和，输出所有三个数字之和为0的组合&lt;/h2&gt;
+&lt;p&gt;3层for循环，暴力计算，同上
+用set，2个for循环，计算set中是否包含-item1-item2的值&lt;/p&gt;
+
+&lt;h3 id=&quot;三数之和&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/3sum/&quot;&gt;三数之和&lt;/a&gt;&lt;/h3&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;给你一个包含 n 个整数的数组 nums，判断 nums 中是否存在三个元素 a，b，c ，使得 a + b + c = 0 ？请你找出所有满足条件且不重复的三元组。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def threeSum(self, nums):
+    nums.sort()
+    res = set()
+    for i,item in enumerate(nums[:-2]):
+        # 此判断为了能快速判断，若item与前一位值相同则继续循环
+        # 因为如果前面相同值有解，后面item的解一定与前面的相同，要求是答案中是不重复的，所以可以排除不遍历
+​        if i &amp;gt;= 1 and item == nums[i-1]:
+​            continue
+​        d = {}
+​        for item2 in nums[i+1:]:
+​            if item2 not in d:
+
+                # 这里的处理方式同两数之和，前2个数的负数就是第3个解，3数值和为0.
+​                d[-item-item2] = 1
+​            else:
+​                res.add((item, -item-item2, item2))
+​    return map(list, res)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;延伸  输出三数之和为0的所有index组合&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&quot;9-验证二叉排序树&quot;&gt;9. 验证二叉排序树&lt;/h2&gt;
+&lt;p&gt;中序遍历整个树，判断是否为有序数组
+递归，每次递归当前节点的左子树，然后判断根节点的值是否比前继节点值大&lt;/p&gt;
+&lt;h3 id=&quot;验证二叉搜索树&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/validate-binary-search-tree/&quot;&gt;验证二叉搜索树&lt;/a&gt;&lt;/h3&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;给定一个二叉树，判断其是否是一个有效的二叉搜索树即二叉平衡树&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def isValidBST(self, root: TreeNode) -&amp;gt; bool:        
+        self.prve = None
+        def isBST(root):
+            if not root:
+                return True
+            if not isBST(root.left):
+                return False 
+            # 这里为什么要小于 前继节点的值？
+            # 因为这是中序遍历，会把左子树全部走完才会走到每个树的根节点，所以prve一定是比根节点小的值，因为都是左子树嘛
+            # 那么这里一定是更节点 &amp;gt; prve的值
+            if self.prve and self.prve.val &amp;gt;= root.val:
+                return False
+            # 这里赋值的原因是，要拿根节点与右子树比较
+            self.prve = root 
+            return isBST(root.right)
+        return isBST(root)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;10-二叉树二叉搜索树的最近公共祖先&quot;&gt;10. 二叉树&amp;amp;二叉搜索树的最近公共祖先&lt;/h2&gt;
+&lt;p&gt;从链表角度考虑，由子节点往根节点遍历，路径上所有点记录下来，比较2个路径中最后的相同节点。
+递归，分别寻找左子树和右子树中是否包含P 和 Q这2个节点，如果包含返回节点，不包含则继续递归直到子树中出现节点或者到达叶子节点返回空，那么这个树就将单一的P或Q一直往上透传，直到在某个节点中与取到的P或Q组成一对，则返回当前根节点的值即为公共祖先&lt;/p&gt;
+&lt;h3 id=&quot;二叉搜索树的最近公共祖先&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-search-tree/&quot;&gt;二叉搜索树的最近公共祖先&lt;/a&gt;&lt;/h3&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;给定一个二叉搜索树, 找到该树中两个指定节点的最近公共祖先。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; def lowestCommonAncestor(self, root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -&amp;gt; 'TreeNode':
+        # 简单递归
+        def lower(root, p, q):
+            if not root or root == p or root == q : return root
+            left = lower(root, p,q) # 结果是p 或 q 或叶子节点
+            right = lower(root, p ,q)
+            if not left: return right # 如果左子树没有结果，结果一定在右边
+            if not right: return left # 同理
+            if left and right : return root # 如果左右子树都有值，说明当前节点就是左右子树的共同根节点
+        return lower(root, left, right)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def lowestCommonAncestor(self, root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -&amp;gt; 'TreeNode':
+        # 排序递归
+        if  root.val&amp;lt; p and root.val&amp;lt; q:
+            return lowestCommonAncestor(root.right, p,q)
+        if  root.val&amp;gt; p and root.val&amp;gt; q:
+            return lowestCommonAncestor(root.left, p,q)
+        if  root.val&amp;gt;p and root.val &amp;lt; q:
+            return root
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;二叉树的最近公共祖先&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-tree/&quot;&gt;二叉树的最近公共祖先&lt;/a&gt;&lt;/h3&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# 同上题简单递归，因为此题无序，无法使用排序逻辑
+def lowestCommonAncestor(self, root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -&amp;gt; 'TreeNode':
+        def lowest(root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -&amp;gt; 'TreeNode':
+            # 此处如果root是空，也可以返回，表示后续没找到，走8，9行判断
+            if not root or root == p or root == q: return root
+            left = lowest(root.left, p, q)
+            right = lowest(root.right, p, q)
+            if not left: return right
+            if not right:return left
+            if left and right: return root
+        return lowest(root, p, q)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;11-powxn--即x的n次方&quot;&gt;11. Pow(x,n)  即x的n次方&lt;/h2&gt;
+&lt;p&gt;递归，分治的思想，x的n次方可以拆分为 x的n/2次方*x的n/2次方，  还可以继续往下拆分，有效避免了重复计算，时间复杂度是logn.&lt;/p&gt;
+
+&lt;h3 id=&quot;powx-n&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/powx-n/&quot;&gt;Pow(x, n)&lt;/a&gt;&lt;/h3&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;实现 pow(x, n) ，即计算 x 的 n 次幂函数。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; # 使用递归方式,分治
+    def myPow(self, x: float, n: int) -&amp;gt; float:
+        if not n : return 1
+        if n &amp;lt; 0 : return (1 / self.myPow(x, -n))
+        if n %2 : # 奇数
+            return x * self.myPow(x, n-1)
+        return self.myPow(x*x, n/2) # 偶数
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;12-求众数即元素出现次数大于n2&quot;&gt;12. 求众数，即元素出现次数大于n/2&lt;/h2&gt;
+&lt;p&gt;暴力计算，2个loop,  O(n²)
+HashMap, 遍历所有元素，把出现次数保存到map中，再查找map中多次数的元素
+排序后获取数组中间位置即为众数
+分治思想，获取左右子集中的众数，如果左右众数一致则得出结果，不一致则继续分治拆分左右子集，统计出所有子集的众数，最多的为众数&lt;/p&gt;
+&lt;h3 id=&quot;多数元素&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/majority-element/&quot;&gt;多数元素&lt;/a&gt;&lt;/h3&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;给定一个大小为 n 的数组，找到其中的多数元素。多数元素是指在数组中出现次数大于 ⌊ n/2 ⌋ 的元素。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def majorityElement(self, nums: List[int]) -&amp;gt; int:
+
+    # 摩尔投票法， 当一个数的重复次数超过数组长度的一半，每次将两个不相同的数删除，最终剩下的就是要找的数。
+        res = 0
+        count = 0
+        for item in nums:
+            if count == 0:
+                res = item
+                count = 1
+            elif item == res:
+                count += 1
+            else:
+                count -= 1
+        if count &amp;gt; 0: return res
+
+def majorityElement(self, nums: List[int]) -&amp;gt; int:
+    # 哈希法
+        res = {}
+        maxItem = 0
+        maxNums = 0
+        for item in nums:
+            res[item] = res.get(item, 0) + 1
+        for item, value in res.items():
+            if maxNums &amp;lt; value : 
+                maxItem = item
+                maxNums = value
+        return maxItem
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;13-买卖股票的最佳时机&quot;&gt;13. 买卖股票的最佳时机&lt;/h2&gt;
+&lt;p&gt;DFS 深度优先搜索
+贪心算法: 选择局部最优
+动态规划&lt;/p&gt;
+&lt;h2 id=&quot;14-二叉树层次遍历&quot;&gt;14. 二叉树层次遍历&lt;/h2&gt;
+&lt;p&gt;BFS, Breadth First Search 广度优先搜索
+DFS, Depth First Search  深度优先搜索&lt;/p&gt;
+&lt;h3 id=&quot;二叉树的层序遍历&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/binary-tree-level-order-traversal/&quot;&gt;二叉树的层序遍历&lt;/a&gt;&lt;/h3&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def levelOrder(self, root: TreeNode) -&amp;gt; List[List[int]]:   
+        # BFS 用队列
+        queue = []
+        queue.append(root)
+        result = []
+        while queue:
+            size = len(queue)
+            current_level = []
+            for _ in range(size):
+                node = queue.pop(0)
+                current_level.append(node.val)
+                if node.left:
+                    queue.append(node.left)
+                if node.right:
+                    queue.append(node.right)
+            result.append(current_level)
+        return result
+     
+
+def levelOrder(self, root: TreeNode) -&amp;gt; List[List[int]]:   
+        # DFS用栈
+        result = []
+        def dfs(node, level):
+            if not node: return []
+            if len(result) &amp;lt; level+1:
+                result.append([])
+            result[level].append(node.val)
+            dfs(node.left, level+1)
+            dfs(node.right, level+1)
+        dfs(root,0)
+        return result
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;15-二叉树的最大和最小深度&quot;&gt;15. 二叉树的最大和最小深度&lt;/h2&gt;
+&lt;p&gt;同上，可以使用BFS 和 DFS方法解决。
+BFS则是使用 while循环遍历当前层级的queue中所有对象，（最小）如果其中一个节点是叶子节点，则结束遍历，输出当前层级即为最小深度。（最大）一直遍历整棵树，输出最后的层级即为最大深度
+DFS则使用递归，递归每层的左右节点，结束条件是若当前节点是空返回0.&lt;/p&gt;
+&lt;h2 id=&quot;16-生成有效括号组合&quot;&gt;16. 生成有效括号组合&lt;/h2&gt;
+&lt;p&gt;同上，使用DFS递归来解决，注意2个递归条件，已使用的右括号必须小于左括号，才可继续增加右括号，否则没有多于的左括号去配对。当左右括号全部使用完毕将字符串添加到结果list中&lt;/p&gt;
+&lt;h2 id=&quot;17-n皇后问题&quot;&gt;17. N皇后问题&lt;/h2&gt;
+&lt;p&gt;使用DFS递归， 思想是类似围棋或象棋算法每一步都会产生一个分支，每个分支下一步棋又会产生一个分支，每条分支的每一步都会有成功或者失败的判断即剪枝的条件，如剪枝成立则此分支结束，回溯到上一分支继续走其他步。上上一步也可回溯继续走下去。只要某个条件下能够走将N个皇后走完，则代表前面的每一步都是成立的，且路径都会有记录。
+使用DFS+位运算， 太复杂， 后续再研究&lt;/p&gt;
+&lt;h2 id=&quot;18-数独问题&quot;&gt;18. 数独问题&lt;/h2&gt;
+&lt;p&gt;依然使用DFS递归然后回溯去搜索解，剪枝的条件是横竖现有值不能重复，3&lt;em&gt;3的9宫格中数字不能重复。除此判断条件外，直接递归回溯直到走完所有9&lt;/em&gt;9输出答案&lt;/p&gt;
+&lt;h2 id=&quot;19-实现一个求解平方根的函数&quot;&gt;19. 实现一个求解平方根的函数&lt;/h2&gt;
+&lt;p&gt;用二分查找法，因为y=x²是单调递增，所以是有序有界的，可以通过mid*mid来逼近真实的x	
+用牛顿迭代法，有数学公式&lt;/p&gt;
+
+&lt;h2 id=&quot;20-实现一个字典树即trie树-字典树&quot;&gt;20. 实现一个字典树即Trie树 字典树&lt;/h2&gt;
+&lt;p&gt;字典里面套字典，表示每个节点有多个边相对应，穿起来所有路径即为最终的单词，Trie树如下图，
+例如insert  “apple” ，则生成Trie树为 {‘a’: {‘p’: {‘p’: {‘l’: {‘e’: {‘#’: ‘#’}}}}}}
+最后一个字母e的分支只有结束标识符”#”
+在上面的基础上insert “app”，  则树为 {‘a’: {‘p’: {‘p’: {‘l’: {‘e’: {‘#’: ‘#’}}, ‘#’: ‘#’}}}}
+在p的分支有2个，一个是”l”, 一个是结束符”#” ,代表app可以结束，也可以只是前缀&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200925/16010192691189.png&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;21-二维网格中的单词搜索问题&quot;&gt;21. 二维网格中的单词搜索问题&lt;/h2&gt;
+&lt;p&gt;在二维网格中搜索单词，可以用DFS，去递归+回溯。 也可用DFS+Trie树+回溯。把单词编制成Trie树，遍历网格中每个单词，若是树中的首字母，则接着递归首字母附件的4个字母是否存在于树中，不存在则回溯&lt;/p&gt;
+&lt;h2 id=&quot;22-统计位1的个数&quot;&gt;22. 统计位1的个数&lt;/h2&gt;
+&lt;p&gt;先学习一下常见的位运算
+x&amp;amp;1 == 1 or == 0 判断奇偶性
+x = x &amp;amp; (x-1)  清除x最低位的1
+x&amp;amp;-x 拿到最低位的1&lt;/p&gt;
+&lt;h2 id=&quot;23-2的幂次方问题比特位计数问题&quot;&gt;23. 2的幂次方问题&amp;amp;比特位计数问题&lt;/h2&gt;
+&lt;p&gt;2的幂次方有个特点，2进制只有1位是1，其他全是0，可以用上面的位运算解决
+比特位计数问题如果用上面的暴力算法是可以解决的，问题是每个数字都要计算一遍浪费时间，最好的方式是前面计算的结果，后面直接使用，公式是count[x] = count[x&amp;amp;(x-1)] +1 ,就是 x比x小1位的数字的个数+1. 这个一个循环得到结果，很巧妙&lt;/p&gt;
+&lt;h3 id=&quot;2的幂&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/power-of-two/&quot;&gt;2的幂&lt;/a&gt;&lt;/h3&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# 2的幂次方 只有一位是1，其他全是0， 所以打掉1之后 就是0了
+def isPowerOfTwo(self, n: int) -&amp;gt; bool:
+        if n != 0 and n&amp;amp;(n-1) == 0:
+            return True
+        else:
+            return False
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2 id=&quot;24-动态规划&quot;&gt;24. 动态规划&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;递推 （递归+记忆化）&lt;/li&gt;
+  &lt;li&gt;状态的定义： opt[n], dp[n]…&lt;/li&gt;
+  &lt;li&gt;状态转移方程： opt[n] = best_of(opt[n-1] ,opt[n-2] …)&lt;/li&gt;
+  &lt;li&gt;最优子结构： 最终的结果是由最优的每一步得到的，每一步的最优结果都得到保存，所以如果问子结构中最优结果就可以直接得到
+例如斐波拉切数列，F[n] = F[n-1] + F[n-2], 直接递归会有很多重复计算，例如F[4]=F[3]+F[2] = F[2]+F[1]+F[2],重复计算了F[2],如果将F[2]结果保存起来，就节省很多时间。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;25-动态规划dp-vs-回溯-vs-贪心&quot;&gt;25. 动态规划DP vs 回溯 vs 贪心&lt;/h2&gt;
+&lt;p&gt;回溯(递归)  -&amp;gt; 重复计算， 可以做到总体最优，但是计算量大，性能低下
+贪心 -&amp;gt; 永远局部最优,如果简单的每步局部最优就是总体最优，这样是可以的，但是往往没这么简单
+DP -&amp;gt; 记录局部最优子结构， 
+其实如果能够递归的问题，一般都可通过DP解决&lt;/p&gt;
+
+&lt;h2 id=&quot;26-爬楼梯&quot;&gt;26. 爬楼梯&lt;/h2&gt;
+&lt;p&gt;递推公式同 斐波拉切 F[n] = F[n-1] + F[n-2]
+因为最后一步有多少种方法等于 前一步的方法 加上前2步的方法， 因为可以一次可以1个台阶或者2个台阶
+DP定义：到第n层有多少种方法&lt;/p&gt;
+&lt;h2 id=&quot;27-三角形的最小路径和&quot;&gt;27. 三角形的最小路径和&lt;/h2&gt;
+&lt;p&gt;一种递归+回溯，能解决，只是时间很长，重复计算
+动态规划，从底层开始，往上遍历，上层每次都选择下面2个其中小的一个， 推导出的DP转移方程为F[j]= min(F[j], F[j+1]) + t[i][j]
+F[j]为指定层第j个位置到达底部最小路径，以此类推，顶部只需要计算下一层到他的最小路径即可。
+DP定义：到第j层最小路径&lt;/p&gt;
+&lt;h2 id=&quot;28-乘积最大子数组&quot;&gt;28. 乘积最大子数组&lt;/h2&gt;
+&lt;p&gt;动态规划，计算连续的子数组积的最大值， 由于元素可能有正，有负， 如果始终只保留正数，可能后续元素出现负数积就变小了，可能之前的负数与负数的积是最大值。所以需要保留之前的最大值和最小值，乘后续数组元素后再覆盖最大值最小值
+DP定义：到第i位最大值和最小值&lt;/p&gt;
+&lt;h2 id=&quot;29-买卖股票的最佳时机---买卖股票的最佳时机-iii--买卖股票的最佳时机-ii&quot;&gt;29. 买卖股票的最佳时机  &amp;amp; 买卖股票的最佳时机 III &amp;amp; 买卖股票的最佳时机 II&lt;/h2&gt;
+&lt;p&gt;用3维数组，分别代表0~n-1天， 0/1是否持股， 0~k次交易 能够满足大部分股票买卖的状态定义&lt;/p&gt;
+&lt;h2 id=&quot;30-最长上升子序列&quot;&gt;30. 最长上升子序列&lt;/h2&gt;
+&lt;p&gt;dp[i]状态为 在i点包含i的最长上升子序列， 不是i点的最长上升子序列，所以最后的结果是选择数组中最大的，而不是指定位置的&lt;/p&gt;
+&lt;h2 id=&quot;31-零钱兑换&quot;&gt;31. 零钱兑换&lt;/h2&gt;
+&lt;p&gt;dp[i] 为凑成当前金额最少的硬币数，则dp方程为 dp[i] = min{dp[i-conins[j] ]} +1, 例如银币金额是[1,2,5], 则dp[11] = min{ dp[10], dp[9], dp[6]} +1
+可以把此题当成爬楼梯，到达11层，一次可以跨1步，2步，5步，最少需要多少步一样。&lt;/p&gt;
+&lt;h2 id=&quot;32-编辑距离&quot;&gt;32. 编辑距离&lt;/h2&gt;
+&lt;p&gt;把A单词转换成B单词最少需要多少步， 可以插入，删除，替换。dp[i][j] 表示从A单词的 i 位置到B单词 j 位置需要的最小操作数。
+dp方程为dp[i][j] = if A[i] ==B[j] : dp[i-1][j-1] else:  min{dp[i-1][j], dp[i][j-1], dp[i-1][j-1]}+1
+如果当前ij字符相等，则dp[i][j]就等于上一步的结果，不需要变动。如果不等，则等于插入，删除，替换其中一个的最小步数+1&lt;/p&gt;
+&lt;h2 id=&quot;33-dp套路-三部曲&quot;&gt;33. DP套路 三部曲&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;套路步骤1， 创建dp状态定义&lt;/li&gt;
+  &lt;li&gt;套路步骤2， 初始化dp首位状态&lt;/li&gt;
+  &lt;li&gt;套路步骤3， 大循环开始写递推公式，并赋值给dp状态&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;34-并查集&quot;&gt;34. 并查集&lt;/h2&gt;
+&lt;p&gt;几个重要方法， 初始化，查找父类，合并。 查找父类可以做路径压缩的优化。&lt;/p&gt;
+&lt;h2 id=&quot;35-岛屿数量&quot;&gt;35. 岛屿数量&lt;/h2&gt;
+&lt;p&gt;染色法：遍历节点，把节点为“1”的相邻节点赋值为“0”， 并记录为一个岛。可用DFS也可BFS。
+并查集：对为“1”的节点初始化，把相邻的合并，最后遍历有多少个roots&lt;/p&gt;
+&lt;h2 id=&quot;36-布隆过滤器&quot;&gt;36. 布隆过滤器&lt;/h2&gt;
+&lt;p&gt;是一个很长的二进制向量和一个映射函数，用于检索一个元素是否在集合中，如果判断不在集合中，那一定不在集合中。如果判断在集合中，不一定再
+特点： 空间效率和查询时间远远超过一般算法，但是有一定误识别率和删除困难。&lt;/p&gt;
+</description>
+        <pubDate>Fri, 25 Sep 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/09/LeetCode%E5%88%B7%E9%A2%98%E7%AC%94%E8%AE%B0/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/LeetCode%E5%88%B7%E9%A2%98%E7%AC%94%E8%AE%B0/</guid>
+        
+        <category>LeetCode</category>
+        
+        
+      </item>
     
       <item>
         <title>iOS 应用启动耗时分析及优化</title>
@@ -200,14 +714,52 @@
 
 &lt;p&gt;这次缺页发生了1509次，耗时200ms，占总耗时的93%。缓存命中1955次只耗时6.42ms，可见缺页造成的耗时很大。&lt;/p&gt;
 
-&lt;p&gt;这里需要用到二进制重排去优化。详见&lt;a href=&quot;https://juejin.im/post/6844904130406793224#heading-0&quot;&gt;iOS 优化篇 - 启动优化之Clang插桩实现二进制重排
+&lt;p&gt;这里需要用到二进制重排去优化。怎样查看main函数之前到底调用了哪些OC类和方法？可以通过clang插桩方式，详见&lt;a href=&quot;https://juejin.im/post/6844904130406793224#heading-0&quot;&gt;iOS 优化篇 - 启动优化之Clang插桩实现二进制重排
 &lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;clang静态插桩&lt;/strong&gt;实际上是在编译期就在每一个函数内部二进制源数据添加 hook 代码 ( 我们添加的 __sanitizer_cov_trace_pc_guard 函数 ) 来实现全局的方法 hook 的效果 .&lt;/p&gt;
+
+&lt;p&gt;在build settings的 Other C Flags中, 添加&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-fsanitize-coverage=func,trace-pc-guard
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;添加hook代码&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void __sanitizer_cov_trace_pc_guard_init(uint32_t *start,
+                                         uint32_t *stop) {
+    static uint32_t N;  // Counter for the guards.
+    
+    if (start == stop || *start)return;  // Initialize only once.
+    printf(&quot;INIT: %p %p\n&quot;, start, stop);
+    for (uint32_t *x = start; x &amp;lt; stop; x++)
+        *x = ++N;  // Guards should start from 1.
+    
+    printf(&quot;totasl count %i\n&quot;, N);
+}
+
+//  所以在每个函数调用时都会先跳转执行该函数
+void __sanitizer_cov_trace_pc_guard(uint32_t *guard) {
+    // +load方法先于guard_init调用，此时guard为0
+//    if(!*guard) { return }
+    
+    if (stopCollecting) {
+        return;
+    }
+    // __builtin_return_address 获取当前调用栈信息，取第一帧地址（即下条要执行的指令地址，被插桩的函数地址）
+    void *PC = __builtin_return_address(0);
+    
+    PointerNode *node = malloc(sizeof(PointerNode));
+    *node = (PointerNode){PC, NULL};
+    // 使用原子队列要存储帧地址
+    OSAtomicEnqueue(&amp;amp;qHead, node, offsetof(PointerNode, next));
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;就能拿到调用的所有方法，包括main函数之前的方法。将函数保存成.order ，并在settings的 &lt;code class=&quot;highlighter-rouge&quot;&gt;Order File&lt;/code&gt;中设置文件路径。再次编译查看link map就能看出，.order中的方法全部被编译在一起，减少缺页的发生。&lt;/p&gt;
 
 &lt;h4 id=&quot;app启动后各个方法耗时&quot;&gt;app启动后各个方法耗时&lt;/h4&gt;
 
 &lt;p&gt;OC中每个方法的调用最终都是会走到&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSend&lt;/code&gt;中，所以如果我们Hook了&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSend&lt;/code&gt;则能以最小改动计算每个方法的耗时。&lt;/p&gt;
 
-&lt;p&gt;详细可见这篇介绍&lt;a href=&quot;https://juejin.im/post/6844904097338884104#heading-7&quot;&gt;iOS底层探索 - 通过objc_msgSend实现iOS方法耗时监控&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;详细可见这篇介绍&lt;a href=&quot;https://juejin.im/post/6844904097338884104#heading-7&quot;&gt;iOS底层探索 - 通过objc_msgSend实现iOS方法耗时监控&lt;/a&gt;以及用到的fishhook的原理&lt;a href=&quot;https://juejin.im/post/6844904061557293069#heading-24&quot;&gt;iOS源码解析: 聊一聊iOS中的hook方案&lt;/a&gt;&lt;/p&gt;
 
 </description>
         <pubDate>Thu, 24 Sep 2020 00:00:00 +0800</pubDate>
@@ -302,6 +854,8 @@ Mach-O 文件的头部定义如下：&lt;/p&gt;
 &lt;h3 id=&quot;查看工程中代码量大的库或类&quot;&gt;查看工程中代码量大的库或类&lt;/h3&gt;
 &lt;p&gt;通过linkMap文件，可分析出各个类和库占用的大小，用来优化库或代码的数量。
 在build setting中打开 link map的开关，在drivedata中找到编译产生的link map文件。&lt;/p&gt;
+
+&lt;p&gt;更多详情见&lt;a href=&quot;https://juejin.im/post/6844904057262505998&quot;&gt;对Mach-O文件的初步探索&lt;/a&gt;&lt;/p&gt;
 </description>
         <pubDate>Wed, 23 Sep 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/09/</link>
@@ -2543,110 +3097,6 @@ BBR不会占用多于的缓冲区，会有单独的延迟探测阶段可以避�
         <pubDate>Sun, 02 Aug 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</guid>
-        
-        <category>webRTC</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>TCP相关控制算法详解</title>
-        <description>&lt;h2 id=&quot;tcp相关控制算法&quot;&gt;TCP相关控制算法&lt;/h2&gt;
-&lt;h4 id=&quot;以段为单位发送数据&quot;&gt;以段为单位发送数据&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;在TCP建立连接三次握手的时候，协议中带有自己接口最适合的MSS (Maximum Segment Size)大小，发送方以后就按照这个大写切分数据段。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;滑动窗口来提高传输速度&quot;&gt;滑动窗口来提高传输速度&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;原先发送发每发送一条数据，都要等待接收方的反馈才会发送下一条，这样效率太低。
-现在定义一个窗口大小，每次发送窗口大小内数据不等待反馈，全部发送完毕等待一次反馈，相比原来节约很多时。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002713341011.png&quot; alt=&quot;截屏2020-07-27 下午11.11.45&quot; /&gt;&lt;/p&gt;
-
-&lt;h4 id=&quot;滑动窗口与重发机制&quot;&gt;滑动窗口与重发机制&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;在使用窗口控制中，出现段丢失或者应答丢失会不会出发重传？ - **==数据应答丢失==** ![截屏2020-07-27 下午11.14.25](http://image.smartjames.cn/mweb/20200916/16002713675070.png)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;==数据段丢失==&lt;/strong&gt;
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002713787395.png&quot; alt=&quot;截屏2020-07-27 下午11.14.45&quot; /&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;流控制-flow-control&quot;&gt;流控制 flow control&lt;/h4&gt;
-&lt;p&gt;主要利用滑动窗口和上面相关设计实现，滑动窗口主要由接收方反馈缓存情况来维护，维护接收方的承受能力&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;接收端主机向发送端通知自己可以接收数据的大小，于是发送端会发生不超过这个限度的数据，
-这个限度就是窗口大小，由接收端确定的。值越大说明网络的吞吐量越高。
-如果接收端数据缓冲区一旦溢出，窗口大小也会减小并发给发送端。
-
-若接收端无法及时清理缓冲区，导致缓冲区没有多于空间，发送方会等待接收方通知新的有效窗口值，
-如果过了超时时间没有收到新通知，会发送一个窗口探测包，获取窗口大小。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002714362536.png&quot; alt=&quot;截屏2020-09-16 下午11.50.12&quot; /&gt;&lt;/p&gt;
-
-&lt;h4 id=&quot;拥塞控制-congestion-control&quot;&gt;拥塞控制 congestion control&lt;/h4&gt;
-&lt;p&gt;主要利用拥塞窗口实现，拥塞窗口主要由发送方的拥塞控制算法检测出的网络拥塞程度来决定的，维护网络带宽的承受能力&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;慢启动的时候，初始大小设为1个MSS，发送后收到一个ACK，拥塞窗口增加1。
-在发送数据包时将拥塞窗口和滑动窗口做比较，用较小值继续作为阈值继续发送。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002714935699.png&quot; alt=&quot;截屏2020-07-27 下午11.28.36&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;由于拥塞窗口会以指数型激增，导致网络拥塞，所以引入阈值，当拥塞窗口到达阈值，后面会降低增长速度 。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002715071116.png&quot; alt=&quot;截屏2020-07-27 下午11.28.42&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;TCP刚开始没有设置慢启动阈值，所以会指数型上升直到遇到超时（采用重发机制,不同于下面的高速重发机制）(==①慢启动阶段==)。
-超出带宽上限。此时设置拥塞窗口为当时窗口一半的大小，cwnd缓慢增加( ==②拥塞避免阶段==)。&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;超时重发： 数据段发送后，在一个时间周期内没有收到ACK，则自动重发
-快速重发： 在一个滑动窗口内，收到3次重复ACK,则启动重发，不需要等待超时
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;由重复确认应答进行高速重发控制时，慢启动阈值设置为当时窗口一半，拥塞窗口大小设置为慢启动阈值+3个数据段。&lt;/p&gt;
-
-&lt;p&gt;快速重发后没有使用慢启动算法，而是拥塞避免，所以又叫快恢复阶段&lt;/p&gt;
-
-&lt;h5 id=&quot;延迟确认应答&quot;&gt;延迟确认应答&lt;/h5&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;因为有滑动窗口的概念，应答少一些也无妨，所以延迟确认得以实现，例如每次双数的数据段到达才回复ACK，或者最多0.5s内没收到下一个数据段就回复ACK。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;是提高网络利用率降低计算机处理负荷的一种较优机制.&lt;/p&gt;
-
-&lt;h5 id=&quot;捎带应答&quot;&gt;捎带应答&lt;/h5&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;在使用延迟应答的同时，拿到程序对于本次接收消息的回复内容，放在ACK中发送给发送方.
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;hr /&gt;
-
-&lt;h4 id=&quot;常见是拥塞控制算法&quot;&gt;常见是拥塞控制算法&lt;/h4&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Reno：Linux内核使用的
-BBR： Google 2016年提出的
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;reno&quot;&gt;Reno&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;分为4个阶段，慢启动，拥塞避免，快重传，快恢复
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002715755176.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;与TCP 内部拥塞控制相似。&lt;/p&gt;
-
-&lt;h4 id=&quot;缩略词&quot;&gt;缩略词&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;RTT: round-trip delay time 来回通信时延 
-TD:  Triple duplicate acknowledgements 三次重复确认应答
-TO:  TimeOut  丢包超时
-MSS: Maximum Segment Size 最大包尺寸
-ssthresh: slow start threshold 慢启动阈值
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-</description>
-        <pubDate>Tue, 28 Jul 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</guid>
         
         <category>webRTC</category>
         
