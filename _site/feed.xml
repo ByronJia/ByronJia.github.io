@@ -5,9 +5,43 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 25 Sep 2020 15:51:56 +0800</pubDate>
-    <lastBuildDate>Fri, 25 Sep 2020 15:51:56 +0800</lastBuildDate>
+    <pubDate>Tue, 29 Sep 2020 14:46:47 +0800</pubDate>
+    <lastBuildDate>Tue, 29 Sep 2020 14:46:47 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>JSBridge实现原理</title>
+        <description>&lt;h2 id=&quot;什么是jsbridge&quot;&gt;什么是JSBridge&lt;/h2&gt;
+&lt;p&gt;由于Native和H5的各自特性，尤其的H5的易于部署的适用与双端的特点，使得为了满足业务的需要，公司实际项目的开发过程中往往会融合两者进行 Hybrid 开发。
+JSBridge 是一种 JS 实现的 Bridge，连接着桥两端的 Native 和 H5。它在 APP 内方便地让 Native 调用 JS，JS 调用 Native ，是双向通信的通道。&lt;/p&gt;
+&lt;h2 id=&quot;为什么要做jsbridge&quot;&gt;为什么要做JSBridge&lt;/h2&gt;
+&lt;p&gt;我们知道OC调用JS的方法可以通过Webview的evaluateJavaScript:completionHandler: 方法实现，但是解决不了异步问题，当JS需要执行一些耗时操作，就无法立即给OC返回相应结果。
+同样JS调用OC的方法没有现成的方法，且也无法解决上面的异步问题。
+所以JSBridge的出现，目的是解决OC与JS相互异步调用，且当其中有多个异步回调，要能处理好各回调之间的关系，能够做到类似CS架构。
+这样能处理原先很多无法实现的能力，例如获取定位，相机拍照，手机传感器等等需要异步的接口调用能力。&lt;/p&gt;
+
+&lt;h2 id=&quot;怎么实现jsbridge&quot;&gt;怎么实现JSBridge&lt;/h2&gt;
+&lt;h3 id=&quot;10版本&quot;&gt;1.0版本&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;JS调用Native，通过自定义跳转URL协议头，并携带相应参数，Native拦截URL并解析来实现。&lt;/li&gt;
+  &lt;li&gt;OC调用Native，通过evaluateJavaScript:completionHandler:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;2端各维护一套响应回调和方法回调的映射表，从而实现在通信过程中，即使异步依然可以从映射表中查出回调地址。
+流程图如下：
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20200929/16013608341218.png&quot; style=&quot;zoom:70%&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;20版本&quot;&gt;2.0版本&lt;/h3&gt;
+&lt;p&gt;通过JavascriptCore实现&lt;/p&gt;
+</description>
+        <pubDate>Tue, 29 Sep 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/09/JSBridge%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/JSBridge%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
     
       <item>
         <title>LeetCode刷题笔记</title>
@@ -91,12 +125,9 @@
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;h3 id=&quot;k-个一组翻转链表&quot;&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/reverse-nodes-in-k-group/&quot;&gt;K 个一组翻转链表&lt;/a&gt;&lt;/h3&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;给你一个链表，每 k 个节点一组进行翻转，请你返回翻转后的链表。
+&lt;p&gt;给你一个链表，每 k 个节点一组进行翻转，请你返回翻转后的链表。
 k 是一个正整数，它的值小于或等于链表的长度。
 如果节点总数不是 k 的整数倍，那么请将最后剩余的节点保持原有顺序。&lt;/p&gt;
-&lt;/blockquote&gt;
 
 &lt;h2 id=&quot;2-判断括号字符串是否有效&quot;&gt;2. 判断括号字符串是否有效&lt;/h2&gt;
 &lt;p&gt;用堆栈，如果符号是左边，入栈，如果符号是右边则与栈顶符号做匹配。最终堆栈为空则有效
@@ -858,8 +889,8 @@ Mach-O 文件的头部定义如下：&lt;/p&gt;
 &lt;p&gt;更多详情见&lt;a href=&quot;https://juejin.im/post/6844904057262505998&quot;&gt;对Mach-O文件的初步探索&lt;/a&gt;&lt;/p&gt;
 </description>
         <pubDate>Wed, 23 Sep 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/09/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/09/</guid>
+        <link>http://localhost:4000/2020/09/Mach-O%E6%96%87%E4%BB%B6%E5%88%9D%E8%AF%86/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/Mach-O%E6%96%87%E4%BB%B6%E5%88%9D%E8%AF%86/</guid>
         
         <category>iOS</category>
         
@@ -1697,8 +1728,8 @@ Swift和OC的区别有很多，这里简要总结这几条：&lt;/li&gt;
 现在牛牛有a个红气球，b个黄气球， c个蓝气球，牛牛想知道自己最多可以兑换多少张彩票。&lt;/strong&gt;&lt;/p&gt;
 </description>
         <pubDate>Thu, 17 Sep 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/09/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/09/</guid>
+        <link>http://localhost:4000/2020/09/iOS%E9%AB%98%E7%BA%A7%E9%9D%A2%E8%AF%95%E9%A2%98(%E8%B6%85%E5%85%A8)/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/09/iOS%E9%AB%98%E7%BA%A7%E9%9D%A2%E8%AF%95%E9%A2%98(%E8%B6%85%E5%85%A8)/</guid>
         
         <category>iOS</category>
         
@@ -2660,99 +2691,6 @@ PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&l
         <pubDate>Sun, 13 Sep 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/09/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3HTTPS/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/09/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3HTTPS/</guid>
-        
-        
-      </item>
-    
-      <item>
-        <title>优秀程序员的九种素质</title>
-        <description>&lt;h3 id=&quot;一&quot;&gt;一&lt;/h3&gt;
-
-&lt;p&gt;上周看到一篇文章，大意是阿里云源代码泄露，涉及多少家企业云云，看起来耸人听闻，点进去发现是有企业在使用阿里云做代码托管的时候，private internal 和 public 傻傻分不清，创建仓库用了 internal，结果只要是登录用户都可以看到并 clone 这些代码。事实上，这三个设置不仅是惯例，internel 的注释也写的清清楚楚，但是挡不住程序员不看。你永远不知道一个人的水准会低到什么地步，也许这些人从来没用过 GitHub 和 GitLab 呢？&lt;/p&gt;
-
-&lt;p&gt;阿里云其实可以采用安全最小化原则，也就是常说的多一事不如少一事。最小化可用原则，对于操作系统来说，就是装最小化的包，没用的服务不启动，操作命令最小化，权限最小化等等。对于阿里云上的托管用户来说，internal 应该是个可有可无的功能，去掉是不是更好呢，也许值得平台方思考。&lt;/p&gt;
-
-&lt;p&gt;永远不要高估用户的聪明程度。&lt;/p&gt;
-
-&lt;h3 id=&quot;二&quot;&gt;二&lt;/h3&gt;
-
-&lt;p&gt;本周我们上线了一款基础课专栏《软件工程之美》，最新的文章中阐述了软件过程和软件危机：&lt;/p&gt;
-
-&lt;p&gt;软件是怎么被创造出来的？&lt;/p&gt;
-
-&lt;p&gt;首先，它们的诞生都是有人想要造一个东西。这其中的很多故事你都耳熟能详：张小龙创造微信、乔布斯创造 iOS、暴雪想做一款不一样的射击游戏……他们首先有着这样的意图，然后，他们立项做这样的产品。&lt;/p&gt;
-
-&lt;p&gt;每一款软件项目背后，都有很多人在参与。你无法想象微信这样复杂的 App 靠张小龙自己可以开发出来；你也不会相信 iOS 是乔布斯一个人设计出来的；像守望先锋这种游戏的背后，有成百上千的游戏策划、美术设计、程序开发人员。&lt;/p&gt;
-
-&lt;p&gt;从立项到第一个版本的发布，每个成功的软件都需要有计划、有步骤地进行，什么时候发布第一个版本、第一个版本有什么样的功能、什么时候发布第二个版本、第二个版本有哪些地方要改进，这些都是研发过程中需要考虑的问题。&lt;/p&gt;
-
-&lt;p&gt;比如，守望先锋是在 2013 年立项，他们计划做一个基于职业的 MMO 游戏，他们先花了几个月的时间做了第一个 Demo 演示，只有四个英雄和一个张地图。&lt;/p&gt;
-
-&lt;p&gt;然后，他们要在 2014 年的“暴雪嘉年华”发布这个游戏的试玩版，包含 12 个英雄和 4 张地图。&lt;/p&gt;
-
-&lt;p&gt;最终这个游戏在 2016 年 5 月正式发布了。这样从立项一步步到最终发布，历时三年，中间经过了诸多环节。&lt;/p&gt;
-
-&lt;p&gt;类似的例子还有微信，2010 年 11 月 20 日立项，2011 年 1 月 21 日第一版上线，当时的功能还非常简陋，只能发送文本消息和照片。之后才是一个个版本的迭代，直到你现在看到的微信。&lt;/p&gt;
-
-&lt;p&gt;像这种有人参与、有计划、有步骤地造一件产品，我们通常称为「工程」。&lt;/p&gt;
-
-&lt;p&gt;那什么是软件危机呢？有兴趣可以订阅专栏阅读。软件工程是你通向程序之巅的必经之路。&lt;/p&gt;
-
-&lt;h3 id=&quot;三&quot;&gt;三&lt;/h3&gt;
-
-&lt;p&gt;周末读村上的书，他说自己能够持续写作和跑步，就是因为具备两个特质，一个是集中力，一个是耐力。村上写长篇的时候每天早晨集中写作四小时，他一个人坐在书桌前，没有任何打扰，将意识集中倾斜在书稿中，其他什么都不考虑。另外，没有耐力也不行。你集中写了一星期然后伸伸懒腰说，我累了，然后就休息一个月，这样是写不成长篇的。你必须每天集中写作，坚持半年，一年，甚至更长才行。&lt;/p&gt;
-
-&lt;p&gt;一个优秀的程序员需要什么特质呢？由此我想到之前读过的一篇文章，是 Redis 之父萨尔瓦托·桑菲利普（Salvatore Sanfilippo）写的 9 种高能程序员的特质，重新意译一下，推荐给读者：&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;1、高效完成子任务&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;从处理编程子任务上，可以看出一个程序员的短板和长处，比如实现一个函数或者一个算法。事实上，擅于使用基本的编程技能来高效完成任务的程序员，并没有人们想象的那么多。有时候，团队里有些不称职的程序员，他们甚至不知道该怎么写一个简单的排序算法。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;2、合理使用自己的经验&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;桑菲利普认为，经验就是一系列解决方案，它们已经被证实可以用于处理一些重复性的任务。经验老道的程序员知道该如何处理各种子任务，这样不但省掉了很多设计工作，而且避免了很多设计错误，而设计错误是简洁性最大的敌人。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;3、准确预测工期&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;花在编码上的时间不仅要看数量，也要看质量。造成注意力不集中的因素既有内部的，也有外部的。集中注意力和避免被打扰，对于提高编程效率来说是至关重要的。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;4、设计权衡：用 5% 换取 90%&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;项目的「非根本性」目标在很大程度上导致了设计的复杂性，或者导致无法达成其他更重要的目标，因为根本性功能和非根本性功能在设计上存在竞争关系。如果意识不到这点，复杂性就会随之而来。对于设计者来说，如果项目要最大化产出，就要把精力集中在重要的事情上，并在合理的时间内完成。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;5、简洁性&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;简洁性是成败之间最为明显的分界点，理解复杂性的产生过程有助于理解什么是简洁性。不愿意做出设计权衡和设计错误的累积是导致复杂性的两个主要因素。我在第一点里讲的 Internal 其实是提高了复杂度导致用户选择错误。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;6、拒绝完美主义（为了偏袒设计而放弃生产力）&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;完美主义可以分为两种：一种是追求程序极致性能的工程文化，另一种是个人特质。不管是哪一种完美主义，它们都会对程序员实现快速交付造成阻碍。完美主义和对外部评判的恐惧会导致设计上的偏袒，程序员根据主观的心理因素和无关紧要的衡量参数做出设计决策，却忽略了健壮性、简洁性和及时交付。&lt;/p&gt;
-
-&lt;p&gt;我曾经服务过的一家公司就犯了这种错误。当然，错误不止于此。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;7、理解知识理论的价值&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;在处理复杂任务时，具备一些理论方面的知识会对设计产生重要影响，比如数据结构方面的知识、了解计算能力的局限性和一些重要的算法。虽然程序员没有必要成为无所不知的超级专家，但是至少要知道一些问题的潜在解决方案，避免设计出复杂、缓慢、低内存效能的解决方案。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;8、理解机器原理&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;程序的很多问题都是源于对计算机工作原理的误解，即使是使用高级语言开发的程序也不外乎如此。这种情况可能导致一个项目需要重新设计和实现，因为项目所使用的工具和算法出现了根本性的错误。&lt;/p&gt;
-
-&lt;p&gt;7 和 8 说的道理差不多，这也是极客时间会连续推出数学、算法、数据结构、网络协议、软件工程等课程的原因，后面还有架构设计、操作系统、编译原理等等。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;9、调试技能&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;查找和解决 bug 经常会占用程序员大量的时间。查找引起 bug 的问题根源，在合理的步骤内修复 bug，以简单的方式编写包含较少 bug 的代码，对于程序员来说，做到这几点就可以显著提升效率。&lt;/p&gt;
-
-&lt;p&gt;能否运用调试技能快速解决问题是衡量一个程序员水平的重要标准。&lt;/p&gt;
-
-&lt;p&gt;你具备这些特质嘛？我觉得村上说的没错，程序员同时还需要集中力和耐力。&lt;/p&gt;
-</description>
-        <pubDate>Thu, 10 Sep 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/09/%E4%BC%98%E7%A7%80%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E4%B9%9D%E7%A7%8D%E7%B4%A0%E8%B4%A8/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/09/%E4%BC%98%E7%A7%80%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E4%B9%9D%E7%A7%8D%E7%B4%A0%E8%B4%A8/</guid>
-        
-        <category>闲谈</category>
         
         
       </item>
