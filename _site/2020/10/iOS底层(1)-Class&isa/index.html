@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>JSBridge实现原理</title>
-  <meta name="description" content="什么是JSBridge由于Native和H5的各自特性，尤其的H5的易于部署的适用与双端的特点，使得为了满足业务的需要，公司实际项目的开发过程中往往会融合两者进行 Hybrid 开发。JSBridge 是一种 JS 实现的 Bridge，连接着桥两端的 Native 和 H5。它在 APP 内方便地让 Nativ...">
+  <title>iOS底层(1)-Class &amp; isa</title>
+  <meta name="description" content="类初始化内存分配NSObject占用内存大小为16个字节，但是NSObjct只有一个属性就是isa只占用8个字节，由于底层设计原因最少需要16个字节。结构体内存对齐，(x+7)&amp; ~x 是将x按照8字节对齐。不满8就补齐8字节malloc 中的内存分配也会有内存对齐规则，mac中是16的倍数，如果传入只需...">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="JSBridge实现原理">
-  <meta name="twitter:description" content="什么是JSBridge由于Native和H5的各自特性，尤其的H5的易于部署的适用与双端的特点，使得为了满足业务的需要，公司实际项目的开发过程中往往会融合两者进行 Hybrid 开发。JSBridge 是一种 JS 实现的 Bridge，连接着桥两端的 Native 和 H5。它在 APP 内方便地让 Nativ...">
+  <meta name="twitter:title" content="iOS底层(1)-Class &amp; isa">
+  <meta name="twitter:description" content="类初始化内存分配NSObject占用内存大小为16个字节，但是NSObjct只有一个属性就是isa只占用8个字节，由于底层设计原因最少需要16个字节。结构体内存对齐，(x+7)&amp; ~x 是将x按照8字节对齐。不满8就补齐8字节malloc 中的内存分配也会有内存对齐规则，mac中是16的倍数，如果传入只需...">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="JSBridge实现原理">
-  <meta property="og:description" content="什么是JSBridge由于Native和H5的各自特性，尤其的H5的易于部署的适用与双端的特点，使得为了满足业务的需要，公司实际项目的开发过程中往往会融合两者进行 Hybrid 开发。JSBridge 是一种 JS 实现的 Bridge，连接着桥两端的 Native 和 H5。它在 APP 内方便地让 Nativ...">
+  <meta property="og:title" content="iOS底层(1)-Class &amp; isa">
+  <meta property="og:description" content="类初始化内存分配NSObject占用内存大小为16个字节，但是NSObjct只有一个属性就是isa只占用8个字节，由于底层设计原因最少需要16个字节。结构体内存对齐，(x+7)&amp; ~x 是将x按照8字节对齐。不满8就补齐8字节malloc 中的内存分配也会有内存对齐规则，mac中是16的倍数，如果传入只需...">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/09/JSBridge%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/">
+  <link rel="canonical" href="http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -192,10 +192,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">JSBridge实现原理</h1>
+    <h1 class="post-title">iOS底层(1)-Class & isa</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-09-29 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-09-29</time>  
+      <time datetime="2020-10-09 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-10-09</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -205,41 +205,93 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#什么是jsbridge">什么是JSBridge</a></li>
-  <li><a href="#为什么要做jsbridge">为什么要做JSBridge</a></li>
-  <li><a href="#怎么实现jsbridge">怎么实现JSBridge</a>
-    <ul>
-      <li><a href="#10版本">1.0版本</a></li>
-      <li><a href="#20版本">2.0版本</a></li>
-    </ul>
-  </li>
+  <li><a href="#类初始化内存分配">类初始化内存分配</a></li>
+  <li><a href="#oc中的对象类型">OC中的对象类型</a></li>
+  <li><a href="#对象之间的关系">对象之间的关系</a></li>
+  <li><a href="#class的结构">Class的结构</a></li>
+  <li><a href="#方法缓存">方法缓存</a></li>
 </ul>
 
   
 
   <section class="post">
-    <h2 id="什么是jsbridge">什么是JSBridge</h2>
-<p>由于Native和H5的各自特性，尤其的H5的易于部署的适用与双端的特点，使得为了满足业务的需要，公司实际项目的开发过程中往往会融合两者进行 Hybrid 开发。
-JSBridge 是一种 JS 实现的 Bridge，连接着桥两端的 Native 和 H5。它在 APP 内方便地让 Native 调用 JS，JS 调用 Native ，是双向通信的通道。</p>
-<h2 id="为什么要做jsbridge">为什么要做JSBridge</h2>
-<p>我们知道OC调用JS的方法可以通过Webview的evaluateJavaScript:completionHandler: 方法实现，但是解决不了异步问题，当JS需要执行一些耗时操作，就无法立即给OC返回相应结果。
-同样JS调用OC的方法没有现成的方法，且也无法解决上面的异步问题。
-所以JSBridge的出现，目的是解决OC与JS相互异步调用，且当其中有多个异步回调，要能处理好各回调之间的关系，能够做到类似CS架构。
-这样能处理原先很多无法实现的能力，例如获取定位，相机拍照，手机传感器等等需要异步的接口调用能力。</p>
+    <h2 id="类初始化内存分配">类初始化内存分配</h2>
+<p>NSObject占用内存大小为16个字节，但是NSObjct只有一个属性就是isa只占用8个字节，由于底层设计原因最少需要16个字节。<br />
+结构体内存对齐，(x+7)&amp; ~x 是将x按照8字节对齐。不满8就补齐8字节
+malloc 中的内存分配也会有内存对齐规则，mac中是16的倍数，如果传入只需要24字节，alloc后系统会分配32个字节空间即内存对齐。 <br />
+class_getInstanceSize 返回的是对象需要的内存， NSObjcet中的isa占用8， 加上继承来的每个属性的空间。
+malloc_size 返回的是实际分配的空间大小</p>
 
-<h2 id="怎么实现jsbridge">怎么实现JSBridge</h2>
-<h3 id="10版本">1.0版本</h3>
+<h2 id="oc中的对象类型">OC中的对象类型</h2>
+<p>分为3种</p>
 <ul>
-  <li>JS调用Native，通过自定义跳转URL协议头(例如jsbridge://)，并携带相应参数，Native拦截URL并解析来实现。</li>
-  <li>OC调用Native，通过evaluateJavaScript:completionHandler: 且用runloop阻塞当前线程，直到返回结果</li>
+  <li>实例对象
+    <ul>
+      <li>isa</li>
+      <li>成员变量值</li>
+    </ul>
+  </li>
+  <li>类对象
+    <ul>
+      <li>isa</li>
+      <li>superclass</li>
+      <li>属性、对象方法、协议、成员变量</li>
+    </ul>
+  </li>
+  <li>元类对象
+    <ul>
+      <li>isa</li>
+      <li>superclass</li>
+      <li>类方法</li>
+    </ul>
+  </li>
 </ul>
 
-<p>2端各维护一套响应回调和方法回调的映射表，从而实现在通信过程中，即使异步依然可以从映射表中查出回调地址。
-流程图如下：
-<img src="http://image.smartjames.cn/mweb/20200929/16013608341218.png" style="zoom:70%" /></p>
+<p>类对象是由元类对象描述的，即class-&gt;isa = metaclass, 但是二者结构一致，只是存储的数据不同。    <br />
+<code class="highlighter-rouge">object_getClass(id)</code> 传入是对象，则返回类对象，传入是类对象，返回元类对象
+<code class="highlighter-rouge">objc_getClass(char * className)</code> 只会返回类对象。</p>
 
-<h3 id="20版本">2.0版本</h3>
-<p>通过JavascriptCore实现,关于JSCore详见<a href="https://tech.meituan.com/2018/08/23/deep-understanding-of-jscore.html">深入理解JSCore</a></p>
+<h2 id="对象之间的关系">对象之间的关系</h2>
+<p>有3个类 NSObjcect -&gt; Person -&gt; Student，
+<code class="highlighter-rouge">[stu studentInstanceMethod];</code> stu-&gt;isa = Student类寻找对象方法来执行
+<code class="highlighter-rouge">[stu personInstanceMethod]; </code> stu-&gt;isa = Student-&gt;superClass = Person寻找对象方法
+<code class="highlighter-rouge">[stu load]; </code>stu-&gt;isa = Student-&gt;superClass = Person-&gt;superClass = NSObject寻找对象方法</p>
+
+<p><code class="highlighter-rouge">[Student studentClassMethod];</code> Student-&gt;isa = Meta_Student 寻找Student的类方法   <br />
+<code class="highlighter-rouge">[Student personClassMethod];</code> Student-&gt;isa = Meta_Student-&gt;superclass = Meta_Person 寻找person的类方法<br />
+<code class="highlighter-rouge">[Student copy]; </code>Student-&gt;isa = Meta_Student-&gt;superclass = Meta_Person-&gt;superclass=Meta_NSObject 寻找NSObject的类方法   <br />
+一旦中途找到，则停止后续寻找，这就是为什么override会覆盖父类同名方法</p>
+
+<p>isa指针地址需要&amp; isa_mask才能得到真实的class的地址
+superClass地址 直接就是真实superclass地址
+<strong>总结</strong>
+instance调用实例方法轨迹
+isa找到class,方法不存在，就通过superclass找到父类(类对象)</p>
+
+<p>class调用类方法轨迹
+isa找meta-class，方法不存在，就通过superclass找父类(元类对象)</p>
+
+<h2 id="class的结构">Class的结构</h2>
+
+<p><img src="http://image.smartjames.cn/mweb/20201009/16022266359919.png" style="zoom=50%" /></p>
+
+<p>class_rw_t 中存放的是可读写的所有数据，class_ro_t保存的是只读的数据，主要是主类中生成的方法变量协议等property_list_t一维数组。class_rw_t中存放的是包含类别变量协议方法的一个大的二维数组property_array_t，存放主类和类别的小数组数据。</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20201009/16022266740521.jpg" style="zoom=50%" /></p>
+
+<h2 id="方法缓存">方法缓存</h2>
+<p>class中有个cache_t cache, 用来做方法的缓存，使用哈希表实现。第一次在rw_t中的methods中遍历查找方法实现，找到就放入cache中，节省查找时间。
+插入和查询时分别用SEL按位与 mask,得到哈希表的index,解决哈希表冲突的方式是开放地址法，就是往前寻找一位。</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20201009/16022267154421.png" style="zoom=50%" /></p>
+
+<p>在arm64之前，isa是一个普通指针，指向class和meta-class地址
+arm64之后， ISA经过优化，使用union数据结构，使用位域来增加存储信息，增加内存利用率
+下图中bits为真正存放数据的值，struct中只是申明bits中分别多少位是什么数据。在取值时将bits按位与得到指定位数的值是多少而不受其他位数据的影响。例如shiftcls是存放类地址的，使用了33位。</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20201009/16022267618486.jpg" alt="1" />
+<img src="http://image.smartjames.cn/mweb/20201009/16022267618501.jpg" alt="2" />
+<img src="http://image.smartjames.cn/mweb/20201009/16022267618514.jpg" alt="3" /></p>
 
   </section>
 
@@ -309,15 +361,10 @@ JSBridge 是一种 JS 实现的 Bridge，连接着桥两端的 Native 和 H5。�
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/09/LeetCode%E5%88%B7%E9%A2%98%E7%AC%94%E8%AE%B0/" data-toggle="tooltip" data-placement="top" title="LeetCode刷题笔记">上一篇：  <span>LeetCode刷题笔记</span>
+            <a href="/2020/09/JSBridge%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/" data-toggle="tooltip" data-placement="top" title="JSBridge实现原理">上一篇：  <span>JSBridge实现原理</span>
             </a>
         </li>
         
-        
-        <li class="next">
-            <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/" data-toggle="tooltip" data-placement="top" title="iOS底层(1)-Class & isa">下一篇：  <span>iOS底层(1)-Class & isa</span>
-            </a>
-        </li>
         
     </ul>
 </section>

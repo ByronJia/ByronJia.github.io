@@ -5,9 +5,98 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 05 Oct 2020 15:33:44 +0800</pubDate>
-    <lastBuildDate>Mon, 05 Oct 2020 15:33:44 +0800</lastBuildDate>
+    <pubDate>Sat, 10 Oct 2020 10:13:13 +0800</pubDate>
+    <lastBuildDate>Sat, 10 Oct 2020 10:13:13 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>iOS底层(1)-Class &amp; isa</title>
+        <description>&lt;h2 id=&quot;类初始化内存分配&quot;&gt;类初始化内存分配&lt;/h2&gt;
+&lt;p&gt;NSObject占用内存大小为16个字节，但是NSObjct只有一个属性就是isa只占用8个字节，由于底层设计原因最少需要16个字节。&lt;br /&gt;
+结构体内存对齐，(x+7)&amp;amp; ~x 是将x按照8字节对齐。不满8就补齐8字节
+malloc 中的内存分配也会有内存对齐规则，mac中是16的倍数，如果传入只需要24字节，alloc后系统会分配32个字节空间即内存对齐。 &lt;br /&gt;
+class_getInstanceSize 返回的是对象需要的内存， NSObjcet中的isa占用8， 加上继承来的每个属性的空间。
+malloc_size 返回的是实际分配的空间大小&lt;/p&gt;
+
+&lt;h2 id=&quot;oc中的对象类型&quot;&gt;OC中的对象类型&lt;/h2&gt;
+&lt;p&gt;分为3种&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;实例对象
+    &lt;ul&gt;
+      &lt;li&gt;isa&lt;/li&gt;
+      &lt;li&gt;成员变量值&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;类对象
+    &lt;ul&gt;
+      &lt;li&gt;isa&lt;/li&gt;
+      &lt;li&gt;superclass&lt;/li&gt;
+      &lt;li&gt;属性、对象方法、协议、成员变量&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;元类对象
+    &lt;ul&gt;
+      &lt;li&gt;isa&lt;/li&gt;
+      &lt;li&gt;superclass&lt;/li&gt;
+      &lt;li&gt;类方法&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;类对象是由元类对象描述的，即class-&amp;gt;isa = metaclass, 但是二者结构一致，只是存储的数据不同。    &lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;object_getClass(id)&lt;/code&gt; 传入是对象，则返回类对象，传入是类对象，返回元类对象
+&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_getClass(char * className)&lt;/code&gt; 只会返回类对象。&lt;/p&gt;
+
+&lt;h2 id=&quot;对象之间的关系&quot;&gt;对象之间的关系&lt;/h2&gt;
+&lt;p&gt;有3个类 NSObjcect -&amp;gt; Person -&amp;gt; Student，
+&lt;code class=&quot;highlighter-rouge&quot;&gt;[stu studentInstanceMethod];&lt;/code&gt; stu-&amp;gt;isa = Student类寻找对象方法来执行
+&lt;code class=&quot;highlighter-rouge&quot;&gt;[stu personInstanceMethod]; &lt;/code&gt; stu-&amp;gt;isa = Student-&amp;gt;superClass = Person寻找对象方法
+&lt;code class=&quot;highlighter-rouge&quot;&gt;[stu load]; &lt;/code&gt;stu-&amp;gt;isa = Student-&amp;gt;superClass = Person-&amp;gt;superClass = NSObject寻找对象方法&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;[Student studentClassMethod];&lt;/code&gt; Student-&amp;gt;isa = Meta_Student 寻找Student的类方法   &lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;[Student personClassMethod];&lt;/code&gt; Student-&amp;gt;isa = Meta_Student-&amp;gt;superclass = Meta_Person 寻找person的类方法&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;[Student copy]; &lt;/code&gt;Student-&amp;gt;isa = Meta_Student-&amp;gt;superclass = Meta_Person-&amp;gt;superclass=Meta_NSObject 寻找NSObject的类方法   &lt;br /&gt;
+一旦中途找到，则停止后续寻找，这就是为什么override会覆盖父类同名方法&lt;/p&gt;
+
+&lt;p&gt;isa指针地址需要&amp;amp; isa_mask才能得到真实的class的地址
+superClass地址 直接就是真实superclass地址
+&lt;strong&gt;总结&lt;/strong&gt;
+instance调用实例方法轨迹
+isa找到class,方法不存在，就通过superclass找到父类(类对象)&lt;/p&gt;
+
+&lt;p&gt;class调用类方法轨迹
+isa找meta-class，方法不存在，就通过superclass找父类(元类对象)&lt;/p&gt;
+
+&lt;h2 id=&quot;class的结构&quot;&gt;Class的结构&lt;/h2&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022266359919.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;class_rw_t 中存放的是可读写的所有数据，class_ro_t保存的是只读的数据，主要是主类中生成的方法变量协议等property_list_t一维数组。class_rw_t中存放的是包含类别变量协议方法的一个大的二维数组property_array_t，存放主类和类别的小数组数据。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022266740521.jpg&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;方法缓存&quot;&gt;方法缓存&lt;/h2&gt;
+&lt;p&gt;class中有个cache_t cache, 用来做方法的缓存，使用哈希表实现。第一次在rw_t中的methods中遍历查找方法实现，找到就放入cache中，节省查找时间。
+插入和查询时分别用SEL按位与 mask,得到哈希表的index,解决哈希表冲突的方式是开放地址法，就是往前寻找一位。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022267154421.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;在arm64之前，isa是一个普通指针，指向class和meta-class地址
+arm64之后， ISA经过优化，使用union数据结构，使用位域来增加存储信息，增加内存利用率
+下图中bits为真正存放数据的值，struct中只是申明bits中分别多少位是什么数据。在取值时将bits按位与得到指定位数的值是多少而不受其他位数据的影响。例如shiftcls是存放类地址的，使用了33位。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022267618486.jpg&quot; alt=&quot;1&quot; /&gt;
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022267618501.jpg&quot; alt=&quot;2&quot; /&gt;
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022267618514.jpg&quot; alt=&quot;3&quot; /&gt;&lt;/p&gt;
+</description>
+        <pubDate>Fri, 09 Oct 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
     
       <item>
         <title>JSBridge实现原理</title>
@@ -2928,113 +3017,6 @@ fl &amp;lt; 2% : 网络良好， As + 5% 提高带宽来探测真实可用带宽
         <pubDate>Wed, 05 Aug 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</guid>
-        
-        <category>webRTC</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>BBR 拥塞控制算法详解</title>
-        <description>&lt;h2 id=&quot;bbr-拥塞控制算法&quot;&gt;BBR 拥塞控制算法&lt;/h2&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;BBR: Bottleneck Bandwidth and RTT
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;BBR 发明的目的是解决2个问题。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;在有一定丢包率的网络链路上充分利用带宽&lt;/li&gt;
-  &lt;li&gt;降低网络链路上的buffer占用率，降低延迟。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;BBR 原理 使用极大带宽和极小延迟的乘积作为发送窗口大小。&lt;/p&gt;
-
-&lt;h3 id=&quot;其他拥塞算法原理&quot;&gt;其他拥塞算法原理&lt;/h3&gt;
-&lt;p&gt;所有拥塞算法目标都是最大化利用网络上瓶颈链路的带宽，通常办法是不断增加数据量，直到发生丢包或者延迟增大等这些信号表明当前带宽已经使用100%。
-GCC等其他算法都是基于某些信号认为网络发生拥塞，例如丢包。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;网络链路上能容纳的数据量=链路带宽×往返时延&lt;/strong&gt;
-但是常用的标准TCP拥塞控制算法的&lt;strong&gt;问题&lt;/strong&gt;在于：&lt;/p&gt;
-&lt;ol&gt;
-  &lt;li&gt;网络上丢包不都是拥塞导致的，可能是传输错误导致的丢包，如果因为传输错误的丢包影响算法对带宽的评估，是失败的。&lt;/li&gt;
-  &lt;li&gt;网络中的缓冲区buffer会被计算在内被占用，计算出的带宽=真实带宽+buffer大小， 问题称为buffrbloat （缓冲区膨胀）&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;缓冲区膨胀问题：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;增加网络延迟&lt;/strong&gt;， buffer东西越多，排队时间越长&lt;/li&gt;
-  &lt;li&gt;共享网络瓶颈的连接较多时，可能导致缓冲区被填满而丢包，被误认为发生拥塞。  &lt;strong&gt;这个地方有点不理解&lt;/strong&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;bbr和常规算法区别&quot;&gt;BBR和常规算法区别&lt;/h3&gt;
-&lt;ol&gt;
-  &lt;li&gt;既然区分不了拥塞丢包和错误丢包，就不考虑丢包这个信号&lt;/li&gt;
-  &lt;li&gt;不断加快数据发送量，容易产生缓冲区膨胀，就单独估计带宽和延迟，而不是简单加快发送数据量。&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h3 id=&quot;bbr算法步骤&quot;&gt;BBR算法步骤&lt;/h3&gt;
-
-&lt;p&gt;BBR分为3个阶段&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;慢启动：增加数据量，计算最大发送窗口&lt;/li&gt;
-  &lt;li&gt;排空阶段：清空数据量，基本不发数据，计算最低延迟&lt;/li&gt;
-  &lt;li&gt;稳定阶段：交替探测带宽和延迟&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;em&gt;下图是发送速率(发送窗口)和时延与网络中的数据量关系&lt;/em&gt;
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002691822869.png&quot; style=&quot;zoom:60%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;随着数据量增加，发送速率达到最高点100%即达到真实带宽，再继续增加数据量会占用buffer而不会增加发送率，RTT在发送率到达100%之前都是最小值，超过后开始产生延迟，且越来越高，直到buffer溢出发生丢包。&lt;/p&gt;
-
-&lt;p&gt;BBR会在窗口1和窗口2之间停下，会超过真实带宽单但没到丢包。
-基于丢包的标准TCP会在窗口2停下，直到丢包才停止。&lt;/p&gt;
-
-&lt;p&gt;所以BBR需要计算的就是蓝色和绿色的转折点，分别代表最低延迟和最大发送窗口。&lt;/p&gt;
-
-&lt;h4 id=&quot;计算最大发送窗口带宽探测&quot;&gt;计算最大发送窗口(带宽探测)&lt;/h4&gt;
-
-&lt;p&gt;刚开始时采用慢启动，每个包都会收到ACK，当发现通过i计算ACK得到的带宽 没有因为增加发送率而增加时，就知道此时已经占用了buffer，开始结束第一阶段，得到的值是3倍bandwight。&lt;/p&gt;
-
-&lt;h4 id=&quot;计算最低延迟排空阶段&quot;&gt;计算最低延迟（排空阶段）&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;因为要计算最低延迟，需要将inflight数据清空，发送极少数据才能保证RTT是极小值. 指数降低发送速率，buffer被慢慢排空，把上一个阶段占用的2倍bandwight的buffer消耗掉，直到延迟不再降低，则为最小延迟(因为buffer的存在说明有数据在排队，会增加延迟)。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;稳定阶段&quot;&gt;稳定阶段&lt;/h4&gt;
-&lt;p&gt;以8个往返为周期，第一个往返时间里，BBR增加为1.25倍的发包率，在第二个时间里，降低为0.85的发包率。后面6个往返里使用估计的带宽发包。
-这里主要是&lt;strong&gt;带宽探测&lt;/strong&gt;任务，&lt;/p&gt;
-
-&lt;p&gt;BBR每过10s ，如果最小延迟没有变化，就进入&lt;strong&gt;探测阶段&lt;/strong&gt;，持续时间200ms， 发送窗口固定4个包，用来探测最小延迟作为新的延迟估计。&lt;strong&gt;大约2%的时间BBR用极低的发包率来测量延迟&lt;/strong&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;性能评估&quot;&gt;性能评估&lt;/h3&gt;
-
-&lt;h4 id=&quot;bbr对于带宽变化的响应&quot;&gt;BBR对于带宽变化的响应&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;大部分时间内带宽的变化比延迟变化更频繁，BBR绝大多数时间都处于带宽探测阶段 *蓝色是延迟，绿色是inflight数量* 当带宽增长一倍时，BBR会每个周期向上探测1.25倍，大概3个周期后就能达到增长后的带宽。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002692643086.png&quot; style=&quot;zoom:90%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;当带宽降低一半时，多出来的包占用了buffer，导致延迟显著增加，但是延迟采用的是不发包测得的极小值，对于刚刚实际延迟增加没有影响。
-带宽估计 是使用一段滑动窗口内的极大值，滑动窗口是多个往返周期，所以需要等当前任务滑出窗口后，发送窗口减半，估计带宽降低一半，发送包速率键盘，buffer被排空，延迟才会缓慢下降。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002692913442.png&quot; style=&quot;zoom:90%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;带宽增加一倍，BBR用时1.5s收敛; 带宽降低一半，BBR用时4s收敛;&lt;/p&gt;
-
-&lt;h4 id=&quot;bbr与标准tcp效果比对&quot;&gt;BBR与标准TCP效果比对&lt;/h4&gt;
-&lt;p&gt;BBR 要解决的第一个问题，丢包错误导致误判拥塞问题。
-只要有0.01%丢包率，标准TCP带宽只剩下30%。 0.1%丢包率TCP带宽只有10%。1%丢包率几乎停滞。
-而BBR在5%以下几乎没有带宽损失， 15%时仍然有75%带宽
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002693162811.png&quot; style=&quot;zoom:90%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;BBR 要解决的第二个问题，降低延迟，减少缓冲区膨胀。
-TCP倾向于填满缓冲区，延迟就越高，当用户网络接入速度很慢时，延迟可能超过造成连接失败。
-BBR不会占用多于的缓冲区，会有单独的延迟探测阶段可以避免这个问题&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002693358027.png&quot; style=&quot;zoom:90%&quot; /&gt;&lt;/p&gt;
-
-</description>
-        <pubDate>Sun, 02 Aug 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</guid>
         
         <category>webRTC</category>
         
