@@ -177,6 +177,132 @@
   <ol class="post-list">
     
     <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" title="访问 iOS底层(7)- 内存管理">iOS底层(7)- 内存管理</a></h2>
+      <p class="excerpt">浅拷贝和深拷贝拷贝的最终目的是产生一个副本，修改副本不会对原对象产生影响。故到底是深拷贝还是浅拷贝要根据这个规则来判断。  [任意对象 copy] 产生一个不可变对象，如果原对象是不可变对象，那么就是浅拷贝，因为不可变对象本身就不能修改，所以没必要创新分配内存。原对象是可变对象，就是深拷贝。  [任意对象 mutableCopy] 产生一个可变对象，不论原对象是否是可变对象，都是深拷贝，因为要产生修改不影响原对象的副本，必须重新分配内存。定义属性时使用copy修饰词，目的是在赋值之后产生一...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-10-10 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-10-10</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" title="访问 iOS底层(6)- runLoop & 多线程">iOS底层(6)- runLoop & 多线程</a></h2>
+      <p class="excerpt">runloop常见类型runloop 和线程一一对应，子线程默认不开启runloop,当第一次获取runloop时就会创建runloop。存在全局map中，key是线程，value是runlooprunloopModel结构体如下常见2种Mode:  kCFRunLoopDefaultMode（NSDefaultRunLoopMode）：App的默认Mode，通常主线程是在这个Mode下运行  UITrackingRunLoopMode：界面跟踪 Mode，用于 ScrollView 追踪...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-10-10 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-10-10</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/" title="访问 iOS底层(5)-Block">iOS底层(5)-Block</a></h2>
+      <p class="excerpt">Block本质本质是一个OC对象，编译之后是一个结构体包含isa指针，block中封装了调用的函数和调用环境。调用环境值variables是block捕获的变量(如果block中访问了一些需要被捕获的变量，例如局部变量)block的变量捕获机制：  局部变量， auto临时变量会捕获到block内部，且用的值传递。static 会捕获，用的指针传递。  全局变量，不会捕获，block运行的时候会直接访问auto临时变量代表 autorelease的在一个作用域内的临时变量其中FuncPtr...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-10-10 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-10-10</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(4)-%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E6%9C%BA%E5%88%B6/" title="访问 iOS底层(4)-方法调用机制">iOS底层(4)-方法调用机制</a></h2>
+      <p class="excerpt">消息发送objc_msgSend()  从cache缓存中查找方法，找到了直接调用  从class_rw_t方法列表中查找，找到了缓存到cache，再调用  从superClass 缓存中查找，找到了缓存到cache，再调用  从superClass class_rw_t方法列表中查找，找到了缓存到cache，再调用  递归父类查找，直到父类为空，执行下一步动态方法解析动态方法解析  若未动态解析过，则调用 resolveInstanceMethod:  resolveClassMetho...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-10-10 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-10-10</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/10/iOS%E5%BA%95%E5%B1%82(4)-%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E6%9C%BA%E5%88%B6/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(3)-KVC-&-KVO/" title="访问 iOS底层(3)-KVC & KVO">iOS底层(3)-KVC & KVO</a></h2>
+      <p class="excerpt">KVOPerson 类的对象p 注册监听。原理：注册监听后，系统利用runtime动态生成一个新的子类NSKVONotifying_Person对象，且将p-&gt;isa = NSKVONotifying_Person. 新的类重写set方法和class方法。在set方法中，先调用willChangeValueForKey, 然后赋值，最后didChangeValueForKey出发监听的方法。NSKVONotifying_Person -&gt;superClass = PersonN...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-10-10 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-10-10</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/10/iOS%E5%BA%95%E5%B1%82(3)-KVC-&-KVO/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(2)-Category%E7%B1%BB%E5%88%AB-&-%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1/" title="访问 iOS底层(2)-Category类别 & 关联对象">iOS底层(2)-Category类别 & 关联对象</a></h2>
+      <p class="excerpt">Category分类在编译的时候变成category_t 结构体，其中包含所有方法，协议，属性等。运行的时候把Category数组合并到Class的大数组中，后面参与编译的在数组的前面，也解释了为什么类别能够覆盖主类的方法，因为在方法查找时先找到类别的方法而已。  +laod()是在app启动时加载类、分类的时候调用。调用原理与普通的category方法不同，是直接按照主类，类别的方法调用专门存取load方法的指针来调用load方法，即调用顺序一定是主类，分类1，分类2。。。而且如果父类还...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-10-10 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-10-10</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/10/iOS%E5%BA%95%E5%B1%82(2)-Category%E7%B1%BB%E5%88%AB-&-%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
       <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/" title="访问 iOS底层(1)-Class & isa">iOS底层(1)-Class & isa</a></h2>
       <p class="excerpt">类初始化内存分配NSObject占用内存大小为16个字节，但是NSObjct只有一个属性就是isa只占用8个字节，由于底层设计原因最少需要16个字节。结构体内存对齐，(x+7)&amp; ~x 是将x按照8字节对齐。不满8就补齐8字节malloc 中的内存分配也会有内存对齐规则，mac中是16的倍数，如果传入只需要24字节，alloc后系统会分配32个字节空间即内存对齐。 class_getInstanceSize 返回的是对象需要的内存， NSObjcet中的isa占用8， 加上继承来的...&hellip;</p>
       <div class="post-list__meta">        
@@ -470,111 +596,6 @@
       <hr class="post-list__divider" />
     </li>
     
-    <li>
-      <h2 class="post-list__post-title post-title"><a href="/2020/05/%E5%9C%A8%E8%85%BE%E8%AE%AF%E4%BA%91%E4%B8%8A%E6%90%AD%E5%BB%BAjekyll%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/" title="访问 在腾讯云上搭建jekyll静态博客">在腾讯云上搭建jekyll静态博客</a></h2>
-      <p class="excerpt">本文旨在帮助小伙伴在腾讯云或阿里云上搭建jekyll环境，有错误还请指正。对于一个全新服务器，需要从新开始配置相关依赖环境。安装 Nodejs 环境$ wget https://nodejs.org/dist/v8.12.0/node-v8.12.0-linux-x64.tar.xz$ xz -d node-v8.12.0-linux-x64.tar.xz$ tar -xf node-v8.12.0-linux-x64.tar $ ln -s ~/node-v8.12.0-linux-x6...&hellip;</p>
-      <div class="post-list__meta">        
-        <time datetime="2020-05-21 00:00:00 +0800" class="post-list__meta--date date">
-          <img src="/images/calendar.png" width="20px" /> 
-          2020-05-21</time> 
-        <div class = "tag-img-icon">
-          <img src="/images/tag-icon.svg" width="20px" /> 
-        </div>
-        <a href="/tags">
-          <div class = "post-list-icon-mate">
-            <span class="post-list__meta--tags-right"></span>
-          </div>
-          <div class = "post-list-small-mate">
-          <a class="btn-border-small" href=/2020/05/%E5%9C%A8%E8%85%BE%E8%AE%AF%E4%BA%91%E4%B8%8A%E6%90%AD%E5%BB%BAjekyll%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/>阅读全文 » </a>
-          </div>
-      </div>
-      <hr class="post-list__divider" />
-    </li>
-    
-    <li>
-      <h2 class="post-list__post-title post-title"><a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E5%9B%9B)/" title="访问 Flutter渲染机制—UI线程(四)">Flutter渲染机制—UI线程(四)</a></h2>
-      <p class="excerpt">四、Framework层绘制在引擎层的处理过程会调用到window.onBeginFrame()和onDrawFrame，回到framework层从这个两个方法开始说起。4.1 SchedulerBinding.initInstances[-&gt; lib/src/scheduler/binding.dart:: SchedulerBinding]mixin SchedulerBinding on BindingBase, ServicesBinding {  @override  vo...&hellip;</p>
-      <div class="post-list__meta">        
-        <time datetime="2020-03-25 00:00:00 +0800" class="post-list__meta--date date">
-          <img src="/images/calendar.png" width="20px" /> 
-          2020-03-25</time> 
-        <div class = "tag-img-icon">
-          <img src="/images/tag-icon.svg" width="20px" /> 
-        </div>
-        <a href="/tags">
-          <div class = "post-list-icon-mate">
-            <span class="post-list__meta--tags-right">Flutter</span>
-          </div>
-          <div class = "post-list-small-mate">
-          <a class="btn-border-small" href=/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E5%9B%9B)/>阅读全文 » </a>
-          </div>
-      </div>
-      <hr class="post-list__divider" />
-    </li>
-    
-    <li>
-      <h2 class="post-list__post-title post-title"><a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%89)/" title="访问 Flutter渲染机制—UI线程(三)">Flutter渲染机制—UI线程(三)</a></h2>
-      <p class="excerpt">三、Engine层绘制3.1 doFrame[-&gt; Choreographer.java]public void doFrame(long frameTimeNanos) {    //Android FW每次当vsync信号触发，则会调用该方法 [见下方]    nativeOnVsync(frameTimeNanos, frameTimeNanos + refreshPeriodNanos, cookie);}Vsync注册过程见[小节2.6] Choreographer.Fra...&hellip;</p>
-      <div class="post-list__meta">        
-        <time datetime="2020-03-19 00:00:00 +0800" class="post-list__meta--date date">
-          <img src="/images/calendar.png" width="20px" /> 
-          2020-03-19</time> 
-        <div class = "tag-img-icon">
-          <img src="/images/tag-icon.svg" width="20px" /> 
-        </div>
-        <a href="/tags">
-          <div class = "post-list-icon-mate">
-            <span class="post-list__meta--tags-right">Flutter</span>
-          </div>
-          <div class = "post-list-small-mate">
-          <a class="btn-border-small" href=/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%89)/>阅读全文 » </a>
-          </div>
-      </div>
-      <hr class="post-list__divider" />
-    </li>
-    
-    <li>
-      <h2 class="post-list__post-title post-title"><a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%BA%8C)/" title="访问 Flutter渲染机制—UI线程(二)">Flutter渲染机制—UI线程(二)</a></h2>
-      <p class="excerpt">二、 VSYNC注册流程2.1 Engine::ScheduleFrame[-&gt; flutter/shell/common/engine.cc]void Engine::ScheduleFrame(bool regenerate_layer_tree) {    //[见小节2.2]    animator_-&gt;RequestFrame(regenerate_layer_tree);}该方法说明：  animator_的赋值过程是在Engine对象初始化过程完成，而Engine...&hellip;</p>
-      <div class="post-list__meta">        
-        <time datetime="2020-03-12 00:00:00 +0800" class="post-list__meta--date date">
-          <img src="/images/calendar.png" width="20px" /> 
-          2020-03-12</time> 
-        <div class = "tag-img-icon">
-          <img src="/images/tag-icon.svg" width="20px" /> 
-        </div>
-        <a href="/tags">
-          <div class = "post-list-icon-mate">
-            <span class="post-list__meta--tags-right">Flutter</span>
-          </div>
-          <div class = "post-list-small-mate">
-          <a class="btn-border-small" href=/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%BA%8C)/>阅读全文 » </a>
-          </div>
-      </div>
-      <hr class="post-list__divider" />
-    </li>
-    
-    <li>
-      <h2 class="post-list__post-title post-title"><a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%80)/" title="访问 Flutter渲染机制—UI线程(一)">Flutter渲染机制—UI线程(一)</a></h2>
-      <p class="excerpt">一、UI线程渲染Flutter是谷歌开源的移动UI框架，可以快速在Android和iOS上构建出高质量的原生用户界面，目前全世界越来越多的开发者加入到Flutter的队伍。 Flutter相比RN性能更好，由于Flutter自己实现了一套UI框架，丢弃了原生的UI框架，非常接近原生的体验。为了揭秘Flutter高性能，本文从源码角度来看看Flutter的渲染绘制机制，跟渲染直接相关的两个线程是UI线程和GPU线程：  UI线程：运行着UI Task Runner，是Flutter Engi...&hellip;</p>
-      <div class="post-list__meta">        
-        <time datetime="2020-03-02 00:00:00 +0800" class="post-list__meta--date date">
-          <img src="/images/calendar.png" width="20px" /> 
-          2020-03-02</time> 
-        <div class = "tag-img-icon">
-          <img src="/images/tag-icon.svg" width="20px" /> 
-        </div>
-        <a href="/tags">
-          <div class = "post-list-icon-mate">
-            <span class="post-list__meta--tags-right">Flutter</span>
-          </div>
-          <div class = "post-list-small-mate">
-          <a class="btn-border-small" href=/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%80)/>阅读全文 » </a>
-          </div>
-      </div>
-      <hr class="post-list__divider" />
-    </li>
-    
   </ol>
 
   <hr class="post-list__divider " />
@@ -586,7 +607,9 @@
 	</script>
 	
     
-    <span class="pagination__page-number">1 / 1</span>
+    <span class="pagination__page-number">1 / 2</span>
+    
+        <a class="older-posts pagination__older btn btn-small btn-tertiary" href="/page/2/#blog">更早 &rarr;</a>
     
 </nav>
 
@@ -668,9 +691,9 @@
             <span id="busuanzi_value_site_pv"></span>次
           </span> -->
 
-        </div>
+        <!-- </div>
         <script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/Epsilon2.1.model.json"},"display":{"position":"right","width":145,"height":315},"mobile":{"show":true,"scale":0.5},"react":{"opacityDefault":0.7,"opacityOnHover":0.8},"log":false,"pluginJsPath":"lib/","pluginRootPath":"live2dw/"});</script></body>
-        <div>
+        <div> -->
     </footer>
 </section>
 

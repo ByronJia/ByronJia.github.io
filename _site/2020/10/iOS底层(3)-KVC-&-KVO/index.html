@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>文章</title>
-  <meta name="description" content="这里有关于iOS,机器学习的笔记心得,欢迎交流">
+  <title>iOS底层(3)-KVC &amp; KVO</title>
+  <meta name="description" content="KVOPerson 类的对象p 注册监听。原理：注册监听后，系统利用runtime动态生成一个新的子类NSKVONotifying_Person对象，且将p-&gt;isa = NSKVONotifying_Person. 新的类重写set方法和class方法。在set方法中，先调用willChangeValue...">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="文章">
-  <meta name="twitter:description" content="这里有关于iOS,机器学习的笔记心得,欢迎交流">
+  <meta name="twitter:title" content="iOS底层(3)-KVC &amp; KVO">
+  <meta name="twitter:description" content="KVOPerson 类的对象p 注册监听。原理：注册监听后，系统利用runtime动态生成一个新的子类NSKVONotifying_Person对象，且将p-&gt;isa = NSKVONotifying_Person. 新的类重写set方法和class方法。在set方法中，先调用willChangeValue...">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="文章">
-  <meta property="og:description" content="这里有关于iOS,机器学习的笔记心得,欢迎交流">
+  <meta property="og:title" content="iOS底层(3)-KVC &amp; KVO">
+  <meta property="og:description" content="KVOPerson 类的对象p 注册监听。原理：注册监听后，系统利用runtime动态生成一个新的子类NSKVONotifying_Person对象，且将p-&gt;isa = NSKVONotifying_Person. 新的类重写set方法和class方法。在set方法中，先调用willChangeValue...">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/archive/">
+  <link rel="canonical" href="http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(3)-KVC-&-KVO/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -172,538 +172,149 @@
 
     <div class="content-wrapper">
         <div class="content-wrapper__inner">
-            <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
+            <head>
+  <link rel="stylesheet" href="/css/post.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.0.0/mermaid.min.js"></script>
+<script>
+  var config = {
+    startOnLoad:true,
+    theme: 'forest',
+    flowchart:{
+            useMaxWidth:false,
+            htmlLabels:true
+        }
+  };
+  mermaid.initialize(config);
+  window.mermaid.init(undefined, document.querySelectorAll('.language-mermaid'));
+</script>
+
+</head>
+
+<article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
+    <h1 class="post-title">iOS底层(3)-KVC & KVO</h1>
     <div class="post-meta">
-      <time datetime="" itemprop="datePublished" class="post-meta__date date"></time>
-      <span class="post-meta__tags tags"></span>
+      <img src="/images/calendar.png" width="20px"/> 
+      <time datetime="2020-10-10 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-10-10</time>  
+
+      <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
+    </p>
     </div>
-    <h1 class="post-title">文章</h1>
   </header>
 
+  
+    <h2 class="post-title">目录</h2>
+    <ul>
+  <li><a href="#kvo">KVO</a></li>
+  <li><a href="#kvc">KVC</a></li>
+</ul>
+
+  
+
   <section class="post">
-    
+    <h2 id="kvo">KVO</h2>
+<p>Person 类的对象p 注册监听。
+原理：注册监听后，系统利用runtime动态生成一个新的子类<code class="highlighter-rouge">NSKVONotifying_Person</code>对象，且将<code class="highlighter-rouge">p-&gt;isa = NSKVONotifying_Person</code>. 新的类重写set方法和class方法。
+在set方法中，先调用<code class="highlighter-rouge">willChangeValueForKey</code>, 然后赋值，最后<code class="highlighter-rouge">didChangeValueForKey</code>出发监听的方法。
+<code class="highlighter-rouge">NSKVONotifying_Person -&gt;superClass = Person</code>
+<code class="highlighter-rouge">NSKVONotifying_Person-&gt;isa = meta-NSKVONotifying_Person</code></p>
+
+<p>想手动调用监听方法：可以先调用<code class="highlighter-rouge">willChangeValueForKey</code>, 再调用<code class="highlighter-rouge">didChangeValueForKey</code>即可</p>
+
+<h2 id="kvc">KVC</h2>
+<p>下图是KVC获取属性和设置属性的调用原理图，例如<code class="highlighter-rouge">[p setValue:21 forKey:@“age”]</code>,找到set方法，因为声明了一个age属性，所以通过setAge方法找到，并赋值后触发监听。如果没有age属性，则不会触发监听。
+<img src="http://image.smartjames.cn/mweb/20201010/16023005369387.png" alt="截屏2020-10-09 下午2.55.25" /></p>
+
+<p><img src="http://image.smartjames.cn/mweb/20201010/16023005401951.png" alt="截屏2020-10-09 下午2.55.32" /></p>
 
 
-<div class="page card">
-
-
-
-  
-    
-    
-    
-    
-  
-    
-    
-    
-      <div class="hat_title">
-        <h3>2020</h3>
-      </div>
-      <div class="post_list">
-      <ul>
-      
-    
-  
-    <li>
-      <span>
-        2020-10-10
-      </span>
-       &raquo; 
-      <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">iOS底层(7)- 内存管理</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-10-10
-      </span>
-       &raquo; 
-      <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/">iOS底层(6)- runLoop & 多线程</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-10-10
-      </span>
-       &raquo; 
-      <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/">iOS底层(5)-Block</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-10-10
-      </span>
-       &raquo; 
-      <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(4)-%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E6%9C%BA%E5%88%B6/">iOS底层(4)-方法调用机制</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-10-10
-      </span>
-       &raquo; 
-      <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(3)-KVC-&-KVO/">iOS底层(3)-KVC & KVO</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-10-10
-      </span>
-       &raquo; 
-      <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(2)-Category%E7%B1%BB%E5%88%AB-&-%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1/">iOS底层(2)-Category类别 & 关联对象</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-10- 9
-      </span>
-       &raquo; 
-      <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/">iOS底层(1)-Class & isa</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-09-29
-      </span>
-       &raquo; 
-      <a href="/2020/09/JSBridge%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/">JSBridge实现原理</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-09-25
-      </span>
-       &raquo; 
-      <a href="/2020/09/LeetCode%E5%88%B7%E9%A2%98%E7%AC%94%E8%AE%B0/">LeetCode刷题笔记</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-09-24
-      </span>
-       &raquo; 
-      <a href="/2020/09/iOS-%E5%BA%94%E7%94%A8%E5%90%AF%E5%8A%A8%E8%80%97%E6%97%B6%E5%88%86%E6%9E%90%E5%8F%8A%E4%BC%98%E5%8C%96/">iOS 应用启动耗时分析及优化</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-09-23
-      </span>
-       &raquo; 
-      <a href="/2020/09/Mach-O%E6%96%87%E4%BB%B6%E5%88%9D%E8%AF%86/">Mach-O文件初识</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-09-17
-      </span>
-       &raquo; 
-      <a href="/2020/09/iOS%E9%AB%98%E7%BA%A7%E9%9D%A2%E8%AF%95%E9%A2%98(%E8%B6%85%E5%85%A8)/">iOS高级面试题(超全)</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-09-16
-      </span>
-       &raquo; 
-      <a href="/2020/09/CoreAnimation/">CoreAnimation详解</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-09-13
-      </span>
-       &raquo; 
-      <a href="/2020/09/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3HTTPS/">深入理解HTTPS</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-08-11
-      </span>
-       &raquo; 
-      <a href="/2020/08/WebRTC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/">WebRTC架构及原理</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-08- 5
-      </span>
-       &raquo; 
-      <a href="/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/">GCC 拥塞控制算法详解</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-08- 2
-      </span>
-       &raquo; 
-      <a href="/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/">BBR 拥塞控制算法详解</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-07-28
-      </span>
-       &raquo; 
-      <a href="/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/">TCP相关控制算法详解</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-06- 5
-      </span>
-       &raquo; 
-      <a href="/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/">SIG蓝牙协议5.2版本更新内容</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-06- 1
-      </span>
-       &raquo; 
-      <a href="/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/">蓝牙协议栈</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-05-21
-      </span>
-       &raquo; 
-      <a href="/2020/05/%E5%9C%A8%E8%85%BE%E8%AE%AF%E4%BA%91%E4%B8%8A%E6%90%AD%E5%BB%BAjekyll%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/">在腾讯云上搭建jekyll静态博客</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-03-25
-      </span>
-       &raquo; 
-      <a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E5%9B%9B)/">Flutter渲染机制—UI线程(四)</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-03-19
-      </span>
-       &raquo; 
-      <a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%89)/">Flutter渲染机制—UI线程(三)</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-03-12
-      </span>
-       &raquo; 
-      <a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%BA%8C)/">Flutter渲染机制—UI线程(二)</a>
-    </li>
- 
-    
-          
-      
-    
-  
-    
-    
-    
-    
-  
-    
-  
-    <li>
-      <span>
-        2020-03- 2
-      </span>
-       &raquo; 
-      <a href="/2020/03/Flutter%E6%B8%B2%E6%9F%93%E6%9C%BA%E5%88%B6-UI%E7%BA%BF%E7%A8%8B(%E4%B8%80)/">Flutter渲染机制—UI线程(一)</a>
-    </li>
- 
-    
-      </ul>
-      
-    
-  
-
-</div>
-</div>
   </section>
+
 </article>
+
+<section>
+
+            <div class="content-play">
+              <!-- <p><a href="javascript:void(0)" onclick="dashangToggle()" class="dashang" title="打赏，支持一下">打赏一个呗</a></p> -->
+              <div class="hide_box-play"></div>
+              <div class="shang_box-play">
+                <a class="shang_close-play" href="javascript:void(0)" onclick="dashangToggle()" title="关闭"><img src="/images/payimg/close.jpg" alt="取消" /></a>
+                <div class="shang_tit-play">
+                  <p>感谢您的支持，我会继续努力的!</p>
+                </div>
+                <div class="shang_payimg">
+                    <img src="/images/payimg/alipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+              <div class="shang_payimg">    
+                    <img src="/images/payimg/weipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+                <div class="pay_explain">扫码打赏，你说多少就多少</div>
+                <div class="shang_payselect">
+                  <div class="pay_item checked" data-id="alipay">
+                    <span class="pay_logo"><img src="/images/payimg/alipay.jpg" alt="支付宝" /></span>
+                  </div>
+                  <div class="pay_item" data-id="weipay">
+                    <span class="pay_logo"><img src="/images/payimg/wechat.jpg" alt="微信" /></span>
+                  </div>
+                </div>
+                <div class="shang_info-play">
+                  <p>打开<span id="shang_pay_txt">支付宝</span>扫一扫，即可进行扫码打赏哦</p>
+                </div>
+              </div>
+            </div>
+            <script type="text/javascript">
+            function dashangToggle(){
+              $(".hide_box-play").fadeToggle();
+              $(".shang_box-play").fadeToggle();
+            }
+            </script>
+
+            <div style="text-align:center;margin:50px 0; font:normal 14px/24px 'MicroSoft YaHei';"></div>
+
+            <style type="text/css">
+              .content-play{width:80%;margin-top: 20px;margin-bottom: 10px;height:40px;}
+              .hide_box-play{z-index:999;filter:alpha(opacity=50);background:#666;opacity: 0.5;-moz-opacity: 0.5;left:0;top:0;height:99%;width:100%;position:fixed;display:none;}
+              .shang_box-play{width:540px;height:540px;padding:10px;background-color:#fff;border-radius:10px;position:fixed;z-index:1000;left:50%;top:50%;margin-left:-280px;margin-top:-280px;border:1px dotted #dedede;display:none;}
+              .shang_box-play img{border:none;border-width:0;}
+              .dashang{display:block;width:100px;margin:5px auto;height:25px;line-height:25px;padding:10px;background-color:#E74851;color:#fff;text-align:center;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;transition: all 0.3s;}
+              .dashang:hover{opacity:0.8;padding:15px;font-size:18px;}
+              .shang_close-play{float:right;display:inline-block;
+                margin-right: 10px;margin-top: 20px;
+              }
+              .shang_logo{display:block;text-align:center;margin:20px auto;}
+              .shang_tit-play{width: 100%;height: 75px;text-align: center;line-height: 66px;color: #a3a3a3;font-size: 16px;background: url('/images/payimg/cy-reward-title-bg.jpg');font-family: 'Microsoft YaHei';margin-top: 7px;margin-right:2px;}
+              .shang_tit-play p{color:#a3a3a3;text-align:center;font-size:16px;}
+              .shang_payimg{width:140px;padding:10px;padding-left: 80px; /*border:6px solid #EA5F00;**/margin:0 auto;border-radius:3px;height:140px;display:inline-block;}
+              .shang_payimg img{display:inline-block;margin-right:10px;float:left;text-align:center;width:140px;height:140px; }
+              .pay_explain{text-align:center;margin:10px auto;font-size:12px;color:#545454;}
+              .shang_payselect{text-align:center;margin:0 auto;margin-top:40px;cursor:pointer;height:60px;width:500px;margin-left:110px;}
+              .shang_payselect .pay_item{display:inline-block;margin-right:140px;float:left;}
+              .shang_info-play{clear:both;}
+              .shang_info-play p,.shang_info-play a{color:#C3C3C3;text-align:center;font-size:12px;text-decoration:none;line-height:2em;}
+            </style>
+
+       <ul class="pager">
+        
+        <li class="previous">
+            <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(2)-Category%E7%B1%BB%E5%88%AB-&-%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1/" data-toggle="tooltip" data-placement="top" title="iOS底层(2)-Category类别 & 关联对象">上一篇：  <span>iOS底层(2)-Category类别 & 关联对象</span>
+            </a>
+        </li>
+        
+        
+        <li class="next">
+            <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(4)-%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E6%9C%BA%E5%88%B6/" data-toggle="tooltip" data-placement="top" title="iOS底层(4)-方法调用机制">下一篇：  <span>iOS底层(4)-方法调用机制</span>
+            </a>
+        </li>
+        
+    </ul>
+</section>
+
+<section class="post-comments">
+
+  
+  
+</section>
+
 
             <section class="footer">
     <footer>

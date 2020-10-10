@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>SIG蓝牙协议5.2版本更新内容</title>
-  <meta name="description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <title>iOS底层(4)-方法调用机制</title>
+  <meta name="description" content="消息发送objc_msgSend()  从cache缓存中查找方法，找到了直接调用  从class_rw_t方法列表中查找，找到了缓存到cache，再调用  从superClass 缓存中查找，找到了缓存到cache，再调用  从superClass class_rw_t方法列表中查找，找到了缓存到cache，再...">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="SIG蓝牙协议5.2版本更新内容">
-  <meta name="twitter:description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <meta name="twitter:title" content="iOS底层(4)-方法调用机制">
+  <meta name="twitter:description" content="消息发送objc_msgSend()  从cache缓存中查找方法，找到了直接调用  从class_rw_t方法列表中查找，找到了缓存到cache，再调用  从superClass 缓存中查找，找到了缓存到cache，再调用  从superClass class_rw_t方法列表中查找，找到了缓存到cache，再...">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="SIG蓝牙协议5.2版本更新内容">
-  <meta property="og:description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <meta property="og:title" content="iOS底层(4)-方法调用机制">
+  <meta property="og:description" content="消息发送objc_msgSend()  从cache缓存中查找方法，找到了直接调用  从class_rw_t方法列表中查找，找到了缓存到cache，再调用  从superClass 缓存中查找，找到了缓存到cache，再调用  从superClass class_rw_t方法列表中查找，找到了缓存到cache，再...">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/">
+  <link rel="canonical" href="http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(4)-%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E6%9C%BA%E5%88%B6/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -192,10 +192,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">SIG蓝牙协议5.2版本更新内容</h1>
+    <h1 class="post-title">iOS底层(4)-方法调用机制</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-06-05 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-06-05</time>  
+      <time datetime="2020-10-10 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-10-10</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -205,104 +205,51 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#主要是3块新特性">主要是3块新特性</a>
-    <ul>
-      <li><a href="#背景介绍">背景介绍</a></li>
-    </ul>
-  </li>
-  <li><a href="#一enhanced-att">一、Enhanced ATT</a></li>
-  <li><a href="#二le-power-control">二、LE Power Control</a></li>
-  <li><a href="#三le-isochronous-channels">三、LE Isochronous Channels</a>
-    <ul>
-      <li><a href="#链接模式">链接模式</a></li>
-      <li><a href="#广播模式">广播模式</a></li>
-    </ul>
-  </li>
+  <li><a href="#消息发送objc_msgsend">消息发送objc_msgSend()</a></li>
+  <li><a href="#动态方法解析">动态方法解析</a></li>
+  <li><a href="#消息转发">消息转发</a></li>
+  <li><a href="#super-关键字">super 关键字</a></li>
 </ul>
 
   
 
   <section class="post">
-    <h4 id="主要是3块新特性">主要是3块新特性</h4>
+    <h2 id="消息发送objc_msgsend">消息发送objc_msgSend()</h2>
 <ul>
-  <li>Enhanced Attribute Protocol</li>
-  <li>LE Power Control</li>
-  <li>LE Isochronous Channels</li>
+  <li>从<code class="highlighter-rouge">cache</code>缓存中查找方法，找到了直接调用</li>
+  <li>从<code class="highlighter-rouge">class_rw_t</code>方法列表中查找，找到了缓存到<code class="highlighter-rouge">cache</code>，再调用</li>
+  <li>从<code class="highlighter-rouge">superClass</code> 缓存中查找，找到了缓存到<code class="highlighter-rouge">cache</code>，再调用</li>
+  <li>从<code class="highlighter-rouge">superClass class_rw_t</code>方法列表中查找，找到了缓存到<code class="highlighter-rouge">cache</code>，再调用</li>
+  <li>递归父类查找，直到父类为空，执行下一步动态方法解析</li>
 </ul>
 
-<h5 id="背景介绍">背景介绍</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PUD: Protocol Data Unit 协议数据单元 被某一层处理为指定数据格式的数据。
-
-SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据，比如输入的数据，叫SDU,封装成PDU通过层与层之间的管道传输给下一层。
-</code></pre></div></div>
-
-<p>本层的PDU是下一层的SDU,本层的SDU是上一层的PDU</p>
-
-<hr />
-<h4 id="一enhanced-att">一、Enhanced ATT</h4>
-
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002632642584.png" alt="" /></p>
-
-<p>ATT: 定义了不同服务的属性参数和可使用的命令，用来作为主从设备间的信息交换个协商。</p>
-
-<p>MTU(Maximum Transmission Unit) 是不同协议的最大数据处理能力，决定不同层协议处理最大PUD/SDU的尺寸。ATT中定义了服务的MTU,在L2CAP根据上下层不同的MTU来分割/组合数据，来适配整体数据通路的PDU/SDU。</p>
-
-<p>LE5.1之前：</p>
+<h2 id="动态方法解析">动态方法解析</h2>
 <ul>
-  <li>ATT与L2CAP之间的MTU是固定的，建立连接后不能改。</li>
-  <li>数据处理是串行的，不同业务MTU必须在上一个PDU/SDU完成后才能执行。</li>
+  <li>若未动态解析过，则调用 <code class="highlighter-rouge">resolveInstanceMethod:  </code><code class="highlighter-rouge">resolveClassMethod:</code> 来完成方法添加</li>
+  <li>不管有没有实现，都会再次走上一步的方法查找
+    <ul>
+      <li>若找到则执行并结束</li>
+      <li>没找到则执行下一步消息转发</li>
+    </ul>
+  </li>
 </ul>
 
-<p>LE5.2:</p>
+<h2 id="消息转发">消息转发</h2>
 <ul>
-  <li>MTU在ATT和L2CAP之间不再一一对应，可以互相独立配置，即ATT和L2CAP之间的MTU和PDU大小动态配置。</li>
-  <li>不同业务PDU可以交叉处理，减小数据延迟</li>
+  <li>调用<code class="highlighter-rouge">forwardingTargetForSelector:</code>
+    <ul>
+      <li>不为空则走<code class="highlighter-rouge">objc_msgSend</code> 向转发的对象发送消息调用</li>
+      <li>返回值为nil,调用 <code class="highlighter-rouge">methodSignatureForSelector</code></li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">methodSignatureForSelector</code> 返回为空 则crash</li>
+  <li>不为空则调用 ForwardInvocation方法，在里面可以手动invoca和获取修改invoca的所有属性，包括target，methodSignature，selector</li>
 </ul>
 
-<p>EATT相比ATT的影响：</p>
-<ul>
-  <li>新的PDU只能再EATT上使用</li>
-  <li>某些ATT PDU只能用在ATT上</li>
-  <li>一些PDU的定义或流程被细化或优化</li>
-  <li>EATT只能加密连接使用，ATT可以通过未加密、加密连接</li>
-</ul>
-
-<hr />
-<h4 id="二le-power-control">二、LE Power Control</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>在蓝牙接收错误率BER超过0.1%时，连接被认为是质量不好连接 增加了发射功率的动态管理，通过信号响度RSSI的监控，通知发射方增加或减少发射功率。使接收器的信号强度落在不太强也不太弱的区域，刚好满足应用又省电。
-</code></pre></div></div>
-
-<hr />
-<h4 id="三le-isochronous-channels">三、LE Isochronous Channels</h4>
-<p>定义了一个有时间依赖的数据传输通道和传输策略。</p>
-<ul>
-  <li>增加对于一对多接收方同步获取数据的机制</li>
-  <li>允许发送方在指定时间外丢弃数据，保证接收方数据满足时效要求</li>
-</ul>
-
-<p>该通道支持链接模式和广播模式.
-俩种模式下 ISO异同点：</p>
-<ul>
-  <li>每个BIG CIG最多包含31个BIS CIS</li>
-  <li>CIS中从设备对主设备有信息反馈，BIS没有</li>
-  <li>BIS重传是通过接收方信息反馈决定， CIS是强制的</li>
-  <li>CIG中CIS同步通过CIG的时间以及CIS时间参数实现，BIG中的BIS通过周期广播的PDU实现</li>
-</ul>
-
-<p>能实现多重串流音频（Multi-Stream Audio）和音频分享（Audio Sharing）</p>
-
-<h5 id="链接模式">链接模式</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>称作CIS (LE Connected Isochronous Stream)逻辑传输通道，可将延迟数据丢弃。 不同的CIS组成CIG ( Connected Isochronous Groups ),同一个CIG内的CIS有相同的时间戳，保证同一个group内数据同步。例如一对TWS耳机
-</code></pre></div></div>
-
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002632747277.png" alt="" /></p>
-
-<h5 id="广播模式">广播模式</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>称作BIS (Broadcast Isochronous Stream)。 多个BIS 可组成BIG (Broadcast Isochronous Groups).通过一个周期广播的PUD实现。 该PDU包含针对每个BIS的时间戳，一旦同步，广播接收者变成同步接收者。例如，广场舞大妈蓝牙耳机听同一音源歌曲。
-</code></pre></div></div>
-
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002633057507.png" alt="" /></p>
-
+<h2 id="super-关键字">super 关键字</h2>
+<p>[self class] 与 [super class] 结果一样，因为super关键字底层实现是调用
+<code class="highlighter-rouge">objc_msgSendSuper({self, class_getSuperClass('selfClass')}</code>, <code class="highlighter-rouge">sel_registerName('class'))</code>,  <code class="highlighter-rouge">objc_msgSendSuper</code>意义是从父类开始查找class方法，但是方法接收者还是self, 所以才能实现跳过自己，直接调用父类的方法。
+class方法的实现是objc_getClass(self), 因为前面接收者是self,所以方法实现里的参数还是自己，那么打印出来就是一样的。</p>
 
   </section>
 
@@ -372,13 +319,13 @@ SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据�
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/" data-toggle="tooltip" data-placement="top" title="蓝牙协议栈">上一篇：  <span>蓝牙协议栈</span>
+            <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(3)-KVC-&-KVO/" data-toggle="tooltip" data-placement="top" title="iOS底层(3)-KVC & KVO">上一篇：  <span>iOS底层(3)-KVC & KVO</span>
             </a>
         </li>
         
         
         <li class="next">
-            <a href="/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="TCP相关控制算法详解">下一篇：  <span>TCP相关控制算法详解</span>
+            <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/" data-toggle="tooltip" data-placement="top" title="iOS底层(5)-Block">下一篇：  <span>iOS底层(5)-Block</span>
             </a>
         </li>
         

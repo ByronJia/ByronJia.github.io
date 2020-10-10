@@ -5,9 +5,328 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 10 Oct 2020 10:42:38 +0800</pubDate>
-    <lastBuildDate>Sat, 10 Oct 2020 10:42:38 +0800</lastBuildDate>
+    <pubDate>Sat, 10 Oct 2020 18:13:06 +0800</pubDate>
+    <lastBuildDate>Sat, 10 Oct 2020 18:13:06 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>iOS底层(7)- 内存管理</title>
+        <description>&lt;h2 id=&quot;浅拷贝和深拷贝&quot;&gt;浅拷贝和深拷贝&lt;/h2&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;拷贝的最终目的是产生一个副本，修改副本不会对原对象产生影响。故到底是深拷贝还是浅拷贝要根据这个规则来判断。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;[任意对象 copy] 产生一个不可变对象，如果原对象是不可变对象，那么就是浅拷贝，因为不可变对象本身就不能修改，所以没必要创新分配内存。原对象是可变对象，就是深拷贝。&lt;/li&gt;
+  &lt;li&gt;[任意对象 mutableCopy] 产生一个可变对象，不论原对象是否是可变对象，都是深拷贝，因为要产生修改不影响原对象的副本，必须重新分配内存。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023208497217.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;定义属性时使用copy修饰词，目的是在赋值之后产生一个不可变对象，那么在修改外部变量的时候不影响内部，例如UI控件的text都是copy修饰，防止外部修改影响内部实现。&lt;/p&gt;
+
+&lt;h2 id=&quot;cadisplaylink-和-nstimer使用问题&quot;&gt;CADisplayLink 和 NSTimer使用问题&lt;/h2&gt;
+&lt;p&gt;会对target 强引用，如果target也强引用他们，就发生循环引用问题
+解决方法是使用NSProxy，是和NSObject同一级别的基类，但是没有实现和声明多余的方法，只有alloc等。
+作用是只要方法列表里找不到方法，跳过动态方法解析，直接做转发。且NXProxy中弱引用target即可。&lt;/p&gt;
+
+&lt;h2 id=&quot;内存布局&quot;&gt;内存布局&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023208614585.png&quot; alt=&quot;2&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;tagged-pointer&quot;&gt;Tagged Pointer&lt;/h2&gt;
+&lt;p&gt;从64位开始引入，目的是优化NSNumber, NSDate， NSString等小对象的存储，提高内存使用率&lt;br /&gt;
+原来NSNumber占用一个对象的空间，指针还指向堆地址的值，最终可能只是为了存一个3。 就浪费很大空间&lt;/p&gt;
+
+&lt;p&gt;在使用Tagged pointer技术后，NSNumber 3的地址0x327, Tag+Data 的形式存储，从地址就能读到真实值，不需要额外空间。当内存地址长度超过64位后，才使用动态分配内存的方式存储数据。&lt;/p&gt;
+
+&lt;p&gt;如果地址最低有效位是1， 则是Tagged pointer&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;注意&lt;/strong&gt; ： 字符串想要使用tagged pointer, 初始化要用&lt;code class=&quot;highlighter-rouge&quot;&gt;[NSString stringWithFormat:]&lt;/code&gt;，如果是@”xx”创建的是常规对象存在常量区。&lt;/p&gt;
+&lt;h2 id=&quot;引用计数管理&quot;&gt;引用计数管理&lt;/h2&gt;
+&lt;p&gt;新建OC对象引用计数默认是1，当调用alloc,new,copy,mutableCopy时对象引用计数会+1&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;引用计数存储&lt;/strong&gt;：
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023208775066.png&quot; alt=&quot;3&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;在64位优化后的isa共用体结构中，引用计数=extra_rc + sidetable_rc.refcnts[self].count,不是每个对象都会使用sidetable_rc,要看isa的标志位has_sidetable_rc.  &lt;br /&gt;
+如果isa不是共用体结构，引用计数=sidetable_rc.refcnts[self].count
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023208883784.png&quot; alt=&quot;4&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;refcnts是一个散列表，使用对象的地址为key,value为引用计数。
+获取引用计数、retain、release操作都是获取extra_rc的值+sidetable的值+1或-1. 如果是release则判断是否为0，为0就dealloc。&lt;/p&gt;
+
+&lt;h2 id=&quot;weak-指针原理&quot;&gt;weak 指针原理&lt;/h2&gt;
+&lt;p&gt;__weak: 弱引用对象，当对象销毁时指针置为空&lt;br /&gt;
+__unsafe_unretain: 弱引用对象，当对象销毁时，指针不变，使用会发生坏内存访问&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;weak能在对象销毁置为空的原理：&lt;/strong&gt;
+当自动调用dealloc方法时，判断是否有弱引用和&lt;code class=&quot;highlighter-rouge&quot;&gt;sidetable_rc&lt;/code&gt;,（弱引用和超过计数器时都使用到了sidetable），有弱引用就将sidetable中自己对应的value取出来，得到一个__weak对象的地址集合(不确定是不是数组，因为用到C++的遍历器)， 并遍历将其置为nil
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023209058628.png&quot; alt=&quot;5&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;自动释放池&quot;&gt;自动释放池&lt;/h2&gt;
+&lt;p&gt;主要通过AutoreleasePoolPage来管理，结构如下&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023209189251.png&quot; alt=&quot;6&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;在@autoreleasePool代码开始时，调用&lt;code class=&quot;highlighter-rouge&quot;&gt;AutoreleasePoolPage&lt;/code&gt;的&lt;code class=&quot;highlighter-rouge&quot;&gt;Push&lt;/code&gt;方法，将&lt;code class=&quot;highlighter-rouge&quot;&gt;BOUNDARY&lt;/code&gt; 添加到&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;中，标记为开始，后续调用&lt;code class=&quot;highlighter-rouge&quot;&gt;autorelease&lt;/code&gt;的对象也会添加到该&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;中，在括号结束时，调用&lt;code class=&quot;highlighter-rouge&quot;&gt;Pop&lt;/code&gt;方法时传入一个&lt;code class=&quot;highlighter-rouge&quot;&gt;POOL_BOUNDARY&lt;/code&gt;的内存地址，会从最后一个入栈的对象开始发送&lt;code class=&quot;highlighter-rouge&quot;&gt;release&lt;/code&gt;消息，直到遇到这个&lt;code class=&quot;highlighter-rouge&quot;&gt;POOL_BOUNDARY&lt;/code&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;对象释放时机&quot;&gt;对象释放时机&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;MRC&lt;/strong&gt;: 对象创建时调用了autorelease方法   &lt;br /&gt;
+系统在主线程的Runloop中注册了2个Observer,1个监听kCFRunLoopEntry时间，调用objc_autoreleasePoolPush()。另一个监听kCFRunLoopBeforeWaiting事件，调用objc_autoreleasePoolPop()、objc_autoreleasePoolPush()。
+监听kCFRunLoopBeforeExit事件调用objc_autoreleasePoolPop() &lt;br /&gt;
+例如：viewdidload和viewwillappear 在一个loop中，即一次执行所有的block和sources，直到执行完毕loop睡眠，在睡眠之前会释放对象。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;ARC&lt;/strong&gt;:
+在括号结束时，LLVM编译器自动给对象release一次，而不是在runloop中执行。&lt;/p&gt;
+</description>
+        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>iOS底层(6)- runLoop &amp; 多线程</title>
+        <description>&lt;h2 id=&quot;runloop&quot;&gt;runloop&lt;/h2&gt;
+&lt;h3 id=&quot;常见类型&quot;&gt;常见类型&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;runloop&lt;/strong&gt; 和线程一一对应，子线程默认不开启runloop,当第一次获取runloop时就会创建runloop。存在全局map中，key是线程，value是runloop&lt;/p&gt;
+
+&lt;p&gt;runloopModel结构体如下
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023184791593.png&quot; alt=&quot;1&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;常见2种Mode:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;kCFRunLoopDefaultMode&lt;/code&gt;（&lt;code class=&quot;highlighter-rouge&quot;&gt;NSDefaultRunLoopMode&lt;/code&gt;）：App的默认Mode，通常主线程是在这个Mode下运行&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;UITrackingRunLoopMode&lt;/code&gt;：界面跟踪 Mode，用于 ScrollView 追踪触摸滑动，保证界面滑动时不受其他 Mode 影响&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;目的是不同组的&lt;code class=&quot;highlighter-rouge&quot;&gt;Source0&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Source1&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Timer&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Observer&lt;/code&gt;能分隔开来，互不影响，处理不同的事件，只能同一时间运行一种模式&lt;/p&gt;
+
+&lt;h3 id=&quot;线程保活&quot;&gt;线程保活&lt;/h3&gt;
+
+&lt;p&gt;一般线程启动后，如果事情做完会直接销毁，因为启动runloop 如果Mode里没有任何&lt;code class=&quot;highlighter-rouge&quot;&gt;Source0&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Source1&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Timer&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Observer&lt;/code&gt;，RunLoop会立马退出。 唯一办法是在runloop中添加前面所说的几个事件。
+做法：
+在当前线程中调用以下代码&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[[NSRunLoop currentRunLoop] addPort:[[NSPort alloc] init]   forMode:NSDefaultRunLoopMode];
+while (1){
+    [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;这样添加一个port的 &lt;code class=&quot;highlighter-rouge&quot;&gt;source1&lt;/code&gt; 事件，并启动本次runMode, 一旦响应一次事件后本次会结束，所以需要while 运行runModel 。其实就是阻塞了当前runloop的一个事件，导致后续事件无法运行，以此保证runloop和线程的存活&lt;/p&gt;
+
+&lt;h2 id=&quot;多线程&quot;&gt;多线程&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023185008204.png&quot; alt=&quot;2&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;线程死锁&quot;&gt;线程死锁&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;使用&lt;code class=&quot;highlighter-rouge&quot;&gt;sync&lt;/code&gt;函数往当前串行队列中添加任务，会卡住当前的串行队列（产生死锁)&lt;/strong&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;performSelector:withObject:afterDelay: &lt;/code&gt;方法是用你NSTimer实现定时，且是加在当前线程runloop中，但是如果当前是&lt;code class=&quot;highlighter-rouge&quot;&gt;asyn&lt;/code&gt;产生的线程runloop没启动的话这种方法无效。需要手动启动&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h3 id=&quot;线程锁&quot;&gt;线程锁&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;OSSpinLock&lt;/code&gt; 自旋锁，一直处于忙等状态&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;os_unfair_lock&lt;/code&gt; 互斥锁，等待锁的线程处于休眠状态，节省资源&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023185133777.jpg&quot; alt=&quot;3&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pthread_mutex&lt;/code&gt; 互斥锁，等待锁的线程处于休眠状态
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023185345005.jpg&quot; alt=&quot;4&quot; /&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pthread_mutex&lt;/code&gt;的条件锁
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023185451423.jpg&quot; alt=&quot;5&quot; /&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;NSLock&lt;/code&gt;  对于pthread_mutex的OC封装&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;NSRecursiveLock&lt;/code&gt;  对于pthread_mutex的OC封装&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;NSCondition&lt;/code&gt;  对于pthread_mutex 和 condition的OC封装&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;dispatch_queue(DISPATCH_QUEUE_SERIAL)&lt;/code&gt; 把不同线程的任务放在同步队列中执行，能达到锁的效果&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;dispatch_semaphore&lt;/code&gt; 信号量， 初始化赋一个最多同时执行线程数量，如果是1就实现了锁的效果&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;锁都是由于不同线程的问题导致的，如果条件锁在一个线程有wait，没有其他线程signal,就会永远睡眠下去。wait后的代码不会执行。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;队列和线程是2个概念，队列中的任务可以在不同的线程中去执行。例如用globalQueue来创建不同的线程任务，所以可以使用串行队列来实现线程锁的问题，只要保证任务都加入到队列中执行即可&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;atomic 用于保证setter、 getter的操作原子性，在方法内部加上线程同步锁&lt;/p&gt;
+
+&lt;h3 id=&quot;读写安全方案-保证同一时间只有一个线程写可以多个线程读不能同时读写&quot;&gt;读写安全方案 ,保证同一时间只有一个线程写，可以多个线程读，不能同时读写&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pthread_rwlock&lt;/code&gt; 读写锁&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;dispatch_barrier_async&lt;/code&gt; 异步栅栏调用
+  &lt;code class=&quot;highlighter-rouge&quot;&gt;dispatch_asyn(que)&lt;/code&gt; 用于读操作
+  &lt;code class=&quot;highlighter-rouge&quot;&gt;diapatch_barrier_async(que)&lt;/code&gt; 用于写操作，可以保证当前队列中只有栅栏中的任务在执行，其他全部暂停。&lt;/li&gt;
+&lt;/ul&gt;
+
+</description>
+        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>iOS底层(5)-Block</title>
+        <description>&lt;h2 id=&quot;block本质&quot;&gt;Block本质&lt;/h2&gt;
+&lt;p&gt;本质是一个OC对象，编译之后是一个结构体包含isa指针，block中封装了调用的函数和调用环境。调用环境值&lt;code class=&quot;highlighter-rouge&quot;&gt;variables&lt;/code&gt;是block捕获的变量(如果block中访问了一些需要被捕获的变量，例如局部变量)
+block的变量捕获机制：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;局部变量， &lt;code class=&quot;highlighter-rouge&quot;&gt;auto&lt;/code&gt;临时变量会捕获到block内部，且用的值传递。&lt;code class=&quot;highlighter-rouge&quot;&gt;static&lt;/code&gt; 会捕获，用的指针传递。&lt;/li&gt;
+  &lt;li&gt;全局变量，不会捕获，block运行的时候会直接访问&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;em&gt;auto临时变量代表 autorelease的在一个作用域内的临时变量&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023098593774.png&quot; alt=&quot;1&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;其中FuncPtr指的block函数的指针。 
+block分为3种类型，分别为&lt;code class=&quot;highlighter-rouge&quot;&gt;__NSGlobalBlock__&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;__NSStackBlock__&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;__NSMallocBlock__&lt;/code&gt;，分为位于以下内存区域，那么什么样的block会属于什么样的类型？&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023098896250.jpg&quot; alt=&quot;2&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023098896265.png&quot; alt=&quot;3&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上图表示不同的block因为操作的变量类型不一样，所以block类型也不一样。因为auto变量是临时变量会存在&lt;code class=&quot;highlighter-rouge&quot;&gt;stack&lt;/code&gt;中自动销毁，所以相应block就是&lt;code class=&quot;highlighter-rouge&quot;&gt;stack&lt;/code&gt;。没访问auto变量则存在常量区&lt;code class=&quot;highlighter-rouge&quot;&gt;global&lt;/code&gt;。&lt;/p&gt;
+
+&lt;h2 id=&quot;为什么block用copy修饰&quot;&gt;为什么block用copy修饰？&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;由于&lt;/strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;stackblock&lt;/code&gt;在栈中，且捕获的是在栈中的变量，如果变量销毁，有可能block访问的就的数据就是野指针，&lt;strong&gt;所以&lt;/strong&gt;需要将&lt;code class=&quot;highlighter-rouge&quot;&gt;stackblock&lt;/code&gt;通过调用&lt;strong&gt;copy&lt;/strong&gt;方法转为&lt;code class=&quot;highlighter-rouge&quot;&gt;mallocblock&lt;/code&gt;即保存到堆中，保证由用户自己创建自己销毁，不会造成程序异常。所以block变量用&lt;strong&gt;copy&lt;/strong&gt;修饰或者直接调用&lt;strong&gt;copy&lt;/strong&gt;方法&lt;/p&gt;
+
+&lt;h2 id=&quot;block如果捕获变量&quot;&gt;block如果捕获变量&lt;/h2&gt;
+&lt;p&gt;当block内部访问了对象类型的auto变量时：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;如果block在栈上，则不会对auto变量强引用&lt;/li&gt;
+  &lt;li&gt;如果block被拷贝到堆上：会调用block内部的copy函数（&lt;code class=&quot;highlighter-rouge&quot;&gt;__block_object_assgin&lt;/code&gt;），会根据对象的修饰符__strong, __weak等作出强引用或弱引用&lt;/li&gt;
+  &lt;li&gt;如果block从堆上移除：调用block内部dispose函数，对变量release&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;__block与__weak__strong&quot;&gt;__block与__weak、__strong&lt;/h2&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;__block&lt;/code&gt;修饰一个变量会把他包装成一个结构体对象，其中的一个属性就是这个变量。且这个结构体对象会把捕获的对象进行引用，根据对象前面是否使用&lt;code class=&quot;highlighter-rouge&quot;&gt;__weak&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;__strong&lt;/code&gt; 决定是弱引用还是强引用。
+block中的&lt;code class=&quot;highlighter-rouge&quot;&gt;forwarding&lt;/code&gt;指针是指向自己位于堆中的地址，如果修饰的是对象，block中还会增加2个内存管理方法,&lt;code class=&quot;highlighter-rouge&quot;&gt;copy&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;dispose&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;__weak 和 __strong 目的是在变量被block捕获的时候以什么引用方式。&lt;/p&gt;
+
+&lt;h2 id=&quot;循环引用问题&quot;&gt;循环引用问题：&lt;/h2&gt;
+&lt;p&gt;对象 强引用 block; block  强引用  对象 导致无法释放， 解决办法是将其中一条链路变为弱引用，则能完成释放。&lt;/p&gt;
+</description>
+        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>iOS底层(4)-方法调用机制</title>
+        <description>&lt;h2 id=&quot;消息发送objc_msgsend&quot;&gt;消息发送objc_msgSend()&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;从&lt;code class=&quot;highlighter-rouge&quot;&gt;cache&lt;/code&gt;缓存中查找方法，找到了直接调用&lt;/li&gt;
+  &lt;li&gt;从&lt;code class=&quot;highlighter-rouge&quot;&gt;class_rw_t&lt;/code&gt;方法列表中查找，找到了缓存到&lt;code class=&quot;highlighter-rouge&quot;&gt;cache&lt;/code&gt;，再调用&lt;/li&gt;
+  &lt;li&gt;从&lt;code class=&quot;highlighter-rouge&quot;&gt;superClass&lt;/code&gt; 缓存中查找，找到了缓存到&lt;code class=&quot;highlighter-rouge&quot;&gt;cache&lt;/code&gt;，再调用&lt;/li&gt;
+  &lt;li&gt;从&lt;code class=&quot;highlighter-rouge&quot;&gt;superClass class_rw_t&lt;/code&gt;方法列表中查找，找到了缓存到&lt;code class=&quot;highlighter-rouge&quot;&gt;cache&lt;/code&gt;，再调用&lt;/li&gt;
+  &lt;li&gt;递归父类查找，直到父类为空，执行下一步动态方法解析&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;动态方法解析&quot;&gt;动态方法解析&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;若未动态解析过，则调用 &lt;code class=&quot;highlighter-rouge&quot;&gt;resolveInstanceMethod:  &lt;/code&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;resolveClassMethod:&lt;/code&gt; 来完成方法添加&lt;/li&gt;
+  &lt;li&gt;不管有没有实现，都会再次走上一步的方法查找
+    &lt;ul&gt;
+      &lt;li&gt;若找到则执行并结束&lt;/li&gt;
+      &lt;li&gt;没找到则执行下一步消息转发&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;消息转发&quot;&gt;消息转发&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;调用&lt;code class=&quot;highlighter-rouge&quot;&gt;forwardingTargetForSelector:&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;不为空则走&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSend&lt;/code&gt; 向转发的对象发送消息调用&lt;/li&gt;
+      &lt;li&gt;返回值为nil,调用 &lt;code class=&quot;highlighter-rouge&quot;&gt;methodSignatureForSelector&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;methodSignatureForSelector&lt;/code&gt; 返回为空 则crash&lt;/li&gt;
+  &lt;li&gt;不为空则调用 ForwardInvocation方法，在里面可以手动invoca和获取修改invoca的所有属性，包括target，methodSignature，selector&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;super-关键字&quot;&gt;super 关键字&lt;/h2&gt;
+&lt;p&gt;[self class] 与 [super class] 结果一样，因为super关键字底层实现是调用
+&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSendSuper({self, class_getSuperClass('selfClass')}&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;sel_registerName('class'))&lt;/code&gt;,  &lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSendSuper&lt;/code&gt;意义是从父类开始查找class方法，但是方法接收者还是self, 所以才能实现跳过自己，直接调用父类的方法。
+class方法的实现是objc_getClass(self), 因为前面接收者是self,所以方法实现里的参数还是自己，那么打印出来就是一样的。&lt;/p&gt;
+</description>
+        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(4)-%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E6%9C%BA%E5%88%B6/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(4)-%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E6%9C%BA%E5%88%B6/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>iOS底层(3)-KVC &amp; KVO</title>
+        <description>&lt;h2 id=&quot;kvo&quot;&gt;KVO&lt;/h2&gt;
+&lt;p&gt;Person 类的对象p 注册监听。
+原理：注册监听后，系统利用runtime动态生成一个新的子类&lt;code class=&quot;highlighter-rouge&quot;&gt;NSKVONotifying_Person&lt;/code&gt;对象，且将&lt;code class=&quot;highlighter-rouge&quot;&gt;p-&amp;gt;isa = NSKVONotifying_Person&lt;/code&gt;. 新的类重写set方法和class方法。
+在set方法中，先调用&lt;code class=&quot;highlighter-rouge&quot;&gt;willChangeValueForKey&lt;/code&gt;, 然后赋值，最后&lt;code class=&quot;highlighter-rouge&quot;&gt;didChangeValueForKey&lt;/code&gt;出发监听的方法。
+&lt;code class=&quot;highlighter-rouge&quot;&gt;NSKVONotifying_Person -&amp;gt;superClass = Person&lt;/code&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;NSKVONotifying_Person-&amp;gt;isa = meta-NSKVONotifying_Person&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;想手动调用监听方法：可以先调用&lt;code class=&quot;highlighter-rouge&quot;&gt;willChangeValueForKey&lt;/code&gt;, 再调用&lt;code class=&quot;highlighter-rouge&quot;&gt;didChangeValueForKey&lt;/code&gt;即可&lt;/p&gt;
+
+&lt;h2 id=&quot;kvc&quot;&gt;KVC&lt;/h2&gt;
+&lt;p&gt;下图是KVC获取属性和设置属性的调用原理图，例如&lt;code class=&quot;highlighter-rouge&quot;&gt;[p setValue:21 forKey:@“age”]&lt;/code&gt;,找到set方法，因为声明了一个age属性，所以通过setAge方法找到，并赋值后触发监听。如果没有age属性，则不会触发监听。
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023005369387.png&quot; alt=&quot;截屏2020-10-09 下午2.55.25&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023005401951.png&quot; alt=&quot;截屏2020-10-09 下午2.55.32&quot; /&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(3)-KVC-&-KVO/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(3)-KVC-&-KVO/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>iOS底层(2)-Category类别 &amp; 关联对象</title>
+        <description>&lt;h2 id=&quot;category&quot;&gt;Category&lt;/h2&gt;
+&lt;p&gt;分类在编译的时候变成&lt;code class=&quot;highlighter-rouge&quot;&gt;category_t&lt;/code&gt; 结构体，其中包含所有方法，协议，属性等。
+运行的时候把Category数组合并到Class的大数组中，后面参与编译的在数组的前面，也解释了为什么类别能够覆盖主类的方法，因为在方法查找时先找到类别的方法而已。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;+laod()&lt;/code&gt;是在app启动时加载类、分类的时候调用。
+调用原理与普通的category方法不同，是直接按照主类，类别的方法调用专门存取load方法的指针来调用load方法，即调用顺序一定是主类，分类1，分类2。。。而且如果父类还未load，先调用父类load。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;+initialize()&lt;/code&gt;在类第一次接受消息时调用。且方法是通过&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSend()&lt;/code&gt;方法调用，则会从大数组中寻找方法，找到第一个肯定是类别的方法，则调用完毕结束。若父类还未初始化，则先调用父类initialize&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;关联对象&quot;&gt;关联对象&lt;/h2&gt;
+&lt;p&gt;可以使用runtime的关联对象给categoty添加成员变量，&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_setAssociatedObject&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;objc_getAssociatedObject&lt;/code&gt;,其中key的参数很重要，必须是不变的一个地址，有多种实现方式，可以用静态变量例如@“key”, 因为存在常量区，所以地址不变。可以用&lt;code class=&quot;highlighter-rouge&quot;&gt;static void * KEYNAEM = &amp;amp;KEYNAME&lt;/code&gt;， 取出定义的全局变量的指针用作key&lt;/p&gt;
+
+&lt;p&gt;原理: 全局保存一个&lt;code class=&quot;highlighter-rouge&quot;&gt;AssociationsManager&lt;/code&gt;，和其中的&lt;code class=&quot;highlighter-rouge&quot;&gt;hashMap&lt;/code&gt;,保存所有的对象和对象需要监听的属性。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16022999875266.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(2)-Category%E7%B1%BB%E5%88%AB-&-%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(2)-Category%E7%B1%BB%E5%88%AB-&-%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
     
       <item>
         <title>iOS底层(1)-Class &amp; isa</title>
@@ -887,2138 +1206,6 @@ void __sanitizer_cov_trace_pc_guard(uint32_t *guard) {
         <guid isPermaLink="true">http://localhost:4000/2020/09/iOS-%E5%BA%94%E7%94%A8%E5%90%AF%E5%8A%A8%E8%80%97%E6%97%B6%E5%88%86%E6%9E%90%E5%8F%8A%E4%BC%98%E5%8C%96/</guid>
         
         <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Mach-O文件初识</title>
-        <description>&lt;h2 id=&quot;mach-o-文件&quot;&gt;Mach-o 文件&lt;/h2&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Mach-O格式全称为Mach Object文件格式的缩写，是mac上可执行文件的格式&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Mach-O 文件构成如下
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200922/16007690041824.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;headers&quot;&gt;Headers&lt;/h3&gt;
-&lt;p&gt;保存了一些基本信息，包括了该文件运行的平台、文件类型、LoadCommands的个数等等。Headers的主要作用就是帮助系统迅速的定位Mach-O文件的运行环境，文件类型，保存了一些dyld重要的加载参数。
-Mach-O 文件的头部定义如下：&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200922/16007696930694.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;magic 标志符 0xfeedface 是 32 位， 0xfeedfacf 是 64 位。&lt;/li&gt;
-  &lt;li&gt;cputype 和 cpusubtype 确定 cpu 类型、平台&lt;/li&gt;
-  &lt;li&gt;filetype 文件类型，可执行文件、符号文件（DSYM）、内核扩展等&lt;/li&gt;
-  &lt;li&gt;ncmds 加载 Load Commands 的数量&lt;/li&gt;
-  &lt;li&gt;flags dyld 加载的标志
-    &lt;ul&gt;
-      &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MH_NOUNDEFS&lt;/code&gt; 目标文件没有未定义的符号，&lt;/li&gt;
-      &lt;li&gt;
-        &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MH_DYLDLINK&lt;/code&gt; 目标文件是动态链接输入文件，不能被再次静态链接&lt;/p&gt;
-      &lt;/li&gt;
-      &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MH_SPLIT_SEGS&lt;/code&gt; 只读 segments 和 可读写 segments 分离&lt;/li&gt;
-      &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MH_NO_HEAP_EXECUTION&lt;/code&gt; 堆内存不可执行&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;header的作用是保存Mach-O可执行文件需要的环境和合法性。&lt;/p&gt;
-
-&lt;h3 id=&quot;load-commands&quot;&gt;Load Commands&lt;/h3&gt;
-&lt;p&gt;可以理解为加载命令，在加载Mach-O文件时会使用这里的数据来确定内存的分布以及相关的加载命令。比如我们的main函数的加载地址，程序所需的dyld的文件路径，以及相关依赖库的文件路径。
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200922/16007699427007.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;cmd&lt;/code&gt; 字段表示command 类型&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;cmdsize&lt;/code&gt; 字段标识command占用地址长度，即到下一个command的偏移量&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;data--segment&quot;&gt;Data &amp;amp; Segment&lt;/h3&gt;
-&lt;p&gt;每一个segment的具体数据都保存在这里，这里包含了具体的代码、数据等&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200923/16008271150398.png&quot; alt=&quot;截屏2020-09-23 上午10.10.27&quot; /&gt;
-数据页的概念，&lt;code class=&quot;highlighter-rouge&quot;&gt;segname&lt;/code&gt; 是数据页类型&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;#define SEG_PAGEZERO “__PAGEZERO” // 可执行文件捕获空指针的段&lt;/li&gt;
-  &lt;li&gt;#define SEG_TEXT “__TEXT” // 代码段，只读数据段&lt;/li&gt;
-  &lt;li&gt;#define SEG_DATA “__DATA” // 数据段&lt;/li&gt;
-  &lt;li&gt;#define SEG_LINKEDIT “__LINKEDIT” // 包含动态链接器所需的符号、字符串表等数据&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;section&quot;&gt;Section&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200923/16008271101120.png&quot; alt=&quot;截屏2020-09-23 上午10.11.03&quot; /&gt;
-数据页中的子分区。&lt;code class=&quot;highlighter-rouge&quot;&gt;sectname&lt;/code&gt;表示自己所在分区名称&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;Text.__text 主程序代码&lt;/li&gt;
-  &lt;li&gt;Text.__cstring c 字符串&lt;/li&gt;
-  &lt;li&gt;Text.__stubs 桩代码&lt;/li&gt;
-  &lt;li&gt;Text.__stub_helper&lt;/li&gt;
-  &lt;li&gt;Data.__data 初始化可变的数据&lt;/li&gt;
-  &lt;li&gt;Data.__objc_imageinfo 镜像信息 ，在运行时初始化时 objc_init，调用 load_images 加载新的镜像到 infolist 中&lt;/li&gt;
-  &lt;li&gt;Data.__la_symbol_ptr&lt;/li&gt;
-  &lt;li&gt;Data.__nl_symbol_ptr&lt;/li&gt;
-  &lt;li&gt;Data.__objc_classlist 类列表&lt;/li&gt;
-  &lt;li&gt;Data.__objc_classrefs 引用的类&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;了解mach-o的作用&quot;&gt;了解Mach-O的作用&lt;/h3&gt;
-&lt;p&gt;分析可执行文件结构，对于逆向砸壳、调取堆栈信息、分析代码组成等有重要帮助。这里介绍分析代码组成减少安装包大小。&lt;/p&gt;
-
-&lt;p&gt;由于 OC 的动态特性，编译器会对所有的源文件进行编译，并连接进可执行文件中，增大了安装包的大小。
-上文中提到了 __objc_classlist 和 __objc_classrefs，它们分别表示项目中全部类列表和项目中被引用的类列表，那么取两者之差，就能删除一些项目中没使用的类文件。但是在删除过程中记住要在项目中全局搜索确认下，看看有没有通过字符串调用无引用的类的方法，原因还是 OC 是动态语言。&lt;/p&gt;
-
-&lt;p&gt;详细过程见&lt;a href=&quot;https://juejin.im/post/6844903921169727496&quot;&gt;iOS删除无用的类&lt;/a&gt;、&lt;a href=&quot;https://xiaolit.com/posts/ed92dfd0/index.html&quot;&gt;iOS项目优化&lt;/a&gt;、&lt;a href=&quot;https://juejin.im/post/6844903925309505550&quot;&gt;iOS删除无用的方法&lt;/a&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;查看工程中代码量大的库或类&quot;&gt;查看工程中代码量大的库或类&lt;/h3&gt;
-&lt;p&gt;通过linkMap文件，可分析出各个类和库占用的大小，用来优化库或代码的数量。
-在build setting中打开 link map的开关，在drivedata中找到编译产生的link map文件。&lt;/p&gt;
-
-&lt;p&gt;更多详情见&lt;a href=&quot;https://juejin.im/post/6844904057262505998&quot;&gt;对Mach-O文件的初步探索&lt;/a&gt;&lt;/p&gt;
-</description>
-        <pubDate>Wed, 23 Sep 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/09/Mach-O%E6%96%87%E4%BB%B6%E5%88%9D%E8%AF%86/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/09/Mach-O%E6%96%87%E4%BB%B6%E5%88%9D%E8%AF%86/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>iOS高级面试题(超全)</title>
-        <description>&lt;h2 id=&quot;oc&quot;&gt;OC&lt;/h2&gt;
-
-&lt;p&gt;&lt;strong&gt;1.Block&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Block的本质是什么？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;block本质是对象，底层是用结构体struct实现&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Block对应的数据结构是什么样子的？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&quot;language-C++&quot;&gt;struct Block_descriptor {
-    unsigned long int reserved;
-    unsigned long int size;
-    void (*copy)(void *dst, void *src);
-    void (*dispose)(void *);
-};
-
-struct Block_layout {
-    void *isa;
-    int flags;
-    int reserved;
-    void (*invoke)(void *, ...);
-    struct Block_descriptor *descriptor;
-    /* Imported variables. */
-};
-&lt;/code&gt;&lt;/pre&gt;
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;isa 指针，所有对象都有该指针，用于实现对象相关的功能。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;flags，用于按 bit 位表示一些 block 的附加信息，本文后面介绍 block copy 的实现代码可以看到对该变量的使用。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;reserved，保留变量。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;invoke，函数指针，指向具体的 block 实现的函数调用地址。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;descriptor， 表示该 block 的附加描述信息，主要是 size 大小，以及 copy 和 dispose 函数的指针。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;variables，capture 过来的变量，block 能够访问它外部的局部变量，就是因为将这些变量（或变量的地址）复制到了结构体中。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;__block的作用是什么？它对应的数据结构又是什么样子的？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;__block的作用是让block可以捕获该变量，捕获之后的变量会进入到block内部，通过反编译的代码我们可以看到该对象是这样的：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&quot;language-C++&quot;&gt;struct __Block_byref_i_0 {
-    void *__isa;
-    __Block_byref_i_0 *__forwarding;
-    int __flags;
-    int __size;
-    int val; //变量名
-};
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;strong&gt;2. GCD中的Block是在堆上还是栈上？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;堆上,可以通过block的isa指针确认。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;3. NSCoding协议是干什么用的？(初级)&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;一种编码协议，归档时和解档时需要依赖该协议定义的编码和解码方法。Foundation和Cocoa Touch中的大部分类都遵循了这个协议，一般被NSKeyedArchiver做自定义对象持久化时使用。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;4. KVO的实现原理&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;利用Runtime生成一个中间对象，让原对象的isa指针指向它，然后重写setter方法，插入willChangeValueForKey和didChangeValueForKey方法。当属性变化时会调用，会调用这两个方法通知到外界属性变化。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;5. NSOperation有哪些特性比着GCD有哪些优点，它有哪些API？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;NSOperation是对GCD的封装，具有面向对象的特点，可以更方便的进行封装，可以设置依赖关系。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;6. NSNotificaiton是同步还是异步的，如果发通知时在子线程，接收在哪个线程？&lt;/strong&gt;
-同步。子线程。&lt;/p&gt;
-
-&lt;h3 id=&quot;引用计数&quot;&gt;引用计数&lt;/h3&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;
-    &lt;p&gt;ARC方案的原理是什么？它是在什么时候做的隐式添加release操作？
-ARC(Automatic Reference Cunting)自动引用计数，意即通过LLVM编译器自动管理对应的引用计数状态。ARC开启时无需再次键入retain或者release代码。&lt;br /&gt;
-它是在编译阶段添加retain或者release代码的。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;循环引用有哪些场景，如何避免？(初级)
-循环引用及两个及以上对象出现引用环，导致对象无法释放的情况。一般在block，delegate，NSTimer时容易出现这个问题。&lt;br /&gt;
-解决方案就是让环的其中一环节实现弱引用。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;为什么当我们在使用block时外面是weak 声明一个weakSelf，还要在block内部使用strong再持有一下？（可扩展提问）
-block外界声明weakSelf是为了实现block方法块内部对obj的弱持有避免循环引用，而里面的storng作用是为了保证在block内部时对象不会随意释放。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;&lt;strong&gt;Autoreleasepool&lt;/strong&gt;&lt;/p&gt;
-&lt;ol&gt;
-  &lt;li&gt;
-    &lt;p&gt;Autoreleasepool是实现机制是什么？&lt;br /&gt;
-Autoreleasepool的原理是一个双向链表，它会对加入其中的对象实现延迟释放。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;它是什么时候释放内部的对象的？&lt;br /&gt;
-当Autoreleasepool调用drain方法时会释放内部标记为autorelease的对象。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;它内部的数据结构是什么样的？&lt;/p&gt;
-
-    &lt;pre&gt;&lt;code class=&quot;language-C++&quot;&gt; class AutoreleasePoolPage {
-     magic_t const magic;
-     id *next;
-     pthread_t const thread;
-     AutoreleasePoolPage * const parent;
-     AutoreleasePoolPage *child;
-     uint32_t const depth;
-     uint32_t hiwat;
- };
-&lt;/code&gt;&lt;/pre&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;哨兵对象的作用是什么，为什么要设计它？&lt;br /&gt;
- 哨兵对象类似一个指针，指向自动释放池的栈顶位置，它的作用就是用于标记当前自动释放池需要释放内部对象时，释放到那个地方结束，每次入栈时它用于确定添加的位置，然后再次移动到栈顶。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;哪些对象会放入到Autoreleasepool中？&lt;/p&gt;
-
-    &lt;ul&gt;
-      &lt;li&gt;非alloc/new/copy/mutablecopy 开始的方式初始化时。&lt;/li&gt;
-      &lt;li&gt;id的指针或对象的指针在没有显示指定时&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;weak的实现原理是什么？当引用对象销毁时它是如何管理内部的Hash表的？（这里要参阅weak源码）
- runTime会把对weak修饰的对象放到一个全局的哈希表中，用weak修饰的对象的内存地址为key，weak指针为值，在对象进行销毁时，用通过自身地址去哈希表中查找到所有指向此对象的weak指针，并把所有的weak指针置为nil。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h3 id=&quot;runtime&quot;&gt;Runtime&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;1.消息发送的流程是怎样的？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;OC中的方法调用会转化成给对象发送消息，发送消息会调用这个方法：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&quot;language-ObjectiveC&quot;&gt;objc_msgSend(receiver, @selector(message))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;该过程有以下关键步骤：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;先确定调用方法的类已经都加载完毕，如果没加载完毕的话进行加载&lt;/li&gt;
-  &lt;li&gt;从cache中查找方法&lt;/li&gt;
-  &lt;li&gt;cache中没有找到对应的方法，则到方法列表中查，查到则缓存&lt;/li&gt;
-  &lt;li&gt;如果本类中查询到没有结果，则遍历所有父类重复上面的查找过程，直到NSObject&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;2.关联对象时什么情况下会导致内存泄露？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;关联对象可以理解就是持有了一个对象，如果是retain等方式的持有，而该对象也持有了本类，那就是导致了循环引用。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;3.消息转发的流程是什么？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;消息转发是发生在接收者（receiver）没有找到对应的方法（method）的时候，该步骤有如下几个关键步骤：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;消息转发的时候，如果是实例方法会走resolveInstanceMethod:，如果是类方法会走resolveClassMethod:，它们的返回值都是Bool，需要我们确定是否进行转发。&lt;/li&gt;
-  &lt;li&gt;如果第一步返回YES，确定转发就会进到下个方法forwardingTargetForSelector，这个方法需要我们指定一个被用receiver。&lt;/li&gt;
-  &lt;li&gt;methodSignatureForSelector用于指定方法签名，forwardInvocation用于处理Invocation，进行完整转发。&lt;/li&gt;
-  &lt;li&gt;如果消息转发也没有处理即为无法处理，会调用doesNotRecognizeSelector，引发崩溃。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;4.category能否添加属性，为什么？能否添加实例变量，为什么？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;可以添加属性，这里的属性指@property，但跟类里的@property又不一样。类里的@property为：实例变量Ivar + Setter + Getter 方法，分类里的@property这三者都没有，需要我们手动实现。&lt;/p&gt;
-
-&lt;p&gt;分类是运行时被编译的，这时类的结构已经固定了，所以我们无法添加实例变量。&lt;/p&gt;
-
-&lt;p&gt;对于分类自定义Setter和Getter方法，我们可以通过关联对象（Associated Object）进行实现。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;5.元类的作用是什么？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;元类的作用是存储类方法，同时它也是为了让OC的类结构能够形成闭环。&lt;/p&gt;
-
-&lt;p&gt;对于为什么设计元类有以下原因；&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;在OC的世界里一切皆对象（借鉴于Smalltalk），metaclass的设计就是要为满足这一点。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;在OC中Class也是一种对象，它对应的类就是metaclass，metaclass也是一种对象，它的类是root metaclass，在往上根元类（root metaclass）指向自己，形成了一个闭环，一个完备的设计。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;如果不要metaclass可不可以？也是可以的，在objc_class再加一个类方法指针。但是这样的设计会将消息传递的过程复杂化，所以为了消息传递流程的复用，为了一切皆对象的思想，就有了metaclass。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;6.类方法是存储到什么地方的？类属性呢？&lt;/strong&gt; &lt;br /&gt;
-    类方法和类属性都是存储到元类中的。&lt;/p&gt;
-
-&lt;p&gt;类属性在Swift用的多些，OC中很少有人用到，但其实它也是有的，写法如下：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&quot;language-ObjectiveC&quot;&gt;@interface Person : NSObject
-// 在属性类别中加上class
-@property (class, nonatomic, copy) NSString *name;
-@end
-// 调用方式
-NSString *temp = Person.name;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;需要注意的是跟实例属性不一样，类属性不会自动生成实例变量和setter，getter方法，需要我们手动实现。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;7.讲几个runtime的应用场景&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;hook系统方法进行方法交换。&lt;/li&gt;
-  &lt;li&gt;了解一个类（闭源）的私有属性和方法。&lt;/li&gt;
-  &lt;li&gt;关联对象，实现添加分类属性的功能。&lt;/li&gt;
-  &lt;li&gt;修改isa指针，自定义KVO。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;runloop&quot;&gt;Runloop&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;1.讲一下对Runloop的理解？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Runloop就是一个运行循环，它保证了在没有任务的时候线程不退出，有任务的时候即使响应。Runloop跟线程，事件响应，手势识别，页面更新，定时器都有着紧密联系。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;2.可以用Runloop实现什么功能？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;检测卡顿&lt;/li&gt;
-  &lt;li&gt;线程保活&lt;/li&gt;
-  &lt;li&gt;性能优化，将一些耗时操作放到runloop wait的情况处理。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;kvc--kvo&quot;&gt;KVC &amp;amp; KVO&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;1：谈谈你对KVC的理解&lt;/strong&gt;
-KVC可以通过key直接访问对象的属性，或者给对象的属性赋值，这样可以在运行时动态的访问或修改对象的属性&lt;/p&gt;
-
-&lt;p&gt;当调用 &lt;strong&gt;setValue：&lt;/strong&gt;属性值 forKey：@”name“ 的代码时，&lt;strong&gt;底层的执行机制如下&lt;/strong&gt;：&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;
-    &lt;p&gt;程序优先调用set&lt;Key&gt;:属性值方法，代码通过setter方法完成设置。注意，这里的&lt;key&gt;是指成员变量名，首字母大小写要符合KVC的命名规则，下同&lt;/key&gt;&lt;/Key&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;如果没有找到 setName：方法，KVC机制会检查+ (BOOL)accessInstanceVariablesDirectly 方法有没有返回YES，默认该方法会返回YES，如果你重写了该方法让其返回NO的话，那么在这一步KVC会执行setValue：forUndefinedKey：方法，不过一般开发者不会这么做。所以KVC机制会搜索该类里面有没有名为&lt;key&gt;的成员变量，无论该变量是在类接口处定义，还是在类实现处定义，也无论用了什么样的访问修饰符，只在存在以&lt;key&gt;命名的变量，KVC都可以对该成员变量赋值。&lt;/key&gt;&lt;/key&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;如果该类即没有set&lt;key&gt;：方法，也没有_&lt;key&gt;成员变量，KVC机制会搜索_is&lt;Key&gt;的成员变量。&lt;/Key&gt;&lt;/key&gt;&lt;/key&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;和上面一样，如果该类即没有set：方法，也没有_和_is成员变量，KVC机制再会继续搜索和is的成员变量。再给它们赋值。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;如果上面列出的方法或者成员变量都不存在，系统将会执行该对象的setValue：forUndefinedKey：方法，默认是抛出异常。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;如果想禁用KVC，重写+ (BOOL)accessInstanceVariablesDirectly方法让其返回NO即可，这样的话如果KVC没有找到 set&lt;Key&gt;: 属性名时，会直接用 setValue：forUndefinedKey：方法。&lt;/Key&gt;&lt;/p&gt;
-
-&lt;p&gt;当调用 valueForKey：@”name“ 的代码时，KVC对key的搜索方式不同于setValue：属性值 forKey：@”name“，&lt;strong&gt;其搜索方式如下&lt;/strong&gt;：&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;
-    &lt;p&gt;首先按get&lt;Key&gt;,&lt;key&gt;,is&lt;Key&gt;的顺序方法查找getter方法，找到的话会直接调用。如果是BOOL或者Int等值类型， 会将其包装成一个NSNumber对象&lt;/Key&gt;&lt;/key&gt;&lt;/Key&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;如果上面的getter没有找到，KVC则会查找countOf&lt;Key&gt;,objectIn&lt;Key&gt;AtIndex或&lt;Key&gt;AtIndexes格式的方法。如果countOf&lt;Key&gt;方法和另外两个方法中的一个被找到，那么就会返回一个可以响应NSArray所有方法的代理集合(它是NSKeyValueArray，是NSArray的子类)，调用这个代理集合的方法，或者说给这个代理集合发送属于NSArray的方法，就会以countOf&lt;Key&gt;,objectIn&lt;Key&gt;AtIndex或&lt;Key&gt;AtIndexes这几个方法组合的形式调用。还有一个可选的get&lt;Key&gt;:range:方法。所以你想重新定义KVC的一些功能，你可以添加这些方法，需要注意的是你的方法名要符合KVC的标准命名方法，包括方法签名。&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;如果上面的方法没有找到，那么会同时查找 countOf&lt;Key&gt;，enumeratorOf&lt;Key&gt;,memberOf&lt;Key&gt; 格式的方法。如果这三个方法都找到，那么就返回一个可以响应NSSet所的方法的代理集合，和上面一样，给这个代理集合发NSSet的消息，就会以 countOf&lt;Key&gt;，enumeratorOf&lt;Key&gt;,memberOf&lt;Key&gt; 组合的形式调用。&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/Key&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;如果还没有找到，再检查类方法 + (BOOL)accessInstanceVariablesDirectly,如果返回 YES (默认行为)，那么和先前的设值一样，会按 _&lt;key&gt;,_is&lt;Key&gt;,&lt;key&gt;,is&lt;Key&gt; 的顺序搜索成员变量名，这里不推荐这么做，因为这样直接访问实例变量破坏了封装性，使代码更脆弱。如果重写了类方法 + (BOOL)accessInstanceVariablesDirectly 返回 NO 的话，那么会直接调用 valueForUndefinedKey: 方法，默认是抛出异常&lt;/Key&gt;&lt;/key&gt;&lt;/Key&gt;&lt;/key&gt;&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;&lt;strong&gt;2.讲一下atomic的实现机制；为什么不能保证绝对的线程安全（最好可以结合场景来说）？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;atomic的实现机制&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;atomic是property的修饰词之一，表示是原子性的，使用方式为@property(atomic)int age;此时编译器会自动生成 getter/setter 方法，最终会调用objc_getProperty和objc_setProperty方法来进行存取属性。&lt;/p&gt;
-
-&lt;p&gt;若此时属性用atomic修饰的话，在这两个方法内部使用os_unfair_lock 来进行加锁，来保证读写的原子性。锁都在PropertyLocks 中保存着（在iOS平台会初始化8个，mac平台64个），在用之前，会把锁都初始化好，在需要用到时，用对象的地址加上成员变量的偏移量为key，去PropertyLocks中去取。因此存取时用的是同一个锁，所以atomic能保证属性的存取时是线程安全的。&lt;/p&gt;
-
-&lt;p&gt;注：由于锁是有限的，不用对象，不同属性的读取用的也可能是同一个锁&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;atomic为什么不能保证绝对的线程安全？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;atomic在getter/setter方法中加锁，仅保证了存取时的线程安全，假设我们的属性是@property(atomic)NSMutableArray *array;可变的容器时,无法保证对容器的修改是线程安全的.&lt;/p&gt;
-
-&lt;p&gt;在编译器自动生产的getter/setter方法，最终会调用objc_getProperty和objc_setProperty方法存取属性，在此方法内部保证了读写时的线程安全的，当我们重写getter/setter方法时，就只能依靠自己在getter/setter中保证线程安全&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;3. setvalue和setobject的区别&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setObject:ForKey&lt;/code&gt;：是&lt;code class=&quot;highlighter-rouge&quot;&gt;NSMutableDictionary&lt;/code&gt;特有的。&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setValue:ForKey&lt;/code&gt;：是&lt;code class=&quot;highlighter-rouge&quot;&gt;KVC&lt;/code&gt;的主要方法。&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setobject&lt;/code&gt;中的&lt;code class=&quot;highlighter-rouge&quot;&gt;key&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;value&lt;/code&gt;可以为nil以外的任何对象。&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setValue&lt;/code&gt;中的key只能为字符串，value可以为&lt;code class=&quot;highlighter-rouge&quot;&gt;nil&lt;/code&gt;也可以为空对象&lt;code class=&quot;highlighter-rouge&quot;&gt;[NSNull null]&lt;/code&gt;以及全部对象&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;性能优化&quot;&gt;性能优化&lt;/h3&gt;
-
-&lt;p&gt;&lt;strong&gt;1.对TableView进行性能优化有哪些方式？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;缓存高度&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;异步渲染&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;减少离屏渲染&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;2.Xcode的Instruments都有哪些调试的工具？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;Activity Monitor（活动监视器）：监控进程的CPU、内存、磁盘、网络使用情况。是程序在手机运行真正占用内存大小&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Allocations（内存分配）：跟踪过程的匿名虚拟内存和堆的对象提供类名和可选保留/释放历史&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Core Animation（图形性能）：显示程序显卡性能以及CPU使用情况&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Core Data：跟踪Core Data文件系统活动&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Energy Log：耗电量监控&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;File Activity：检测文件创建、移动、变化、删除等&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Leaks（泄漏）：一般的措施内存使用情况，检查泄漏的内存，并提供了所有活动的分配和泄漏模块的类对象分配统计信息以及内存地址历史记录&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Network：用链接工具分析你的程序如何使用TCP/IP和UDP/IP链接&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;System Usage：记录关于文件读写，sockets，I/O系统活动，输入输出&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Time Profiler（时间探查）：方法执行耗时分析&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Zombies：测量一般的内存使用，专注于检测过度释放的野指针对象。也提供对象分配统计以及主动分配的内存地址历史&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;3.讲一下你做过的性能优化的事情。&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;4.如何检测卡顿，都有哪些方法？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;FPS，通过CADisplayLink计算1s内刷新次数，也可以利用Instruments里的Core Animation。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;利用Runloop，实时计算 kCFRunLoopBeforeSources 和 kCFRunLoopAfterWaiting 两个状态区域之间的耗时是否超过某个阀值&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;子线程检测，每次检测时设置标记位为YES，然后派发任务到主线程中将标记位设置为NO。接着子线程沉睡超时阙值时长，判断标志位是否成功设置成NO，如果没有说明主线程发生了卡顿。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;5.缩小包体积有哪些方案？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;图片压缩，无用图片删除&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;一些大图可以动态下发&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;删除无用类，无用方法&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;减少三方库的依赖&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;ui&quot;&gt;UI&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;1.事件响应链是如何传递的？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;手势的点击会发生两个重要事情，事件传递和事件响应。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;事件传递&lt;/strong&gt;：从UIApplication开始，到window，再逐步往下层（子视图）找，直到找到最深层的子视图，其为first responder。用到的判断方法是&lt;code class=&quot;highlighter-rouge&quot;&gt;pointInside:withEvent&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;hitTest:withEvent&lt;/code&gt;。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;事件响应&lt;/strong&gt;：从识别到的视图（first responder）开始验证能否响应事件，如果不能就交给其上层（父视图）视图，如果能响应将不再往下传递，如果直到找到UIApplication层还没有响应，那就忽略该次点击。用到的判断方法是&lt;code class=&quot;highlighter-rouge&quot;&gt;touchesBegan:withEvent&lt;/code&gt;、&lt;code class=&quot;highlighter-rouge&quot;&gt;touchesMoved:withEvent&lt;/code&gt;等。&lt;/p&gt;
-
-&lt;p&gt;这两个过程大致的相反的。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;2.什么是异步渲染？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;异步渲染就是在子线程进行绘制，然后拿到主线程显示。&lt;/p&gt;
-
-&lt;p&gt;UIView的显示是通过CALayer实现的，CALayer的显示则是通过contents进行的。异步渲染的实现原理是当我们改变UIView的frame时，会调用layer的setNeedsDisplay，然后调用layer的display方法。我们不能在非主线程将内容绘制到layer的context上，但我们单独开一个子线程通过CGBitmapContextCreateImage()绘制内容，绘制完成之后切回主线程，将内容赋值到contents上。&lt;/p&gt;
-
-&lt;p&gt;这个步骤可以参照YYText中YYTextAsyncLayer.m[6]文件中的实现方式。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;3.layoutsubviews是在什么时机调用的？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;init初始化不会触发。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;addSubview时。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;设置frame且前后值变化，frame为zero且不添加到指定视图不会触发。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;旋转Screen会触发父视图的layoutSubviews。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;滚动UIScrollView引起View重新布局时会触发layoutSubviews。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;4.一张图片的展示经历了哪些步骤？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;5.什么是离屏渲染，什么情况会导致离屏渲染？&lt;/strong&gt;
-如果要在显示屏上显示内容，我们至少需要一块与屏幕像素数据量一样大的frame buffer，作为像素数据存储区域。如果有时因为面临一些限制，无法把渲染结果直接写入frame buffer，而是先暂存在另外的内存区域，之后再写入frame buffer，那么这个过程被称之为离屏渲染。
-以阴影为例，为什么它会导致离屏渲染。因为GPU的渲染是遵循“画家算法”，一层一层绘制的，但阴影很特殊，它需要全部内容绘制完成，再根据外轮廓进行绘制。这就导致了，阴影这一层要一直占据一块内存区域，这就导致了离屏渲染。&lt;/p&gt;
-
-&lt;p&gt;类似导致离屏渲染的情况还有：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;cornerRadius+clipsToBounds&lt;/li&gt;
-  &lt;li&gt;group opacity 组透明度&lt;/li&gt;
-  &lt;li&gt;mask 遮罩&lt;/li&gt;
-  &lt;li&gt;UIBlurEffect 毛玻璃效果&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;6.CoreAnimation这个框架的作用什么，它跟UIKit的关系是什么？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;CoreAnimation虽然直译是核心动画，但它其实是一个图像渲染框架，动画实现只是它的一部分功能。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200917/16003308335042.png&quot; alt=&quot;Core Animation&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;看这张图我们可以知道，它是UIKit和AppKit的底层实现，位于Metal、Core Graphics和GPU之上之上。&lt;/p&gt;
-
-&lt;p&gt;苹果官方文档：About Core Animation[9]&lt;/p&gt;
-
-&lt;h2 id=&quot;swift&quot;&gt;Swift&lt;/h2&gt;
-&lt;ol&gt;
-  &lt;li&gt;Swift中struct和class有什么区别？
-struct是值引用，更轻量，存放于栈区，class是类型引用，存放于堆区。struct无法继承，class可继承。&lt;/li&gt;
-  &lt;li&gt;Swift中的方法调用有哪些形式？
-直接派发、函数表派发、消息机制派发。派发方式受声明位置，引用类型，特定行为的影响。为什么Swift有这么多派发形式？为了效率。&lt;/li&gt;
-  &lt;li&gt;Swift和OC有什么区别？
-Swift和OC的区别有很多，这里简要总结这几条：&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;table&gt;
-  &lt;thead&gt;
-    &lt;tr&gt;
-      &lt;th&gt; &lt;/th&gt;
-      &lt;th&gt;Swift&lt;/th&gt;
-      &lt;th&gt;Objective-C&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;td&gt;语言特性&lt;/td&gt;
-      &lt;td&gt;静态语言，更加安全&lt;/td&gt;
-      &lt;td&gt;动态语言不那么安全&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;td&gt;语法&lt;/td&gt;
-      &lt;td&gt;更精简&lt;/td&gt;
-      &lt;td&gt;冗长&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;td&gt;命名空间&lt;/td&gt;
-      &lt;td&gt;有&lt;/td&gt;
-      &lt;td&gt;无&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;td&gt;方法调用&lt;/td&gt;
-      &lt;td&gt;直接调用，函数表调用，消息转发&lt;/td&gt;
-      &lt;td&gt;消息转发&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;td&gt;泛型/元组/高阶函数&lt;/td&gt;
-      &lt;td&gt;有&lt;/td&gt;
-      &lt;td&gt;无&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;td&gt;语言效率&lt;/td&gt;
-      &lt;td&gt;性能更高，速度更快&lt;/td&gt;
-      &lt;td&gt;略低&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;td&gt;文件特性&lt;/td&gt;
-      &lt;td&gt;.swift 单文件&lt;/td&gt;
-      &lt;td&gt;.h/.m包含头文件&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;td&gt;编程特性&lt;/td&gt;
-      &lt;td&gt;可以更好的实现函数式编程/响应式编程&lt;/td&gt;
-      &lt;td&gt;面向对象编程&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;怎么理解面向协议编程？
-面向对象是以对象的视角观察整体结构，万物皆为对象。
-面向协议则是用协议的方式组织各个类的关系，Swift底层几乎所有类都构建在协议之上。
-面向协议能够解决面向对象的菱形继承，横切关注点和动态派发的安全性等问题。&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h2 id=&quot;计算机相关&quot;&gt;计算机相关&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;1.项目编译的流程是什么？手机上的应用程序自点击图标开始到首屏内容展示都经历了哪些步骤？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;编译流程：&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;预处理：处理宏定义，删除注释，展开头文件。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;词法分析：把代码切成一个个token，比如大小括号等于号还有字符串&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;语法分析：验证语法是否正确，合成抽象语法树AST&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;静态分析：查找代码错误&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;类型检查：动态和静态&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;目标代码的生成与优化，包括删除多余指令，选择合适的寻址方式，如果开启了bitcode，会做进一步的优化&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;汇编：由汇编器生成汇编语言&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;机器码：由汇编语言转成机器码，生成.o文件&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;应用启动的流程：&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;启动的前提是完成编译，运行程序即运行编译过后的目标程序，它分为main函数前和main函数后：&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;main前&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;加载可执行文件（App的.o文件集合）&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;加载动态链接库（系统和应用的动态链接库），进行rebase指针调整和bind符号绑定&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Objc运行时的初始处理，包括Objc相关类的注册，category注册，selector唯一性检查&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;初始化，包括执行+load()、attribute(constructor)修饰的函数的调用、创建C++静态全局变量&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;main后&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;首页初始化所需要配置文件的读写操作&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;首页界面渲染&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;2.对于基本数据类型，一般是存储到栈中的，它有没有可能存在堆上，什么情况下会存储到堆上？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;栈和堆都是同属一块内存，只不过一个是高地址往低地址存储，一个从低地址往高地址存储，他们并没有严格的界限说一个值只能放在堆上或者栈上。所以基本数据类型也是可以存储到堆上的。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;3.数据库中的事务是什么意思？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;事务就是访问并操作各种数据项的一个数据库操作序列，这些操作要么全部执行，要么全部不执行。如果其中一个步骤出错就要撤销整个操作，回滚到进入事务之前的状态。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;4.使用过什么数据库（我回答的Sqlite，Realm），Realm在使用时有哪些注意事项，如何实现批量操作？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Realm需要注意&lt;/strong&gt;的主要就是不能直接跨线程访问同一对象。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;批量操作&lt;/strong&gt;可以在一个单独的事务中执行多个数据库的修改。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;5.LRU算法是否了解，如何实现一套LRU算法？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;LRU（Least recently used 最近最少使用）算法是一个缓存淘汰算法，其作用就是当缓存很多时，该淘汰哪些内容，见名知意，它的核心思想是淘汰最近使用最少的内容。实现它的关键步骤是：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;新数据插入到链表的头部&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;每当缓存命中时，则将数据移动到链表头部&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;链表满时，将尾部数据清除&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200917/16003308538183.png&quot; alt=&quot;LRU算法图解&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;6.知道哪些设计模式，怎么理解设计模式的作用？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;工厂模式、观察者模式、中介者模式、单例模式。这个根据实际情况说吧。
-&lt;a href=&quot;https://github.com/huang303513/Design-Pattern-For-iOS&quot;&gt;设计模式&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;7.如果有1000万个Int类型的数字，如何对他们排序？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;这里的隐藏含义是，内存不够用时如何排序，还有一个隐藏含义是硬盘足够大。这是可以采用分而治之的方法，将数据分成若干块，使每一小块满足当前内容大小，然后对每块内容单独排序，最后采用归并排序对所有块进行排序，就得到了一个有序序列。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;8.设计一套数据库方案，实现类似微信的搜索关键词能快速检索出包含该字符串的聊天信息，并展示对应数量（聊天记录的数据量较大）。&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;可以对聊天记录的文本值加上索引。正常情况下数据库搜索都是全量检索的，加上索引之后只会检索满足条件的记录，大大降低检索量。&lt;/p&gt;
-
-&lt;h2 id=&quot;其他&quot;&gt;其他&lt;/h2&gt;
-
-&lt;p&gt;&lt;strong&gt;1.MVVM和MVC有什么区别？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;MVC：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;&lt;strong&gt;M&lt;/strong&gt; 是数据模型&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;，负责处理数据，以及数据改变时发出通知(&lt;code class=&quot;highlighter-rouge&quot;&gt;Notification、KVO&lt;/code&gt;)，&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;不能直接进行通信，这样会违背MVC设计模式；&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;&lt;strong&gt;V&lt;/strong&gt; 是视图&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;，用来展示界面，和用户进行交互，为了解耦合一般不会直接持有 或者 操作数据层中的数据模型(可以通过&lt;code class=&quot;highlighter-rouge&quot;&gt;action-target&lt;/code&gt;、&lt;code class=&quot;highlighter-rouge&quot;&gt;delegate&lt;/code&gt;、&lt;code class=&quot;highlighter-rouge&quot;&gt;block&lt;/code&gt;等方式解耦)；&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;&lt;strong&gt;C&lt;/strong&gt; 是控制器&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;用来调节&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;之间的交互，可以直接与Model还有View进行通信，操作Model进行数据更新，刷新View。&lt;/p&gt;
-
-    &lt;p&gt;&lt;strong&gt;优点：&lt;/strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;、&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;低耦合、高复用、容易维护。&lt;/p&gt;
-
-    &lt;p&gt;&lt;strong&gt;缺点：&lt;/strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;的代码过于臃肿，如果&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;与&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;直接交互会导致&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;之间的耦合性比较大、网络逻辑会加重&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;的臃肿。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;MVVM：&lt;code class=&quot;highlighter-rouge&quot;&gt;Model - View - ViewModel&lt;/code&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;MVVM&lt;/strong&gt;衍生于&lt;strong&gt;MVC&lt;/strong&gt;，是MVC的一种演进，促进了UI代码和业务逻辑的分离，抽取&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;中的展示逻辑放到&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;里边。&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;M：&lt;/strong&gt; 数据模型&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;。&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;V：&lt;/strong&gt; 就是&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;联系到一起，视为是一个组件&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;。View和Controller都不能直接引用模型Model，可以引用视图模型ViewModel。ViewController 尽量不涉及业务逻辑，让 ViewModel 去做这些事情。ViewController 只是一个中间人，负责接收 View 的事件、调用 ViewModel 的方法、响应 ViewModel 的变化。&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;VM：&lt;/strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;负责封装业务逻辑、网络处理和数据缓存。使用ViewModel会轻微的增加代码量，但是总体上减少了代码的复杂性。&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;之间可以有依赖。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;注意事项：&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt;引用&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;，但反过来不行，因为如果VM跟V产生了耦合，不方便复用。即不要在&lt;code class=&quot;highlighter-rouge&quot;&gt;viewModel&lt;/code&gt;中引入&lt;code class=&quot;highlighter-rouge&quot;&gt;#import UIKit.h&lt;/code&gt;，任何视图本身的引用都不应该放在&lt;code class=&quot;highlighter-rouge&quot;&gt;viewModel&lt;/code&gt;中 (&lt;strong&gt;注意：基本要求，必须满足&lt;/strong&gt;)。&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;可以引用&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt;，但反过来不行。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;优点：&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;低耦合、可复用、数据流向清晰、而且兼容MVC，便于代码的移植、并且ViewModel可以拆出来独立开发、方便测试。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;缺点：&lt;/strong&gt; 类会增多、&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;会越来越庞大、调用复杂度增加、双向绑定数据会导致问题调试变得困难。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;总结：&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;&lt;strong&gt;MVVM&lt;/strong&gt;其实是MVC的变种。&lt;code class=&quot;highlighter-rouge&quot;&gt;MVVM&lt;/code&gt;只是帮&lt;code class=&quot;highlighter-rouge&quot;&gt;MVC&lt;/code&gt;中的&lt;code class=&quot;highlighter-rouge&quot;&gt;Controller&lt;/code&gt;瘦身，把一些逻辑代码和网络请求分离出去。不让Controller处理更多的东西，不会变得臃肿，&lt;code class=&quot;highlighter-rouge&quot;&gt;MVVM&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;MVC&lt;/code&gt;可以根据实际需求进行灵活选择。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;&lt;strong&gt;MVVM&lt;/strong&gt; 在使用当中，通常还会利用双向绑定技术，使得&lt;code class=&quot;highlighter-rouge&quot;&gt;Model&lt;/code&gt; 变化时，&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;会自动更新，而&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;变化时，&lt;code class=&quot;highlighter-rouge&quot;&gt;View&lt;/code&gt; 也会自动变化。OC中可以用&lt;strong&gt;RAC(ReactiveCocoa)&lt;/strong&gt;函数响应式框架来实现响应式编程。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;2. 静态链接了解吗？静态库和动态库的区别是什么？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;静态链接是指将多个目标文件合并为一个可执行文件，直观感觉就是将所有目标文件的段合并。需要注意的是可执行文件与目标文件的结构基本一致，不同的是是否“可执行”。&lt;/p&gt;
-
-&lt;p&gt;静态库：链接时被完整复制到可执行文件中&lt;/p&gt;
-
-&lt;p&gt;动态库：由系统动态加载到内存，内存中只会有一份该动态库。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;3. 了解Flutter吗？它有没有使用UIKit？它是如何渲染UI的？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;UIKit是基于CoreAnimation渲染的，而Flutter并没有用到它，而是自己基于C++实现了一套渲染框架。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200917/16003309243619.png&quot; alt=&quot;FlutterUI渲染&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;4. 二进制重排的核心依据是什么？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;修改链接顺序，减少启动时的缺页中断。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;5. 如何设计一套切换主题的方案？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;核心思路是观察者模式+协议（通知），当获取到主题切换时，通知各个实现了主题协议的类进行更新。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;6. AVPlayer和IJKPlayer有什么区别？用IJKPlayer如何实现一个缓存视频列表每条视频前1s的内容？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;7. 类似微博的短视频列表，滑动停留播放，如何实现？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;这个主要就是监测contentOffset和屏幕中间位置，设置一些边界条件，处理滑动过程中的切换行为。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;8. 使用python做过哪些事？如何理解脚本语言？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;多语言管理，csv多语言文件读取，然后写入到项目Localizable.strings中；抓取项目中的多语言字符串。&lt;/li&gt;
-  &lt;li&gt;Icon剪裁&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;9. TCP为什么要三次握手，四次挥手？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;三次握手：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;客户端向服务端发起请求链接，首先发送&lt;code class=&quot;highlighter-rouge&quot;&gt;SYN&lt;/code&gt;报文，&lt;code class=&quot;highlighter-rouge&quot;&gt;SYN=1，seq=x&lt;/code&gt;,并且客户端进入&lt;code class=&quot;highlighter-rouge&quot;&gt;SYN_SENT&lt;/code&gt;状态&lt;/li&gt;
-  &lt;li&gt;服务端收到请求链接，服务端向客户端进行回复，并发送响应报文，&lt;code class=&quot;highlighter-rouge&quot;&gt;SYN=1，seq=y,ACK=1,ack=x+1&lt;/code&gt;,并且服务端进入到&lt;code class=&quot;highlighter-rouge&quot;&gt;SYN_RCVD&lt;/code&gt;状态&lt;/li&gt;
-  &lt;li&gt;客户端收到确认报文后，向服务端发送确认报文，&lt;code class=&quot;highlighter-rouge&quot;&gt;ACK=1，ack=y+1&lt;/code&gt;，此时客户端进入到&lt;code class=&quot;highlighter-rouge&quot;&gt;ESTABLISHED&lt;/code&gt;，服务端收到用户端发送过来的确认报文后，也进入到&lt;code class=&quot;highlighter-rouge&quot;&gt;ESTABLISHED&lt;/code&gt;状态，此时链接创建成功&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;四次挥手：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;客户端向服务端发起关闭链接，并停止发送数据&lt;/li&gt;
-  &lt;li&gt;服务端收到关闭链接的请求时，向客户端发送回应，我知道了，然后停止接收数据&lt;/li&gt;
-  &lt;li&gt;当服务端发送数据结束之后，向客户端发起关闭链接，并停止发送数据&lt;/li&gt;
-  &lt;li&gt;客户端收到关闭链接的请求时，向服务端发送回应，我知道了，然后停止接收数据&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;为什么需要三次握手：&lt;/p&gt;
-
-&lt;p&gt;为了防止已失效的连接请求报文段突然又传送到了服务端，因而产生错误，假设这是一个早已失效的报文段。但&lt;code class=&quot;highlighter-rouge&quot;&gt;server&lt;/code&gt;收到此失效的连接请求报文段后，就误认为是&lt;code class=&quot;highlighter-rouge&quot;&gt;client&lt;/code&gt;再次发出的一个新的连接请求。于是就向&lt;code class=&quot;highlighter-rouge&quot;&gt;client&lt;/code&gt;发出确认报文段，同意建立连接。假设不采用“三次握手”，那么只要server发出确认，新的连接就建立了。由于现在&lt;code class=&quot;highlighter-rouge&quot;&gt;client&lt;/code&gt;并没有发出建立连接的请求，因此不会理睬&lt;code class=&quot;highlighter-rouge&quot;&gt;server&lt;/code&gt;的确认，也不会向&lt;code class=&quot;highlighter-rouge&quot;&gt;server&lt;/code&gt;发送数据。但&lt;code class=&quot;highlighter-rouge&quot;&gt;server&lt;/code&gt;却以为新的运输连接已经建立，并一直等待&lt;code class=&quot;highlighter-rouge&quot;&gt;client&lt;/code&gt;发来数据。这样，&lt;code class=&quot;highlighter-rouge&quot;&gt;server&lt;/code&gt;的很多资源就白白浪费掉了。&lt;/p&gt;
-
-&lt;p&gt;为什么需要四次挥手：&lt;/p&gt;
-
-&lt;p&gt;因为TCP是全双工通信的，在接收到客户端的关闭请求时，还可能在向客户端发送着数据，因此不能再回应关闭链接的请求时，同时发送关闭链接的请求&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;10. App签名原理&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;
-    &lt;p&gt;在Mac开发机器上生成一对公钥和私钥，这里称为公钥L，私钥L(L：Local)。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;苹果自己有固定的一对公钥和私钥，私钥在苹果后台，公钥在每个iOS设备上。这里称为公钥A，私钥A(A：Apple)。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;把开发机器上的公钥L传到苹果后台，用苹果后台的私钥A去签名公钥L。得到一个包含公钥L以及其签名数据证书。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;在苹果后台申请AppID，配置好设备ID列表和APP可使用的权限，再加上第③步的证书，组成的数据用私钥A签名，把数据和签名一起组成一个Provisioning Profile描述文件，下载到本地Mac开发机器。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;在开发时，编译完一个APP后，用本地的私钥L对这个APP进行签名，同时把第④步得到的Provisioning Profile描述文件打包进APP里，文件名为embedded.mobileprovision，把 APP安装到手机上。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;在安装时，iOS系统取得证书，通过系统内置的公钥A，去验证embedded.mobileprovision的数字签名是否正确，里面的证书签名也会再验一遍。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;确保了embedded.mobileprovision里的数据都是苹果授权的以后，就可以取出里面的数据，做各种验证，包括用公钥 L 验证APP签名，验证设备 ID 是否在 ID 列表上，AppID 是否对应得上，权限开关是否跟 APP 里的 Entitlements 对应等。&lt;/p&gt;
-
-    &lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200918/16004181558605.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h2 id=&quot;数据结构与算法&quot;&gt;数据结构与算法&lt;/h2&gt;
-
-&lt;p&gt;&lt;strong&gt;1.什么是Hash表，什么是Hash碰撞，解决Hash碰撞有什么方法？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;哈希表（Hash Table，也叫散列表），是根据关键码值 (Key-Value) 而直接进行访问的数据结构。也就是说，它通过把关键码值映射到表中一个位置来访问记录，以加快查找的速度。我们常用的Dictionary就是一种Hash表。&lt;/p&gt;
-
-&lt;p&gt;那什么是Hash碰撞呢，我们知道Hash表的查找是通过键值进行定位的，当两个不同的输入对应一个输出时，即为Hash碰撞，也被称为Hash冲突。&lt;/p&gt;
-
-&lt;p&gt;如果使用字典的例子你可能联想不到冲突的情况，我们假设另一种情况：假设hash表的大小为9（即有9个槽），现在要把一串数据存到表里：5,28,19,15,20,33,12,17,10。我们使用的hash函数是对9取余。这样的话会出现hash(5)=5，hash(28)=1，hash(19)=1。28和19都对应一个地址，这就出现了Hash冲突。&lt;/p&gt;
-
-&lt;p&gt;解决Hash冲突的方式有开放定址法和链地址法。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;2.给出二叉树【10，6，14，4，8，12，16】进行前序、中序、后续遍历？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;前序遍历：根节点 &amp;gt; 左子节点 &amp;gt; 右子节点。&lt;/p&gt;
-
-&lt;p&gt;10，6，4，8，14，12，16&lt;/p&gt;
-
-&lt;p&gt;中序遍历：左子节点 &amp;gt; 根节点 &amp;gt; 右子节点。&lt;/p&gt;
-
-&lt;p&gt;4，6，8，10，12，14，16&lt;/p&gt;
-
-&lt;p&gt;后序遍历：左子节点 &amp;gt; 右子节点 &amp;gt; 根节点。&lt;/p&gt;
-
-&lt;p&gt;4，8，6，12，16，14，10&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;3.简述下快速排序的过程，时间复杂度是多少？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;快排的思想是通过一趟排序将要排序的数据分割成独立的两部分，其中一部分的所有数据都比另外一部分的所有数据都要小，然后再按此方法对这两部分数据分别进行快速排序，整个排序过程可以递归进行。&lt;/p&gt;
-
-&lt;p&gt;一个简单的Swift实现方式如下：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&quot;language-Swift&quot;&gt;func quicksort&amp;lt;T: Comparable&amp;gt;(_ a: [T]) -&amp;gt; [T] {
-  guard a.count &amp;gt; 1 else { return a }
-
-  let pivot = a[a.count/2]
-  let less = a.filter { $0 &amp;lt; pivot }
-  let equal = a.filter { $0 == pivot }
-  let greater = a.filter { $0 &amp;gt; pivot }
-
-  return quicksort(less) + equal + quicksort(greater)
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;快速排序是有好几种的，他们的区别在于如何实现filter和分区基准值的选取。&lt;/p&gt;
-
-&lt;p&gt;快排的时间复杂度是O(nlogn)，空间复杂度是O(logn)&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;4.有一个整数数组，如何只遍历一遍就实现让该数组奇数都在前面，偶数都在后面？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;5.假设你正在爬楼梯。需要 n 阶你才能到达楼顶。每次你可以爬 1 或 2 个台阶。你有多少种不同的方法可以爬到楼顶呢？&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;6.给出一个 32 位的有符号整数，你需要将这个整数中每位上的数字进行反转。leetcode 7&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;7.有红. 黄. 蓝三种颜色的气球。在牛客王国，1个红气球+1个黄气球+1个蓝气球可以兑换一张彩票。
-2个红气球+1个黄气球可以兑换1个蓝气球。
-2个黄气球+1个蓝气球可以兑换1个红气球。
-2个蓝气球+1个红气球可以兑换1个黄气球。
-现在牛牛有a个红气球，b个黄气球， c个蓝气球，牛牛想知道自己最多可以兑换多少张彩票。&lt;/strong&gt;&lt;/p&gt;
-</description>
-        <pubDate>Thu, 17 Sep 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/09/iOS%E9%AB%98%E7%BA%A7%E9%9D%A2%E8%AF%95%E9%A2%98(%E8%B6%85%E5%85%A8)/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/09/iOS%E9%AB%98%E7%BA%A7%E9%9D%A2%E8%AF%95%E9%A2%98(%E8%B6%85%E5%85%A8)/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>CoreAnimation详解</title>
-        <description>&lt;h2 id=&quot;1-图层树&quot;&gt;1. 图层树&lt;/h2&gt;
-&lt;p&gt;CALayer 是存在于UIView中的一种平行的层级关系
-&lt;img src=&quot;http://image.smartjames.cn/20200811234017.jpg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;2寄宿图&quot;&gt;2.寄宿图&lt;/h2&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contens 属性可以给layer赋值CGImage
-contentsGravity属性类似contentModel：kCAGravityResizeAspect
-contentsScale属性用来设置渲染倍数 
-contentsRect用来显示contents中指定区域，适用于雪碧图的展示
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;// 裁剪并显示雪碧图，不用从内存中读多张图片，4张图片在一张雪碧图中
-- (void)addSpriteImage:(UIImage *)img withContentRect:(CGRect)rect toLayer:(CALayer *)layer
-{
-    layer.contents = (__bridge id)(img.CGImage);
-    layer.contentsGravity = kCAGravityResizeAspect;
-    layer.contentsRect = rect;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;3-图层几何学&quot;&gt;3. 图层几何学&lt;/h2&gt;
-&lt;p&gt;UIView的center和 CALayer的position是 一个含义，代表中间点相对于父视图的位置。&lt;/p&gt;
-
-&lt;p&gt;anchorPoint是用单位坐标表示的center和position的值作用与本身的那个位置。&lt;/p&gt;
-
-&lt;p&gt;anchorPoint 可以用来实现时钟的指针转动
-&lt;img src=&quot;http://image.smartjames.cn/20200812165714.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;
-用layer的 -hitTest: 方法判断当前点击的是那个图层。一般情况下，我们理解layer是不能响应点击时间的，但是layer有这种方法判断点击位置&lt;/p&gt;
-
-&lt;p&gt;CALayerDelegate提供如下函数，当frame变化时会调用，用以重新处理layer的位置，但是无法做到像UIView的自适应屏幕。&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)layoutSublayersOfLayer:(CALayer *)layer;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;4视觉效果&quot;&gt;4.视觉效果&lt;/h2&gt;
-
-&lt;p&gt;阴影      &lt;br /&gt;
-shadowOffset表示阴影的相对位移，默认值{0,-3}， 表示阴影上移3个点，因为Core Animation是Mac OS上出现的，Mac和iOS坐标系是翻转的，所以在Mac上显示的就是向下位移3个点。&lt;/p&gt;
-
-&lt;p&gt;shadowRadius是控制阴影的模糊度&lt;/p&gt;
-
-&lt;p&gt;shadowPath通过一个CGPath来绘制阴影，因为当视图有多个图层，shadowOffset计算阴影会非常消耗资源。可以通过shadowPath提前绘制一个大概的阴影代替会快很多，涉及到离屏渲染。&lt;/p&gt;
-
-&lt;p&gt;蒙版
-mask是图层的属性，类型也是图层，可以用来将蒙版以外的内容裁剪掉。而且支持动态的mask
-&lt;img src=&quot;http://image.smartjames.cn/20200812175605.png&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;拉伸过滤
-minificationFilter和magnificationFilter属性，提供3中拉伸函数&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;kCAFilterLinear&lt;/li&gt;
-  &lt;li&gt;kCAFilterNearest&lt;/li&gt;
-  &lt;li&gt;kCAFilterTrilinear&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;组透明
-UIViewGroupOpacity，当一个控件a内部有另一个控件b, 设置a的alpha, 那么b的透明度也是0.5，但是会叠加控件a的部分颜色，通过在infoplsit中设置UIViewGroupOpacity为yes,或者设置layer的shouldRasterize=yes。
-但是在最新的系统上，已经不需要单独处理这种问题。
-&lt;img src=&quot;http://image.smartjames.cn/20200812183557.png&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;5变换&quot;&gt;5.变换&lt;/h2&gt;
-
-&lt;h3 id=&quot;仿射变换&quot;&gt;仿射变换：&lt;/h3&gt;
-&lt;p&gt;属于Core Graphics框架，是2D绘图API, 和UIView一样，只有2维空间&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CGAffineTransformRotate(CGAffineTransform t, CGFloat angle)     
-CGAffineTransformScale(CGAffineTransform t, CGFloat sx, CGFloat sy)      
-CGAffineTransformTranslate(CGAffineTransform t, CGFloat tx, CGFloat ty)
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;CALayer有三维空间，所以同理CATransform3D属于Core Animation框架可以支持3D变换
-API增加了Z轴旋转角度，XYZ轴缩放比例，和Z轴的移动距离&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CATransform3DMakeRotation(CGFloat angle, CGFloat x, CGFloat y, CGFloat z)
-CATransform3DMakeScale(CGFloat sx, CGFloat sy, CGFloat sz)
-CATransform3DMakeTranslation(Gloat tx, CGFloat ty, CGFloat tz)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/20200812222012.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;由图所见，绕Z轴的旋转等同于之前二维空间的仿射旋转，但是绕X轴和Y轴的旋转就突破了屏幕的二维空间，并且在用户视角看来发生了倾斜。
-但是旋转得到的结果是等距投影，与真实世界里透视投影不一样。在等距投影中，远处的物体和近处的物体保持同样的缩放比例。引出透视投影的概念。&lt;/p&gt;
-
-&lt;h3 id=&quot;透视投影&quot;&gt;透视投影：&lt;/h3&gt;
-&lt;p&gt;在真实世界中，当物体远离我们的时候，由于视角的原因看起来会变小，理论上说远离我们的视图的边要比靠近视角的边更短。
-通过矩阵中一个元素控制：m34。m34的默认值是0，我们可以通过设置m34为-1.0 / d来应用透视效果；d是相机与屏幕之间的距离。
-&lt;img src=&quot;http://image.smartjames.cn/20200812234846.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; CATransform3D transform = CATransform3DIdentity;
-    transform.m34 = - 1.0 / 500.0;
-    transform = CATransform3DRotate(transform, M_PI_4, 0, 1, 0);
-    self.layerView.layer.transform = transform;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;sublayerTransform属性，使子图层都有相同的trasnform设置。&lt;/p&gt;
-
-&lt;h3 id=&quot;背面&quot;&gt;背面&lt;/h3&gt;
-&lt;p&gt;旋转180°后，形成一个镜像，可以用doubleSided属性控制背面是否需要绘制。&lt;/p&gt;
-
-&lt;h3 id=&quot;扁平化图层&quot;&gt;扁平化图层&lt;/h3&gt;
-&lt;p&gt;当父视图沿着Y轴旋转45°时，子视图沿着Y轴旋转-45°时，预期结果如下，能够抵消旋转的角度
-&lt;img src=&quot;http://image.smartjames.cn/20200812235931.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;但是真实结果如下所示，子视图并没有垂直Z轴，因为CoreAnimation的3D场景其实是扁平化的，3D场景是图层想象出来的，绘制在图层表面的，且各自独立在不同的3D空间。
-&lt;img src=&quot;http://image.smartjames.cn/20200812235939.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;
-所以用普通的CALayer很难创建非常复杂的3D场景，除非用CATransformLayer。&lt;/p&gt;
-
-&lt;h3 id=&quot;固体对象&quot;&gt;固体对象&lt;/h3&gt;
-&lt;p&gt;通过将不同layer旋转不同角度，拼凑成一个表面看是实心体。&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CATransform3D perspective = CATransform3DIdentity;
-    perspective.m34 = -1.0 / 500.0;
-    
-    // 都旋转一个角度,看到侧面
-    perspective = CATransform3DRotate(perspective, -M_PI_4, 1, 0, 0);
-    perspective = CATransform3DRotate(perspective, -M_PI_4, 0, 1, 0);
-    
-    self.view.layer.sublayerTransform = perspective;
-    //add cube face 1
-    CATransform3D transform = CATransform3DMakeTranslation(0, 0, 100);
-    [self addFace:0 withTransform:transform];
-    //add cube face 2
-    transform = CATransform3DMakeTranslation(100, 0, 0);
-    transform = CATransform3DRotate(transform, M_PI_2, 0, 1, 0);
-    [self addFace:1 withTransform:transform];
-    //add cube face 3
-    transform = CATransform3DMakeTranslation(0, -100, 0);
-    transform = CATransform3DRotate(transform, M_PI_2, 1, 0, 0);
-    [self addFace:2 withTransform:transform];
-    //add cube face 4
-    transform = CATransform3DMakeTranslation(0, 100, 0);
-    transform = CATransform3DRotate(transform, -M_PI_2, 1, 0, 0);
-    [self addFace:3 withTransform:transform];
-    //add cube face 5
-    transform = CATransform3DMakeTranslation(-100, 0, 0);
-    transform = CATransform3DRotate(transform, -M_PI_2, 0, 1, 0);
-    [self addFace:4 withTransform:transform];
-    //add cube face 6
-    transform = CATransform3DMakeTranslation(0, 0, -100);
-    transform = CATransform3DRotate(transform, M_PI, 0, 1, 0);
-    [self addFace:5 withTransform:transform];
-    
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/20200813003034.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;6专用图层&quot;&gt;6.专用图层&lt;/h2&gt;
-
-&lt;h3 id=&quot;cashapelayer&quot;&gt;CAShapeLayer&lt;/h3&gt;
-&lt;p&gt;一个通过矢量图形而不是bitmap来绘制的图层子类。&lt;/p&gt;
-
-&lt;p&gt;定义颜色和线宽用CGPath就能渲染，看起来Core Graphics也能实现，但是CAShapeLayer优点如下：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;渲染快。使用了硬件加速，绘制比CG快很多&lt;/li&gt;
-  &lt;li&gt;高效使用内存。不会像普通CALayer一样创建一个寄宿图，所以无论多大，都不会占用太多内存&lt;/li&gt;
-  &lt;li&gt;不会被图层边界裁掉。可以在边界之外绘制&lt;/li&gt;
-  &lt;li&gt;不会像素化。因为是矢量图。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;实现3个圆角，1个直角的矩形。&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CGRect rect = CGRectMake(50, 50, 100, 100);
-    CGSize radii = CGSizeMake(20, 20);
-    UIRectCorner corners = UIRectCornerTopRight | UIRectCornerBottomLeft | UIRectCornerTopLeft;
-    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:rect byRoundingCorners:corners cornerRadii:radii];
-    
-CAShapeLayer *layer = [CAShapeLayer layer];
-........ // 设置宽度颜色等
-layer.path = path.CGPath;
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;catextlayer&quot;&gt;CATextLayer&lt;/h3&gt;
-&lt;p&gt;它以图层的形式包含了UILabel几乎所有的绘制特性，并且额外提供了一些新的特性。同样，CATextLayer也要比UILabel渲染得快得多。很少有人知道在iOS 6及之前的版本，UILabel其实是通过WebKit来实现绘制的，这样就造成了当有很多文字的时候就会有极大的性能压力。而CATextLayer使用了Core text，并且渲染得非常快。&lt;/p&gt;
-
-&lt;h3 id=&quot;catransformlayer&quot;&gt;CATransformLayer&lt;/h3&gt;
-&lt;p&gt;前面想做一个立体图形的旋转状态，需要对立体图形的每一个图层做一次旋转。
-现在使用CATransformLayer不需要，只要创建立体图形时把图层加入到CATransformLayer中，旋转CATransformLayer一次即可实现立体图形旋转。&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (CALayer *)cubeWithTransform:(CATransform3D)transform
-{
-  //create cube layer
-  CATransformLayer *cube = [CATransformLayer layer];
-
-  //add cube face 1
-  CATransform3D ct = CATransform3DMakeTranslation(0, 0, 50);
-  [cube addSublayer:[self faceWithTransform:ct]];
-
-// .......
-
-  //add cube face 6
-  ct = CATransform3DMakeTranslation(0, 0, -50);
-  ct = CATransform3DRotate(ct, M_PI, 0, 1, 0);
-  [cube addSublayer:[self faceWithTransform:ct]];
-
-  //center the cube layer within the container
-  CGSize containerSize = self.containerView.bounds.size;
-  cube.position = CGPointMake(containerSize.width / 2.0, containerSize.height / 2.0);
-
-  //apply the transform and return
-  cube.transform = transform;
-  return cube;
-}
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/20200813010733.png&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;cagradientlayer&quot;&gt;CAGradientLayer&lt;/h3&gt;
-&lt;p&gt;用来生成2种或更多颜色平滑渐变的图层。&lt;/p&gt;
-
-&lt;p&gt;startPoint和endPoint决定渐变方向，用单位坐标系定义，左上角是{0,0}, 右下角是{1,1}
-location定义不同颜色的位置，个数要和颜色个数相同，可选。&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)viewDidLoad {
-	[super viewDidLoad];
-
-	//create gradient layer and add it to our container view
-	CAGradientLayer *gradientLayer = [CAGradientLayer layer];
-	gradientLayer.frame = self.containerView.bounds;
-	[self.containerView.layer addSublayer:gradientLayer];
-
-	//set gradient colors
-	gradientLayer.colors = @[(__bridge id)[UIColor redColor].CGColor, (__bridge id) [UIColor yellowColor].CGColor, (__bridge id)[UIColor greenColor].CGColor];
-
-	//set locations
-	gradientLayer.locations = @[@0.0, @0.25, @0.5];
-
-	//set gradient start and end points
-	gradientLayer.startPoint = CGPointMake(0, 0);
-	gradientLayer.endPoint = CGPointMake(1, 1);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/20200813011439.png&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;careplicatorlayer&quot;&gt;CAReplicatorLayer&lt;/h3&gt;
-&lt;p&gt;为了高效生成许多相似的重复图层。&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)viewDidLoad
-{
-    [super viewDidLoad];
-    //create a replicator layer and add it to our view
-    CAReplicatorLayer *replicator = [CAReplicatorLayer layer];
-    replicator.frame = self.containerView.bounds;
-    [self.containerView.layer addSublayer:replicator];
-
-    //configure the replicator
-    replicator.instanceCount = 10;
-
-    //apply a transform for each instance
-    CATransform3D transform = CATransform3DIdentity;
-    transform = CATransform3DTranslate(transform, 0, 200, 0);
-    transform = CATransform3DRotate(transform, M_PI / 5.0, 0, 0, 1);
-    transform = CATransform3DTranslate(transform, 0, -200, 0);
-    replicator.instanceTransform = transform;
-
-    //apply a color shift for each instance
-    replicator.instanceBlueOffset = -0.1;
-    replicator.instanceGreenOffset = -0.1;
-
-    //create a sublayer and place it inside the replicator
-    CALayer *layer = [CALayer layer];
-    layer.frame = CGRectMake(100.0f, 100.0f, 100.0f, 100.0f);
-    layer.backgroundColor = [UIColor whiteColor].CGColor;
-    [replicator addSublayer:layer];
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/20200813012855.png&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;instanceCount 代表有复制多少次
-instanceTransform属性，代表后续每个图层都要做这个变换。
-instanceBlueOffset和instanceGreenOffset代表每次减少蓝色绿色通道多少值。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;镜像&lt;/strong&gt;
-用CAReplicatorLayer实现镜像效果&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; CAReplicatorLayer *layer = (CAReplicatorLayer *)self.layer;
-    layer.instanceCount = 2;
-
-    //move reflection instance below original and flip vertically
-    CATransform3D transform = CATransform3DIdentity;
-    CGFloat verticalOffset = self.bounds.size.height + 2;
-    transform = CATransform3DTranslate(transform, 0, verticalOffset, 0);
-    transform = CATransform3DScale(transform, 1, -1, 0);
-    layer.instanceTransform = transform;
-
-    //reduce alpha of reflection layer
-    layer.instanceAlphaOffset = -0.6;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;2个重复对象，移动高度的2倍，缩小一点，颜色透明一点&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/20200813013306.png&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;cascrolllayer&quot;&gt;CAScrollLayer&lt;/h3&gt;
-&lt;p&gt;实现类似UIScrollView的图层，但是内容可以滑出边界。&lt;/p&gt;
-
-&lt;h3 id=&quot;catiledlayer&quot;&gt;CATiledLayer&lt;/h3&gt;
-&lt;p&gt;iOS中绘制图片最终是转化为OpenGL纹理，最大纹理尺寸是2048×2048或4096×4096， 如果图片超过这个尺寸，会遇到性能问题。&lt;/p&gt;
-
-&lt;p&gt;因为Core Animation强制用CPU处理图片而不是GPU。&lt;/p&gt;
-
-&lt;p&gt;CATiledLayer会将大图片分解成小图片然后按需载入，类似ScrollView.
-    &lt;strong&gt;使用场景&lt;/strong&gt;是iOS老版本的地图应用，会一块一块的显示新的之前未曾渲染过的地图，就是用到了这个技术。&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)drawLayer:(CATiledLayer *)layer inContext:(CGContextRef)ctx
-{
-    //determine tile coordinate
-    CGRect bounds = CGContextGetClipBoundingBox(ctx);
-    NSInteger x = floor(bounds.origin.x / layer.tileSize.width);
-    NSInteger y = floor(bounds.origin.y / layer.tileSize.height);
-
-    //load tile image
-    NSString *imageName = [NSString stringWithFormat: @&quot;Snowman_%02i_%02i&quot;, x, y];
-    NSString *imagePath = [[NSBundle mainBundle] pathForResource:imageName ofType:@&quot;jpg&quot;];
-    UIImage *tileImage = [UIImage imageWithContentsOfFile:imagePath];
-
-    //draw tile
-    UIGraphicsPushContext(ctx);
-    [tileImage drawInRect:bounds];
-    UIGraphicsPopContext();
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;滑动图层到边缘时自动调用在drawLayer方法，获取对应要显示的图片并渲染。
-CATiledLayer支持多线程绘制，这一点不同于UIKit和Core Animation方法。即-drawLayer:inContext: 能在多线程中并发调用&lt;/p&gt;
-
-&lt;h3 id=&quot;caemitterlayer&quot;&gt;CAEmitterLayer&lt;/h3&gt;
-&lt;p&gt;是一个高性能的粒子引擎，被用来创建实时粒子动画如：烟雾，火，雨，烟花等。&lt;/p&gt;
-
-&lt;p&gt;CAEmitterLayer是CAEmitterCell的容器，后者定义了粒子效果，CAEmitterLayer将不同的粒子效果cell作为模板实例化粒子流。&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;   CAEmitterLayer *emitter = [CAEmitterLayer layer];
-    emitter.frame = self.view.bounds;
-    [self.view.layer addSublayer:emitter];
-
-    //configure emitter
-    emitter.renderMode = kCAEmitterLayerAdditive;
-    emitter.emitterPosition = CGPointMake(emitter.frame.size.width / 2.0, emitter.frame.size.height / 2.0);
-
-    //create a particle template
-    CAEmitterCell *cell = [[CAEmitterCell alloc] init];
-    cell.contents = (__bridge id)[UIImage imageNamed:@&quot;Spark.png&quot;].CGImage;
-    cell.birthRate = 150;
-    cell.lifetime = 5.0;
-    cell.color = [UIColor colorWithRed:1 green:0.5 blue:0.1 alpha:1.0].CGColor;
-    cell.alphaSpeed = -0.4;
-    cell.velocity = 50;
-    cell.velocityRange = 50;
-    cell.emissionRange = M_PI * 2.0;
-
-    //add particle template to emitter
-    emitter.emitterCells = @[cell];
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/20200813020502.png&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;CAEMitterCell的属性基本上可以分为三种：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;这种粒子的某一属性的初始值。比如，color属性指定了一个可以混合图片内容颜色的混合色。在示例中，我们将它设置为桔色。&lt;/li&gt;
-  &lt;li&gt;粒子某一属性的变化范围。比如emissionRange属性的值是2π，这意味着粒子可以从360度任意位置反射出来。如果指定一个小一些的值，就可以创造出一个圆锥形。&lt;/li&gt;
-  &lt;li&gt;指定值在时间线上的变化。比如，在示例中，我们将alphaSpeed设置为-0.4，就是说粒子的透明度每过一秒就是减少0.4，这样就有发射出去之后逐渐消失的效果。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;caeagllayer&quot;&gt;CAEAGLLayer&lt;/h3&gt;
-&lt;p&gt;当想使用GLKit实现OpenGL渲染时，使用CLKView类来处理大部分的设置和绘制工作，但是OpenGL 绘图缓冲的底层可配置项仍然需要使用CAEAGLLayer完成，用来显示任意的Open GL图形。&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#import &quot;ViewController.h&quot;
-#import &amp;lt;QuartzCore/QuartzCore.h&amp;gt;
-#import &amp;lt;GLKit/GLKit.h&amp;gt;
-
-@interface ViewController ()
-
-@property (nonatomic, weak) IBOutlet UIView *glView;
-@property (nonatomic, strong) EAGLContext *glContext;
-@property (nonatomic, strong) CAEAGLLayer *glLayer;
-@property (nonatomic, assign) GLuint framebuffer;
-@property (nonatomic, assign) GLuint colorRenderbuffer;
-@property (nonatomic, assign) GLint framebufferWidth;
-@property (nonatomic, assign) GLint framebufferHeight;
-@property (nonatomic, strong) GLKBaseEffect *effect;
-
-@end
-
-@implementation ViewController
-
-- (void)setUpBuffers
-{
-    //set up frame buffer
-    glGenFramebuffers(1, &amp;amp;_framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
-
-    //set up color render buffer
-    glGenRenderbuffers(1, &amp;amp;_colorRenderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, _colorRenderbuffer);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, _colorRenderbuffer);
-    [self.glContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:self.glLayer];
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &amp;amp;_framebufferWidth);
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &amp;amp;_framebufferHeight);
-
-    //check success
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        NSLog(@&quot;Failed to make complete framebuffer object: %i&quot;, glCheckFramebufferStatus(GL_FRAMEBUFFER));
-    }
-}
-
-- (void)tearDownBuffers
-{
-    if (_framebuffer) {
-        //delete framebuffer
-        glDeleteFramebuffers(1, &amp;amp;_framebuffer);
-        _framebuffer = 0;
-    }
-
-    if (_colorRenderbuffer) {
-        //delete color render buffer
-        glDeleteRenderbuffers(1, &amp;amp;_colorRenderbuffer);
-        _colorRenderbuffer = 0;
-    }
-}
-
-- (void)drawFrame {
-    //bind framebuffer &amp;amp; set viewport
-    glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
-    glViewport(0, 0, _framebufferWidth, _framebufferHeight);
-
-    //bind shader program
-    [self.effect prepareToDraw];
-
-    //clear the screen
-    glClear(GL_COLOR_BUFFER_BIT); glClearColor(0.0, 0.0, 0.0, 1.0);
-
-    //set up vertices
-    GLfloat vertices[] = {
-        -0.5f, -0.5f, -1.0f, 0.0f, 0.5f, -1.0f, 0.5f, -0.5f, -1.0f,
-    };
-
-    //set up colors
-    GLfloat colors[] = {
-        0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-    };
-
-    //draw triangle
-    glEnableVertexAttribArray(GLKVertexAttribPosition);
-    glEnableVertexAttribArray(GLKVertexAttribColor);
-    glVertexAttribPointer(GLKVertexAttribPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-    glVertexAttribPointer(GLKVertexAttribColor,4, GL_FLOAT, GL_FALSE, 0, colors);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-
-    //present render buffer
-    glBindRenderbuffer(GL_RENDERBUFFER, _colorRenderbuffer);
-    [self.glContext presentRenderbuffer:GL_RENDERBUFFER];
-}
-
-- (void)viewDidLoad
-{
-    [super viewDidLoad];
-    //set up context
-    self.glContext = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES2];
-    [EAGLContext setCurrentContext:self.glContext];
-
-    //set up layer
-    self.glLayer = [CAEAGLLayer layer];
-    self.glLayer.frame = self.glView.bounds;
-    [self.glView.layer addSublayer:self.glLayer];
-    self.glLayer.drawableProperties = @{kEAGLDrawablePropertyRetainedBacking:@NO, kEAGLDrawablePropertyColorFormat: kEAGLColorFormatRGBA8};
-
-    //set up base effect
-    self.effect = [[GLKBaseEffect alloc] init];
-
-    //set up buffers
-    [self setUpBuffers];
-
-    //draw frame
-    [self drawFrame];
-}
-
-- (void)viewDidUnload
-{
-    [self tearDownBuffers];
-    [super viewDidUnload];
-}
-
-- (void)dealloc
-{
-    [self tearDownBuffers];
-    [EAGLContext setCurrentContext:nil];
-}
-@end
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/20200813021236.png&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;avplayerlayer&quot;&gt;AVPlayerLayer&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;由AVFoundation框架提供用于播放视频的图层。 因为本身是CALayer的子类，所以也支持layer该有的效果，例如边框，圆角，蒙版，阴影等。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;7隐式动画&quot;&gt;7.隐式动画&lt;/h2&gt;
-
-&lt;h3 id=&quot;事务&quot;&gt;事务&lt;/h3&gt;
-&lt;p&gt;通过CATransaction类来管理，通过begin和commit的入栈和出栈来管理栈中的动画事务，栈中的动画默认执行时长0.25秒  &lt;br /&gt;
-不显示的调用begin，在runloop一个周期内，也会收集所有属性的变化，做一些0.25秒的动画。  &lt;br /&gt;
-CATransaction 有completionBlock方法，动画执行完后会自动调用。&lt;/p&gt;
-
-&lt;p&gt;UIView会默认禁用关联图层的动画效果，否则对于UIview的属性修改都会形成动画效果，这不是我们想要的。要实现UIView的动画，使用UIView的animateWithDuration：方法；&lt;/p&gt;
-
-&lt;h3 id=&quot;catransition&quot;&gt;CATransition&lt;/h3&gt;
-&lt;p&gt;控制移动的动画类，使用方法如下&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CATransition *transition = [CATransition animation];
-transition.type = kCATransitionPush;
-transition.subtype = kCATransitionFromLeft;
-self.colorLayer.actions = @{@&quot;backgroundColor&quot;: transition};
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;CALayer的属性值变化，其实在设置的当时已经变化，只是视图的更新会延后，CALayer在动画过程中，需要知道当前显示在屏幕上的属性值的记录，所以提供-presentationLayer方法来访问当前呈现的图层。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002639342476.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;大多数情况下，不需要直接访问呈现图层，但在以下俩种情况下呈现图层会很有用，一个是同步动画，一个是处理用户交互。&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;如果实现一个基于定时器的动画，而不仅仅是基于事务的动画，这个时候准确地知道在某个时刻图层显示在什么位置就会对正确摆放图层很有用。&lt;/li&gt;
-  &lt;li&gt;想让动画的图层响应用户输入，可以使用++-hitTest:++ 方法判断指定图层是否被触摸，此时响应的是呈现图层，而不是动画结束后的模型图层。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;8显式动画&quot;&gt;8.显式动画&lt;/h2&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;显式动画相对于隐式动画，是用户自己主动创建的一种动画类型，与隐式动画做的关于属性动画不同。 ### 属性动画
-作用于图层的某个单一属性，并指定了它的一个或一连串目标值，分为基础动画和关键帧动画，即CABasicAnimation和CAKeyframeAnimation
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;基础动画&quot;&gt;基础动画&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;最简单的形式就是从一个值改变到另一个值，这也是CABasicAnimation最主要的功能。提供了fromValue, toValue, byValue三个属性。fromValue代表了动画开始之前属性的值，toValue代表了动画结束之后的值，byValue代表了动画执行过程中改变的相对值。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; CABasicAnimation *animation = [CABasicAnimation animation];
-    animation.keyPath = @&quot;backgroundColor&quot;;
-    animation.toValue = (__bridge id)color.CGColor;
-    [self.colorLayer addAnimation:animation forKey:nil];
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;上面这种动画，是使layer变换颜色，但是动画结束后又立刻变回原始值，因为这里使用的显式动画改变的是呈现层，不是模型层（隐式动画通过赋值达到改变模型层）。解决方案是动画完成前赋值给模型层。&lt;/p&gt;
-
-&lt;h3 id=&quot;关键帧动画&quot;&gt;关键帧动画&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CABasicAnimation揭示了大多数隐式动画背后依赖的机制，这的确很有趣，但是显式地给图层添加CABasicAnimation相较于隐式动画而言，只能说费力不讨好。 CAKeyframeAnimation是另一种UIKit没有暴露出来但功能强大的类。不光能设置单一值，还能设置一串值。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CAKeyframeAnimation *animation = [CAKeyframeAnimation animation];
-    animation.keyPath = @&quot;backgroundColor&quot;;
-    animation.duration = 2.0;
-    animation.values = @[
-                         (__bridge id)[UIColor blueColor].CGColor,
-                         (__bridge id)[UIColor redColor].CGColor,
-                         (__bridge id)[UIColor greenColor].CGColor,
-                         (__bridge id)[UIColor blueColor].CGColor ];
-    [self.colorLayer addAnimation:animation forKey:nil];
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;上面给关键帧的values赋值了一个颜色组，每个颜色默认动画0.25秒。&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CAKeyframeAnimation *animation = [CAKeyframeAnimation animation];
-    animation.keyPath = @&quot;position&quot;;
-    animation.duration = 4.0;
-    animation.path = bezierPath.CGPath;
-    [shipLayer addAnimation:animation forKey:nil];
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;关键帧不光能接受一组值，还能接受一个路径，使用Core Graphics函数定义运动序列来绘制动画。移动中通过设置rotationMode = kCAAnimationRotateAuto达到图层垂直于路径。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002639342490.jpeg&quot; style=&quot;zoom:40%&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;虚拟属性&quot;&gt;虚拟属性&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;前面的属性动画都针对真实属性，例如backgroundColor, position等。如果想对一个属性的路径，或不是真实属性做动画，就是虚拟属性。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CABasicAnimation *animation = [CABasicAnimation animation];
-animation.keyPath = @&quot;transform&quot;;
-animation.toValue = [NSValue valueWithCATransform3D: CATransform3DMakeRotation(M_PI, 0, 0, 1)];
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;正常的属性赋值是上面这样，使用虚拟属性可以向下面一样使用&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CABasicAnimation *animation = [CABasicAnimation animation];
-animation.keyPath = @&quot;transform.rotation&quot;;
-animation.byValue = @(M_PI * 2);
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;用transform.rotation而不是transform做动画的好处如下：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;我们可以不通过关键帧一步旋转多于180度的动画。&lt;/li&gt;
-  &lt;li&gt;可以用相对值而不是绝对值旋转（设置byValue而不是toValue）。&lt;/li&gt;
-  &lt;li&gt;可以不用创建CATransform3D，而是使用一个简单的数值来指定角度。&lt;/li&gt;
-  &lt;li&gt;不会和transform.position或者transform.scale冲突（同样是使用关键路径来做独立的动画属性）。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;过渡变幻&quot;&gt;过渡/变幻&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;过渡并不像属性动画那样平滑地在两个值之间做动画，而是影响到整个图层的变化。过渡动画首先展示之前的图层外观，然后通过一个交换过渡到新的外观。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;使用CATransition类，有4种变换类型。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;kCATransitionFade&lt;/li&gt;
-  &lt;li&gt;kCATransitionMoveIn&lt;/li&gt;
-  &lt;li&gt;kCATransitionPush&lt;/li&gt;
-  &lt;li&gt;kCATransitionReveal&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;和4个方向&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;kCATransitionFromRight&lt;/li&gt;
-  &lt;li&gt;kCATransitionFromLeft&lt;/li&gt;
-  &lt;li&gt;kCATransitionFromTop&lt;/li&gt;
-  &lt;li&gt;kCATransitionFromBottom&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002639342502.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;自定义动画&quot;&gt;自定义动画&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;过渡是一种对那些不太好做平滑动画属性的强大工具，但是CATransition的提供的动画类型太少了。 UIView +transitionFromView:toView:duration:options:completion: 提供的过渡选项却很多 - UIViewAnimationOptionTransitionFlipFromLeft  - UIViewAnimationOptionTransitionFlipFromRight - UIViewAnimationOptionTransitionCurlUp  - UIViewAnimationOptionTransitionCurlDown - UIViewAnimationOptionTransitionCrossDissolve  - UIViewAnimationOptionTransitionFlipFromTop  - UIViewAnimationOptionTransitionFlipFromBottom
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;9图层时间&quot;&gt;9.图层时间&lt;/h2&gt;
-
-&lt;h3 id=&quot;camediatiming-协议&quot;&gt;CAMediaTiming 协议&lt;/h3&gt;
-&lt;p&gt;CAMediaTiming协议定义了在一段动画内用来控制逝去时间的属性的集合，CALayer和CAAnimation都实现了此协议。&lt;/p&gt;
-
-&lt;p&gt;常用属性&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;duration      动画持续时间&lt;/li&gt;
-  &lt;li&gt;repeatCount   重复次数&lt;/li&gt;
-  &lt;li&gt;speed         倍速，0暂停，负数回放动画&lt;/li&gt;
-  &lt;li&gt;beginTime     动画开始之前的的延迟时间&lt;/li&gt;
-  &lt;li&gt;timeOffset    动画快进到某一点&lt;/li&gt;
-  &lt;li&gt;fillMode      动画结束是否保持之前的状态，定义了几个类型&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kCAFillModeForwards
-kCAFillModeBackwards
-kCAFillModeBoth
-kCAFillModeRemoved
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;ul&gt;
-  &lt;li&gt;autoreverses  是否进行反向动画，实现门的开关&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002639342517.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;10时间函数&quot;&gt;10.时间函数&lt;/h2&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;为了让动画显得更自然，而不是很机械，需要使用时间函数控制动画速率
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;camediatimingfunction&quot;&gt;CAMediaTimingFunction&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CAAnimation的timingFunciont属性接收一个CAMediaTimingFunction对象。 包含以下类型 - kCAMediaTimingFunctionLinear  - kCAMediaTimingFunctionEaseIn  - kCAMediaTimingFunctionEaseOut  - kCAMediaTimingFunctionEaseInEaseOut - kCAMediaTimingFunctionDefault
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;uiview的时间函数&quot;&gt;UIView的时间函数&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;UIView的动画也支持时间函数，参考CAAnimation的函数 - UIViewAnimationOptionCurveEaseInOut  - UIViewAnimationOptionCurveEaseIn  - UIViewAnimationOptionCurveEaseOut  - UIViewAnimationOptionCurveLinear
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;自定义时间函数&quot;&gt;自定义时间函数&lt;/h3&gt;
-&lt;p&gt;除了+functionWithName:之外，CAMediaTimingFunction同样有另一个构造函数，一个有四个浮点参数的+functionWithControlPoints::::
-三次贝塞尔时间函数，自定义函数的入参就是图中的几个控制点
-参数就是图中的几个控制点&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002639342534.jpeg&quot; style=&quot;zoom:50%&quot; /&gt;&lt;/p&gt;
-&lt;h2 id=&quot;12性能调优&quot;&gt;12.性能调优&lt;/h2&gt;
-
-&lt;h3 id=&quot;影响gpu-降低图层绘制&quot;&gt;影响GPU， 降低图层绘制&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;太多的几何结构 - 这发生在需要太多的三角板来做变换，以应对处理器的栅格化的时候。现代iOS设备的图形芯片可以处理几百万个三角板，所以在Core Animation中几何结构并不是GPU的瓶颈所在。但由于图层在显示之前通过IPC发送到渲染服务器的时候（图层实际上是由很多小物体组成的特别重量级的对象），太多的图层就会引起CPU的瓶颈。这就限制了一次展示的图层个数（见本章后续“CPU相关操作”）。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;重绘 - 主要由重叠的半透明图层引起。GPU的填充比率（用颜色填充像素的比率）是有限的，所以需要避免重绘（每一帧用相同的像素填充多次）的发生。在现代iOS设备上，GPU都会应对重绘；即使是iPhone 3GS都可以处理高达2.5的重绘比率，并任然保持60帧率的渲染（这意味着你可以绘制一个半的整屏的冗余信息，而不影响性能），并且新设备可以处理更多。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;离屏绘制 - 这发生在当不能直接在屏幕上绘制，并且必须绘制到离屏图片的上下文中的时候。离屏绘制发生在基于CPU或者是GPU的渲染，或者是为离屏图片分配额外内存，以及切换绘制上下文，这些都会降低GPU性能。对于特定图层效果的使用，比如圆角，图层遮罩，阴影或者是图层光栅化都会强制Core Animation提前渲染图层的离屏绘制。但这不意味着你需要避免使用这些效果，只是要明白这会带来性能的负面影响。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;过大的图片 - 如果视图绘制超出GPU支持的2048x2048或者4096x4096尺寸的纹理，就必须要用CPU在图层每次显示之前对图片预处理，同样也会降低性能。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;影响cpu延迟动画开始时间&quot;&gt;影响CPU，延迟动画开始时间&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;布局计算 - 如果你的视图层级过于复杂，当视图呈现或者修改的时候，计算图层帧率就会消耗一部分时间。特别是使用iOS6的自动布局机制尤为明显，它应该是比老版的自动调整逻辑加强了CPU的工作。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;视图惰性加载 - iOS只会当视图控制器的视图显示到屏幕上时才会加载它。这对内存使用和程序启动时间很有好处，但是当呈现到屏幕上之前，按下按钮导致的许多工作都会不能被及时响应。比如控制器从数据库中获取数据，或者视图从一个nib文件中加载，或者涉及IO的图片显示（见后续“IO相关操作”），都会比CPU正常操作慢得多。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Core Graphics绘制 - 如果对视图实现了-drawRect:方法，或者CALayerDelegate的-drawLayer:inContext:方法，那么在绘制任何东西之前都会产生一个巨大的性能开销。为了支持对图层内容的任意绘制，Core Animation必须创建一个内存中等大小的寄宿图片。然后一旦绘制结束之后，必须把图片数据通过IPC传到渲染服务器。在此基础上，Core Graphics绘制就会变得十分缓慢，所以在一个对性能十分挑剔的场景下这样做十分不好。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;解压图片 - PNG或者JPEG压缩之后的图片文件会比同质量的位图小得多。但是在图片绘制到屏幕上之前，必须把它扩展成完整的未解压的尺寸（通常等同于图片宽 x 长 x 4个字节）。为了节省内存，iOS通常直到真正绘制的时候才去解码图片（14章“图片IO”会更详细讨论）。根据你加载图片的方式，第一次对图层内容赋值的时候（直接或者间接使用UIImageView）或者把它绘制到Core Graphics中，都需要对它解压，这样的话，对于一个较大的图片，都会占用一定的时间。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;性能优化实例&quot;&gt;性能优化实例&lt;/h3&gt;
-&lt;p&gt;UITabelViewCell 使用了阴影和圆角等触发离屏渲染，影响性能。这是可以打开shouldRasterize， 这是光栅化，缓存阴影和圆角到位图，下次重绘时直接取用缓存。虽然光栅会也会触发离屏渲染，但是能够缓解cell的滑动不断渲染，也能一定程度上提高性能。&lt;/p&gt;
-
-&lt;h2 id=&quot;13-高效绘图&quot;&gt;13. 高效绘图&lt;/h2&gt;
-
-&lt;p&gt;软件绘图指不由GPU协助的绘图，iOS中一般通过Core Graphics完成，但是和Core Animation和 OpenGL相比，Core Graphics要慢不少。
-软件绘图还会消耗不少内存，一个Context上下文相当于图层宽×高×4字节，分辨率为2048*1526的iPad来说，就是12MB内存，且每次重绘都需要抹掉内存重新分配，代价很大，所以要尽量避免绘图。&lt;/p&gt;
-
-&lt;h3 id=&quot;使用cashapelayer-提高效率&quot;&gt;使用CAShapeLayer 提高效率&lt;/h3&gt;
-&lt;p&gt;例如实现手指滑动绘制线条，简单做法如下：&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
-{
-    //get the current point
-    CGPoint point = [[touches anyObject] locationInView:self];
-
-    //add a new line segment to our path
-    [self.path addLineToPoint:point];
-
-    //redraw the view
-    [self setNeedsDisplay];
-}
-
-- (void)drawRect:(CGRect)rect
-{
-    //draw path
-    [[UIColor clearColor] setFill];
-    [[UIColor redColor] setStroke];
-    [self.path stroke];
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;使用了Core Graphics，画的越多，程序越慢，每次都会重绘整个路径，效率很低。
-使用CAShapeLayer替代Core Graphics，性能大幅提高。&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;+ (Class)layerClass
-{
-    //this makes our view create a CAShapeLayer
-    //instead of a CALayer for its backing layer
-    return [CAShapeLayer class];
-}
-- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
-{
-    //get the current point
-    CGPoint point = [[touches anyObject] locationInView:self];
-
-    //add a new line segment to our path
-    [self.path addLineToPoint:point];
-
-    //update the layer with a copy of the path
-    ((CAShapeLayer *)self.layer).path = self.path.CGPath;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;脏矩形&quot;&gt;脏矩形&lt;/h3&gt;
-&lt;p&gt;为了减少不必要的绘制，MacOS和iOS设备将会把屏幕区分为需要重绘的区域和不需要重绘的区域。那些需要重绘的部分被称作『脏区域』。&lt;/p&gt;
-
-&lt;p&gt;当一个视图被改动过了，TA可能需要重绘。但是很多情况下，只是这个视图的一部分被改变了，所以重绘整个寄宿图就太浪费了。所以提供了-setNeedsDisplayInRect:来把脏区域作为参数传入，能够提高部分效率。&lt;/p&gt;
-
-&lt;p&gt;相比依赖于Core Graphics为你重绘，裁剪出自己的绘制区域可能会让你避免不必要的操作。那就是说，如果你的裁剪逻辑相当复杂，那还是让Core Graphics来代劳吧，记住：当你能高效完成的时候才这样做。&lt;/p&gt;
-
-&lt;p&gt;CGRectIntersectsRect()能判断指定的rect在不在脏区域内，从而判断是否需要重新绘制这一块。&lt;/p&gt;
-
-&lt;h3 id=&quot;异步绘制&quot;&gt;异步绘制&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;CATiledLayer 分片显示的layer，在多线程中为每个小块同时调用drawLayer:inContext:方法，避免阻塞交互。&lt;/li&gt;
-  &lt;li&gt;drawsAsynchronously 它自己的-drawLayer:inContext:方法只会在主线程调用，但是CGContext并不等待每个绘制命令的结束。相反地，它会将命令加入队列，当方法返回时，在后台线程逐个执行真正的绘制。==根据苹果的说法。这个特性在需要频繁重绘的视图上效果最好（比如我们的绘图应用，或者诸如UITableViewCell之类的），对那些只绘制一次或很少重绘的图层内容来说没什么太大的帮助。==&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;14图像io&quot;&gt;14.图像IO&lt;/h2&gt;
-&lt;p&gt;图像耗费时间主要包括2个部分，加载到内存和解压。&lt;/p&gt;
-
-&lt;h3 id=&quot;解决加载问题&quot;&gt;解决加载问题&lt;/h3&gt;
-
-&lt;p&gt;&lt;strong&gt;文件读取&lt;/strong&gt;: 使用异步加载的方式，GCD或NSOperationQueue，在子线程中读取图片，在主线程中显示图片。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;延迟解压&lt;/strong&gt;: 当加载图片之后，iOS通常会延迟解压图片的时间。这就会在准备绘制图片的时候影响性能，因为需要在绘制之前进行解压（通常是消耗时间的问题所在）。&lt;/p&gt;
-
-&lt;p&gt;使用+imageNamed:方法能避免延时加载，会在加载图片后立刻解压。但对于生成的图片，相册照片或下载的图片无效。
-此时可以使用ImageIO框架实现：&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;NSInteger index = indexPath.row;
-NSURL *imageURL = [NSURL fileURLWithPath:self.imagePaths[index]];
-NSDictionary *options = @{(__bridge id)kCGImageSourceShouldCache: @YES}; 
-CGImageSourceRef source = CGImageSourceCreateWithURL((__bridge CFURLRef)imageURL, NULL);
-CGImageRef imageRef = CGImageSourceCreateImageAtIndex(source, 0,(__bridge CFDictionaryRef)options);
-UIImage *image = [UIImage imageWithCGImage:imageRef]; 
-CGImageRelease(imageRef);
-CFRelease(source);
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;这样就可以使用kCGImageSourceShouldCache来创建图片，强制图片立刻解压，然后在图片的生命周期保留解压后的版本。&lt;/p&gt;
-
-&lt;h3 id=&quot;分辨率替换&quot;&gt;分辨率替换&lt;/h3&gt;
-&lt;p&gt;在滑动的时候使用分辨率图片，滑动停止时替换为高分辨率图片。&lt;/p&gt;
-
-&lt;h3 id=&quot;图片缓存&quot;&gt;图片缓存&lt;/h3&gt;
-&lt;p&gt;imageNamed: 在内存中自动缓存了解压后的图片，但也有以下几个问题&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;[UIImage imageNamed:]方法仅仅适用于在应用程序资源束目录下的图片，但是大多数应用的许多图片都要从网络或者是用户的相机中获取，所以[UIImage imageNamed:]就没法用了。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;[UIImage imageNamed:]缓存用来存储应用界面的图片（按钮，背景等等）。如果对照片这种大图也用这种缓存，那么iOS系统就很可能会移除这些图片来节省内存。那么在切换页面时性能就会下降，因为这些图片都需要重新加载。对传送器的图片使用一个单独的缓存机制就可以把它和应用图片的生命周期解耦。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;[UIImage imageNamed:]缓存机制并不是公开的，所以你不能很好地控制它。例如，你没法做到检测图片是否在加载之前就做了缓存，不能够设置缓存大小，当图片没用的时候也不能把它从缓存中移除。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;nscache&quot;&gt;NSCache&lt;/h3&gt;
-&lt;p&gt;NSCache和NSDictionary类似，你可以通过-setObject:forKey:和-object:forKey:方法分别来插入，检索。和字典不同的是，NSCache在系统低内存的时候自动丢弃存储的对象。
--setCountLimit: 设置缓存大小
--setObject:forKey:cost:来对每个存储的对象指定消耗的值来提供一些参考，数值越大说明很昂贵，降低丢弃的优先级。
--setTotalCostLimit: 指定全体缓存的大小&lt;/p&gt;
-
-&lt;h3 id=&quot;png和jpeg区别&quot;&gt;PNG和JPEG区别&lt;/h3&gt;
-&lt;p&gt;JPEG不包含透明度通道，压缩算法复杂，文件小，解压时会耗费时间多
-PNG包含透明度通道，算法简单，文件大，解压时耗费时间少&lt;/p&gt;
-
-&lt;p&gt;JPEG适合噪点大的图片， PNG适合扁平颜色，锋利的线条和渐变色图片。&lt;/p&gt;
-
-&lt;h2 id=&quot;15图层性能&quot;&gt;15.图层性能&lt;/h2&gt;
-
-&lt;h3 id=&quot;光栅化&quot;&gt;光栅化&lt;/h3&gt;
-
-&lt;p&gt;在第四章『视觉效果』中我们提到了&lt;code class=&quot;highlighter-rouge&quot;&gt;CALayer&lt;/code&gt;的&lt;code class=&quot;highlighter-rouge&quot;&gt;shouldRasterize&lt;/code&gt;属性，它可以解决重叠透明图层的混合失灵问题。同样在第12章『速度的曲调』中，它也是作为绘制复杂图层树结构的优化方法。&lt;/p&gt;
-
-&lt;p&gt;启用&lt;code class=&quot;highlighter-rouge&quot;&gt;shouldRasterize&lt;/code&gt;属性会将图层绘制到一个屏幕之外的图像。然后这个图像将会被缓存起来并绘制到实际图层的&lt;code class=&quot;highlighter-rouge&quot;&gt;contents&lt;/code&gt;和子图层。如果有很多的子图层或者有复杂的效果应用，这样做就会比重绘所有事务的所有帧划得来得多。但是光栅化原始图像需要时间，而且还会消耗额外的内存。&lt;/p&gt;
-
-&lt;p&gt;当我们使用得当时，光栅化可以提供很大的性能优势（如你在第12章所见），但是一定要避免作用在内容不断变动的图层上，否则它缓存方面的好处就会消失，而且会让性能变的更糟。&lt;/p&gt;
-
-&lt;p&gt;为了检测你是否正确地使用了光栅化方式，用Instrument查看一下Color Hits Green和Misses Red项目，是否已光栅化图像被频繁地刷新（这样就说明图层并不是光栅化的好选择，或则你无意间触发了不必要的改变导致了重绘行为）。&lt;/p&gt;
-
-&lt;h3 id=&quot;混合和过度绘制&quot;&gt;混合和过度绘制&lt;/h3&gt;
-
-&lt;p&gt;GPU每一帧可以绘制的像素有最大显示fill rate, 所以必须有选择的绘制区域。GPU会放弃绘制哪些被其他图层遮挡的像素，但是要计算出一个图层是否被遮挡也是相当复杂并且会消耗处理器资源。同样，合并不同图层的透明重叠像素(混合)消耗的资源也是相当可观的。所以为了加速处理进程，非必要时刻不要用透明图层。&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;给视图&lt;code class=&quot;highlighter-rouge&quot;&gt;backgroundColor&lt;/code&gt; 设置一个固定的不透明颜色。&lt;/li&gt;
-  &lt;li&gt;设置&lt;code class=&quot;highlighter-rouge&quot;&gt;opaque&lt;/code&gt;属性为YES&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;这样做减少了混合行为（因为编译器知道在图层之后的东西都不会对最终的像素颜色产生影响），且计算得到了加速。&lt;/p&gt;
-</description>
-        <pubDate>Wed, 16 Sep 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/09/CoreAnimation/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/09/CoreAnimation/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>深入理解HTTPS</title>
-        <description>&lt;h2 id=&quot;what&quot;&gt;What&lt;/h2&gt;
-&lt;p&gt;HTTPS在传统的HTTP和TCP之间加了一层用于&lt;code class=&quot;highlighter-rouge&quot;&gt;加密解密的SSL/TLS层&lt;/code&gt;（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。&lt;/p&gt;
-
-&lt;h2 id=&quot;why&quot;&gt;Why&lt;/h2&gt;
-&lt;h3 id=&quot;http的问题&quot;&gt;HTTP的问题&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;不加密，通信是明文，可能被窃听&lt;/li&gt;
-  &lt;li&gt;无法证明报文的完整性，可能被篡改&lt;/li&gt;
-  &lt;li&gt;没验证通信方的身份，可能遭遇中间人伪装&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;https解决的问题&quot;&gt;HTTPS解决的问题&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;信息加密传输：第三方无法窃听；&lt;/li&gt;
-  &lt;li&gt;校验机制：一旦被篡改，通信双方会立刻发现；&lt;/li&gt;
-  &lt;li&gt;身份证书：防止身份被冒充。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;how&quot;&gt;How&lt;/h2&gt;
-&lt;h3 id=&quot;如何加密&quot;&gt;如何加密&lt;/h3&gt;
-&lt;h4 id=&quot;哈希加密&quot;&gt;哈希加密&lt;/h4&gt;
-&lt;p&gt;哈希算法加密是通过哈希算法对数据加密，加密后的结果不可逆，即加密后不能再解密。
-特点: 不可逆、算法公开、相同数据加密结果一致。
-作用: 信息摘要，信息“指纹”，用来做数据识别的。如：用户密码加密、文件校验、数字签名、鉴权协议。&lt;/p&gt;
-
-&lt;h4 id=&quot;对称加密&quot;&gt;对称加密&lt;/h4&gt;
-&lt;p&gt;加密和解密同用一个密钥。&lt;strong&gt;没有密钥就无法对密码解密，反过来说，任何人只要持有密钥就能解密了&lt;/strong&gt;。对称加密有很多种算法，常用的有AES, DES。由于它效率很高，所以被广泛使用在很多加密协议的核心当中。&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    encrypt(明文，秘钥) = 密文
-    decrypt(密文，秘钥) = 明文
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;优点: 相对于非对称加密，加解密效率高得多，加密速度块。
-缺点: 对于秘钥的管理和分发上比较困难，秘钥管理负担重。&lt;/p&gt;
-
-&lt;h4 id=&quot;非对称加密&quot;&gt;非对称加密&lt;/h4&gt;
-&lt;p&gt;指的是加、解密使用不同的密钥，一把作为公开的公钥，另一把作为私钥。公钥加密的信息，只有私钥才能解密。&lt;strong&gt;私钥只能由一方安全保管，不能外泄，而公钥则可任意发布给需要的人&lt;/strong&gt;。
-非对称RSA有2种用法：&lt;/p&gt;
-&lt;ol&gt;
-  &lt;li&gt;加解密
- 公钥加密，私钥解密是普通的方式&lt;/li&gt;
-  &lt;li&gt;数字签名
- 私钥签名(加密)，公钥验证(解密)是数字签名，防止中间人冒充&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    encrypt(明文，公钥) = 密文
-    decrypt(密文，私钥) = 明文
-    
-    sign(明文，私钥) = 密文
-    verify(密文，公钥) = 明文
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;优点: 安全性高，私钥自己保存，不需要传输。
-缺点: 加解密消耗高，速度慢。&lt;/p&gt;
-
-&lt;p&gt;HTTPS采用了对称加密+非对称加密的方案。具体做法如下：&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633632456.png&quot; style=&quot;zoom:60%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;但是依然解决不了中间人的攻击，如下图：&lt;/strong&gt;
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633723857.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;因此需要保证数据完整性引入数字签名&lt;/strong&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;如何保证数据完整性-数字签名&quot;&gt;如何保证数据完整性-数字签名&lt;/h3&gt;
-&lt;blockquote&gt;
-  &lt;p&gt;网络传输过程中需要经过很多中间节点，虽然数据无法被解密，但可能被篡改，那如何校验数据的完整性呢？—-校验数字签名。&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;数字签名是通过HASH算法和RSA加密来实现的。 我们将明文数据加上&lt;strong&gt;通过RSA加密的数据HASH值&lt;/strong&gt;一起传输给对方，对方可以解密拿出HASH值来进行验证。这个通过RSA加密HASH值数据，我们称之为数字签名。&lt;/p&gt;
-
-&lt;p&gt;数字签名有两种功效：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;能确定消息确实是由发送方签名并发出来的，因为别人假冒不了发送方的签名。&lt;/li&gt;
-  &lt;li&gt;数字签名能确定消息的完整性,证明数据是否未被篡改过。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;数字签名如何生成：&lt;/strong&gt;
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002633815147.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;将一段文本先用HASH算法生成消息摘要，然后用发送者的私钥RSA加密生成数字签名，与原文一起传送给接收者。接下来就是接收者校验数字签名的流程了。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;校验数字签名流程：&lt;/strong&gt;
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002634134529.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;接收者只有用发送者的公钥才能解密被加密的摘要信息，然后用HASH算法对收到的原文产生一个摘要信息，与上一步得到的摘要信息对比。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改，否则说明信息被修改过，因此数字签名能够验证信息的完整性。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;上面可行的前提是需要事先拿到可信的公钥，因此引入数字证书&lt;/strong&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;如何校验身份-数字证书&quot;&gt;如何校验身份-数字证书&lt;/h3&gt;
-&lt;p&gt;数字证书就是Server将公钥和公司信息提交给证书颁发机构（Certificate Authority，简称CA），CA将公钥和其他信息数字签名后生成证书， Client也会内置所有受信CA的证书。
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002634229207.png&quot; alt=&quot;6&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;至此HTTPS的流程如下：&lt;/p&gt;
-&lt;ol&gt;
-  &lt;li&gt;客户端请求服务器获取&lt;code class=&quot;highlighter-rouge&quot;&gt;证书公钥&lt;/code&gt;&lt;/li&gt;
-  &lt;li&gt;客户端(SSL/TLS)解析证书，判断真实性&lt;/li&gt;
-  &lt;li&gt;生成&lt;code class=&quot;highlighter-rouge&quot;&gt;密钥&lt;/code&gt;&lt;/li&gt;
-  &lt;li&gt;用&lt;code class=&quot;highlighter-rouge&quot;&gt;公钥&lt;/code&gt;加密&lt;code class=&quot;highlighter-rouge&quot;&gt;密钥&lt;/code&gt;&lt;/li&gt;
-  &lt;li&gt;客户端将&lt;code class=&quot;highlighter-rouge&quot;&gt;密钥&lt;/code&gt;发送给服务器&lt;/li&gt;
-  &lt;li&gt;服务端用&lt;code class=&quot;highlighter-rouge&quot;&gt;私钥&lt;/code&gt;解密得到&lt;code class=&quot;highlighter-rouge&quot;&gt;密钥&lt;/code&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;将信息和秘钥混合在一起&lt;/code&gt;进行对称加密&lt;/li&gt;
-  &lt;li&gt;将加密的内容发送给客户端&lt;/li&gt;
-  &lt;li&gt;客户端用&lt;code class=&quot;highlighter-rouge&quot;&gt;秘钥&lt;/code&gt;解密信息&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002634413967.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;附：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;HTTPS默认使用443端口，而HTTP默认使用80端口。&lt;/li&gt;
-  &lt;li&gt;TLS就是从SSL发展而来的，只是SSL发展到3.0版本后改成了TLS&lt;/li&gt;
-  &lt;li&gt;第一次请求中TLS握手的代价很大&lt;/li&gt;
-  &lt;li&gt;后续的请求会共用第一次请求的协商结果&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-        <pubDate>Sun, 13 Sep 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/09/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3HTTPS/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/09/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3HTTPS/</guid>
-        
-        
-      </item>
-    
-      <item>
-        <title>WebRTC架构及原理</title>
-        <description>&lt;h2 id=&quot;架构&quot;&gt;架构&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002625734050.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现&lt;/li&gt;
-  &lt;li&gt;视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层&lt;/li&gt;
-  &lt;li&gt;传输层包含P2P,STUN,TURN,ICE，RTP,RTSP等传输控制协议。网络IO层可override 自己实现&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;信令服务器&quot;&gt;信令服务器&lt;/h2&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002625864892.png&quot; style=&quot;zoom:80%&quot; /&gt;&lt;/p&gt;
-&lt;h3 id=&quot;nat穿越&quot;&gt;NAT穿越：&lt;/h3&gt;
-&lt;blockquote&gt;
-  &lt;p&gt;设备大多在网关背后，想要简历P2P连接就要穿过网关，连接到内网的设备，网关一般包含以下4种防火墙类型。&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;完全锥形：网关只做简单的映射，最容易穿越&lt;/li&gt;
-  &lt;li&gt;地址限制锥形：对于主动访问外网的IP做记录，容易穿越&lt;/li&gt;
-  &lt;li&gt;端口限制锥形：对主动访问外网的IP和Port做记录，比上一个更严格&lt;/li&gt;
-  &lt;li&gt;对称型：内网与外网通信会建立一个IP和Port,不同的外网地址建立不同的IP和port,基本无法穿越。&lt;strong&gt;是否可用中继服务器的方式打洞&lt;/strong&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;穿越原理&quot;&gt;穿越原理&lt;/h4&gt;
-&lt;ul&gt;
-  &lt;li&gt;C1, C2向STUN发消息&lt;/li&gt;
-  &lt;li&gt;交换公网IP和Port&lt;/li&gt;
-  &lt;li&gt;C1-&amp;gt;C2, C2-&amp;gt;C1。如果是对称型需要端口猜测&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;stun&quot;&gt;STUN:&lt;/h3&gt;
-&lt;blockquote&gt;
-  &lt;p&gt;目的就是获取设备的公网IP和Port然后互相交换&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;turn&quot;&gt;TURN:&lt;/h3&gt;
-&lt;blockquote&gt;
-  &lt;p&gt;目的是解决对称NAT无法穿越的问题，用来转发数据。
-获取到双方地址后尝试P2P链接，如果链接失败，则使用数据转发&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;hr /&gt;
-&lt;h3 id=&quot;ice&quot;&gt;ICE:&lt;/h3&gt;
-&lt;blockquote&gt;
-  &lt;p&gt;包含了STUN, TURN的一整个解决方案框架，不断选择最优的链接通路，获取不同的candidate，尝试最优的链路。&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;收集Candidata&lt;/li&gt;
-  &lt;li&gt;对Candidate Pair排序，筛选出最合适的候选者对，否则直接检查浪费时间
-    &lt;ul&gt;
-      &lt;li&gt;一方收集到所有候选者后，通过信令传给对方&lt;/li&gt;
-      &lt;li&gt;另一方收到候选者后也做收集工作&lt;/li&gt;
-      &lt;li&gt;当双方拿到全部列表后，将候选者形成匹配对儿&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;对Candidate Pair连通性检查
-    &lt;ul&gt;
-      &lt;li&gt;对每个后选对进行发送，接收检查&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002626005389.png&quot; style=&quot;zoom:80%&quot; /&gt;
-***&lt;/p&gt;
-
-&lt;h4 id=&quot;candidata&quot;&gt;Candidata&lt;/h4&gt;
-&lt;p&gt;是一个地址，例如： …UDP…192.168.1.2  1816 type host等协议，地址，类型
-类型包含3个：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;主机候选者， 本机网卡上所有地址和类型&lt;/li&gt;
-  &lt;li&gt;反射候选者，NAT穿越后的地址和类型， SUTN/TURN&lt;/li&gt;
-  &lt;li&gt;中继候选者， TURN服务开通后的地址和类型， TURN&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;hr /&gt;
-
-&lt;h4 id=&quot;sdp&quot;&gt;SDP&lt;/h4&gt;
-&lt;blockquote&gt;
-  &lt;p&gt;Session Description Protocol ， 是设备之间互通配置信息的协议&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002626096788.png&quot; alt=&quot;&quot; /&gt;
-上图中是SDP基本内容， 其中有2个candidate, 一个是本机UDP,另一个是NAT穿越后的地址UDP&lt;/p&gt;
-
-&lt;p&gt;SDP规范包括2部分：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;会话层： 会话时间，名称等全局基本信息，多个媒体信息&lt;/li&gt;
-  &lt;li&gt;媒体层
-    &lt;ul&gt;
-      &lt;li&gt;媒体格式:音频、视频、数据&lt;/li&gt;
-      &lt;li&gt;传输协议：TCP/UDP&lt;/li&gt;
-      &lt;li&gt;传输IP和Port&lt;/li&gt;
-      &lt;li&gt;媒体负载类型:VP8 VP9 h264. h265&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;m 媒体名称和地址, c 传输层信息, b 带宽信息 ,a 各种属性定义和对m的描述&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;WebRTC中的SDP包含5个部分：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;会话元&lt;/li&gt;
-  &lt;li&gt;网络描述&lt;/li&gt;
-  &lt;li&gt;流描述&lt;/li&gt;
-  &lt;li&gt;安全描述&lt;/li&gt;
-  &lt;li&gt;服务质量&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;hr /&gt;
-
-&lt;h4 id=&quot;连接流程图&quot;&gt;连接流程图&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002626241435.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-</description>
-        <pubDate>Tue, 11 Aug 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/08/WebRTC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/08/WebRTC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/</guid>
-        
-        <category>webRTC</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>GCC 拥塞控制算法详解</title>
-        <description>&lt;h2 id=&quot;gcc-拥塞控制算法&quot;&gt;GCC 拥塞控制算法&lt;/h2&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;谷歌使用GCC (Google Congestion Control ) 在 WebRTC中的拥塞控制算法，包含2个部分，一个是基于丢包的用拥塞控制，一个是基于延迟的拥塞控制。
-最终基于丢包的码率估计值和基于延迟的码率估计值做比较，使用最小的码率估计值作为最终发送码率。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;早期实现中2部分分别在发送端和接收端实现，接收端实现延迟梯度算法计算出估计带宽，反馈给发送端，发送端再根据2个算法结果确定最终发送码率。最近的WebRTC中的GCC都在发送端来实现，所以需要接收端在RTCP中反馈包达到时间用来计算延迟。&lt;/p&gt;
-
-&lt;h3 id=&quot;基于丢包的带宽估计&quot;&gt;基于丢包的带宽估计&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;思想是基于丢包多少来判断网络拥塞程度，丢包少提高发送码率，丢包多降低码率。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;接收端通过在RTCP协议中的fraction lost字段反馈给发送端丢包率， WebRTC通过以下公式估算发送码率，式中 As(tk) 即为 tk 时刻的带宽估计值，fl(tk)即为 tk 时刻的丢包率：
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002700924519.png&quot; style=&quot;zoom=100%&quot; /&gt;&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;fl &amp;gt; 10%: 有拥塞，根据丢包率降低带宽
-2%&amp;lt; fl &amp;lt; 10%: 正常，保持当前码率不变，避免因波动丢包等误判导致降低码率
-fl &amp;lt; 2% : 网络良好， As + 5% 提高带宽来探测真实可用带宽
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;基于延迟梯度的带宽估计&quot;&gt;基于延迟梯度的带宽估计&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;接收端在RTCP中增加transport-cc-feedback字段反馈所有媒体包到达的时间，发送端根据接受延迟和发送间隔计算出延迟梯度，从而估计带宽。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;步骤有3个：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;到达时间滤波器&lt;/li&gt;
-  &lt;li&gt;过载检测器&lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;速率控制器&lt;/p&gt;
-
-    &lt;p&gt;到达滤波器根据包的到达时延和发送间隔，计算延迟变化，用卡尔曼滤波器平滑处理消除网络噪音。
-  延迟变化作为过载检测器的输入，判断出当前网络状态underuse/overuse/normal。 
-  速率控制器根据网络状态和带宽公式计算出带宽。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;到达时间滤波器&quot;&gt;到达时间滤波器&lt;/h4&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002707293607.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;用两个包到达时间间隔减去发送时间间隔，得到一个延迟的变化，公式如下：&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002708393823.png&quot; alt=&quot;图片12&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;理想情况下，每个包的到达时间间隔和发送间隔是一样的，所以延迟梯度为0。如果某一个包因为拥塞导致排队，那么延迟梯度就不为0。为了计算精确，计算策略如下：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;由于测量粒度很小，为了避免网络噪音的误差，使用卡尔曼滤波来平滑延迟梯度的结果&lt;/li&gt;
-  &lt;li&gt;实现中是按照数据组来计算整体延迟梯度，不是按单个包计算。发送时间间隔小于5ms位一个组。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;过载检测器&quot;&gt;过载检测器&lt;/h4&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;将延迟梯度和某个阈值比较，高于阈值则为拥塞，低于阈值则为良好，阈值是动态调整的。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002702640507.png&quot; style=&quot;zoom=100%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;m(t&lt;sub&gt;i&lt;/sub&gt;)表示计算出的延迟梯度&lt;/p&gt;
-
-&lt;p&gt;γ(t&lt;sub&gt;i&lt;/sub&gt;)表示判断阈值&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002703739032.png&quot; alt=&quot;图片32&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002704016723.png&quot; alt=&quot;图片24&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;上面为阈值自适应算法，当梯度减小时，阈值会以更慢的速率减小。梯度增加时，阈值会以更慢的速率增加。阈值的减小速度要小于增加速度，因为最终目的还是要探测更多可用的网络带宽。&lt;/p&gt;
-
-&lt;h4 id=&quot;速率控制器&quot;&gt;速率控制器&lt;/h4&gt;
-
-&lt;p&gt;根据过载探测器输出的信号，驱动速率控制状态机，估算出当前网络速率。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;当收到overuse，进入decrease状态&lt;/li&gt;
-  &lt;li&gt;当收到normal，进入increase状态&lt;/li&gt;
-  &lt;li&gt;当收到underuse， 进入hold状态&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002704269607.png&quot; style=&quot;zoom=100%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;这个状态机输出的是带宽估计值。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;当前处于降低带宽值状态，发现带宽低载或者正常，就不再下降，如果依然过载，继续降&lt;/li&gt;
-  &lt;li&gt;当前处于平衡状态，发现带宽正常，则尝试增加带宽估计值，寻求达到低载状态，争夺多一点的带宽资源&lt;/li&gt;
-  &lt;li&gt;当前处于增加带宽值状态，发现带宽正常，继续增加，发现过载，降低带宽估计值，发现低载，目的达到了，保持当前状态&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20200916/16002704602190.png&quot; style=&quot;zoom=100%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;其中η=1.05，α=0.85。 当increase时，以上一次估计码率乘1.05作为当前码率。 当decrease时以当前估算的接受端码率 乘0.85作为当前码率，hold状态不变。&lt;/p&gt;
-
-&lt;p&gt;最终基于丢包的码率估计值和基于延迟的码率估计值做比较，使用最小的码率估计值作为最终发送码率。&lt;/p&gt;
-
-</description>
-        <pubDate>Wed, 05 Aug 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/</guid>
-        
-        <category>webRTC</category>
         
         
       </item>

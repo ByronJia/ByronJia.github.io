@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>SIG蓝牙协议5.2版本更新内容</title>
-  <meta name="description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <title>iOS底层(6)- runLoop &amp; 多线程</title>
+  <meta name="description" content="runloop常见类型runloop 和线程一一对应，子线程默认不开启runloop,当第一次获取runloop时就会创建runloop。存在全局map中，key是线程，value是runloop">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="SIG蓝牙协议5.2版本更新内容">
-  <meta name="twitter:description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <meta name="twitter:title" content="iOS底层(6)- runLoop &amp; 多线程">
+  <meta name="twitter:description" content="runloop常见类型runloop 和线程一一对应，子线程默认不开启runloop,当第一次获取runloop时就会创建runloop。存在全局map中，key是线程，value是runloop">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="SIG蓝牙协议5.2版本更新内容">
-  <meta property="og:description" content="主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels">
+  <meta property="og:title" content="iOS底层(6)- runLoop &amp; 多线程">
+  <meta property="og:description" content="runloop常见类型runloop 和线程一一对应，子线程默认不开启runloop,当第一次获取runloop时就会创建runloop。存在全局map中，key是线程，value是runloop">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/">
+  <link rel="canonical" href="http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -192,10 +192,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">SIG蓝牙协议5.2版本更新内容</h1>
+    <h1 class="post-title">iOS底层(6)- runLoop & 多线程</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-06-05 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-06-05</time>  
+      <time datetime="2020-10-10 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-10-10</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -205,17 +205,17 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#主要是3块新特性">主要是3块新特性</a>
+  <li><a href="#runloop">runloop</a>
     <ul>
-      <li><a href="#背景介绍">背景介绍</a></li>
+      <li><a href="#常见类型">常见类型</a></li>
+      <li><a href="#线程保活">线程保活</a></li>
     </ul>
   </li>
-  <li><a href="#一enhanced-att">一、Enhanced ATT</a></li>
-  <li><a href="#二le-power-control">二、LE Power Control</a></li>
-  <li><a href="#三le-isochronous-channels">三、LE Isochronous Channels</a>
+  <li><a href="#多线程">多线程</a>
     <ul>
-      <li><a href="#链接模式">链接模式</a></li>
-      <li><a href="#广播模式">广播模式</a></li>
+      <li><a href="#线程死锁">线程死锁</a></li>
+      <li><a href="#线程锁">线程锁</a></li>
+      <li><a href="#读写安全方案-保证同一时间只有一个线程写可以多个线程读不能同时读写">读写安全方案 ,保证同一时间只有一个线程写，可以多个线程读，不能同时读写</a></li>
     </ul>
   </li>
 </ul>
@@ -223,85 +223,79 @@
   
 
   <section class="post">
-    <h4 id="主要是3块新特性">主要是3块新特性</h4>
+    <h2 id="runloop">runloop</h2>
+<h3 id="常见类型">常见类型</h3>
+<p><strong>runloop</strong> 和线程一一对应，子线程默认不开启runloop,当第一次获取runloop时就会创建runloop。存在全局map中，key是线程，value是runloop</p>
+
+<p>runloopModel结构体如下
+<img src="http://image.smartjames.cn/mweb/20201010/16023184791593.png" alt="1" /></p>
+
+<p>常见2种Mode:</p>
 <ul>
-  <li>Enhanced Attribute Protocol</li>
-  <li>LE Power Control</li>
-  <li>LE Isochronous Channels</li>
+  <li><code class="highlighter-rouge">kCFRunLoopDefaultMode</code>（<code class="highlighter-rouge">NSDefaultRunLoopMode</code>）：App的默认Mode，通常主线程是在这个Mode下运行</li>
+  <li><code class="highlighter-rouge">UITrackingRunLoopMode</code>：界面跟踪 Mode，用于 ScrollView 追踪触摸滑动，保证界面滑动时不受其他 Mode 影响</li>
 </ul>
 
-<h5 id="背景介绍">背景介绍</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PUD: Protocol Data Unit 协议数据单元 被某一层处理为指定数据格式的数据。
+<p>目的是不同组的<code class="highlighter-rouge">Source0</code>/<code class="highlighter-rouge">Source1</code>/<code class="highlighter-rouge">Timer</code>/<code class="highlighter-rouge">Observer</code>能分隔开来，互不影响，处理不同的事件，只能同一时间运行一种模式</p>
 
-SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据，比如输入的数据，叫SDU,封装成PDU通过层与层之间的管道传输给下一层。
+<h3 id="线程保活">线程保活</h3>
+
+<p>一般线程启动后，如果事情做完会直接销毁，因为启动runloop 如果Mode里没有任何<code class="highlighter-rouge">Source0</code>/<code class="highlighter-rouge">Source1</code>/<code class="highlighter-rouge">Timer</code>/<code class="highlighter-rouge">Observer</code>，RunLoop会立马退出。 唯一办法是在runloop中添加前面所说的几个事件。
+做法：
+在当前线程中调用以下代码</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[[NSRunLoop currentRunLoop] addPort:[[NSPort alloc] init]   forMode:NSDefaultRunLoopMode];
+while (1){
+    [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
+}
 </code></pre></div></div>
+<p>这样添加一个port的 <code class="highlighter-rouge">source1</code> 事件，并启动本次runMode, 一旦响应一次事件后本次会结束，所以需要while 运行runModel 。其实就是阻塞了当前runloop的一个事件，导致后续事件无法运行，以此保证runloop和线程的存活</p>
 
-<p>本层的PDU是下一层的SDU,本层的SDU是上一层的PDU</p>
+<h2 id="多线程">多线程</h2>
+<p><img src="http://image.smartjames.cn/mweb/20201010/16023185008204.png" alt="2" /></p>
 
-<hr />
-<h4 id="一enhanced-att">一、Enhanced ATT</h4>
-
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002632642584.png" alt="" /></p>
-
-<p>ATT: 定义了不同服务的属性参数和可使用的命令，用来作为主从设备间的信息交换个协商。</p>
-
-<p>MTU(Maximum Transmission Unit) 是不同协议的最大数据处理能力，决定不同层协议处理最大PUD/SDU的尺寸。ATT中定义了服务的MTU,在L2CAP根据上下层不同的MTU来分割/组合数据，来适配整体数据通路的PDU/SDU。</p>
-
-<p>LE5.1之前：</p>
-<ul>
-  <li>ATT与L2CAP之间的MTU是固定的，建立连接后不能改。</li>
-  <li>数据处理是串行的，不同业务MTU必须在上一个PDU/SDU完成后才能执行。</li>
-</ul>
-
-<p>LE5.2:</p>
-<ul>
-  <li>MTU在ATT和L2CAP之间不再一一对应，可以互相独立配置，即ATT和L2CAP之间的MTU和PDU大小动态配置。</li>
-  <li>不同业务PDU可以交叉处理，减小数据延迟</li>
-</ul>
-
-<p>EATT相比ATT的影响：</p>
-<ul>
-  <li>新的PDU只能再EATT上使用</li>
-  <li>某些ATT PDU只能用在ATT上</li>
-  <li>一些PDU的定义或流程被细化或优化</li>
-  <li>EATT只能加密连接使用，ATT可以通过未加密、加密连接</li>
-</ul>
-
-<hr />
-<h4 id="二le-power-control">二、LE Power Control</h4>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>在蓝牙接收错误率BER超过0.1%时，连接被认为是质量不好连接 增加了发射功率的动态管理，通过信号响度RSSI的监控，通知发射方增加或减少发射功率。使接收器的信号强度落在不太强也不太弱的区域，刚好满足应用又省电。
+<h3 id="线程死锁">线程死锁</h3>
+<p><strong>使用<code class="highlighter-rouge">sync</code>函数往当前串行队列中添加任务，会卡住当前的串行队列（产生死锁)</strong>
+<code class="highlighter-rouge">performSelector:withObject:afterDelay: </code>方法是用你NSTimer实现定时，且是加在当前线程runloop中，但是如果当前是<code class="highlighter-rouge">asyn</code>产生的线程runloop没启动的话这种方法无效。需要手动启动</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
 </code></pre></div></div>
+<h3 id="线程锁">线程锁</h3>
 
-<hr />
-<h4 id="三le-isochronous-channels">三、LE Isochronous Channels</h4>
-<p>定义了一个有时间依赖的数据传输通道和传输策略。</p>
 <ul>
-  <li>增加对于一对多接收方同步获取数据的机制</li>
-  <li>允许发送方在指定时间外丢弃数据，保证接收方数据满足时效要求</li>
+  <li><code class="highlighter-rouge">OSSpinLock</code> 自旋锁，一直处于忙等状态</li>
+  <li><code class="highlighter-rouge">os_unfair_lock</code> 互斥锁，等待锁的线程处于休眠状态，节省资源</li>
 </ul>
 
-<p>该通道支持链接模式和广播模式.
-俩种模式下 ISO异同点：</p>
+<p><img src="http://image.smartjames.cn/mweb/20201010/16023185133777.jpg" alt="3" /></p>
+
 <ul>
-  <li>每个BIG CIG最多包含31个BIS CIS</li>
-  <li>CIS中从设备对主设备有信息反馈，BIS没有</li>
-  <li>BIS重传是通过接收方信息反馈决定， CIS是强制的</li>
-  <li>CIG中CIS同步通过CIG的时间以及CIS时间参数实现，BIG中的BIS通过周期广播的PDU实现</li>
+  <li>
+    <p><code class="highlighter-rouge">pthread_mutex</code> 互斥锁，等待锁的线程处于休眠状态
+<img src="http://image.smartjames.cn/mweb/20201010/16023185345005.jpg" alt="4" /></p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">pthread_mutex</code>的条件锁
+<img src="http://image.smartjames.cn/mweb/20201010/16023185451423.jpg" alt="5" /></p>
+  </li>
+  <li><code class="highlighter-rouge">NSLock</code>  对于pthread_mutex的OC封装</li>
+  <li><code class="highlighter-rouge">NSRecursiveLock</code>  对于pthread_mutex的OC封装</li>
+  <li><code class="highlighter-rouge">NSCondition</code>  对于pthread_mutex 和 condition的OC封装</li>
+  <li><code class="highlighter-rouge">dispatch_queue(DISPATCH_QUEUE_SERIAL)</code> 把不同线程的任务放在同步队列中执行，能达到锁的效果</li>
+  <li><code class="highlighter-rouge">dispatch_semaphore</code> 信号量， 初始化赋一个最多同时执行线程数量，如果是1就实现了锁的效果</li>
 </ul>
 
-<p>能实现多重串流音频（Multi-Stream Audio）和音频分享（Audio Sharing）</p>
+<p>锁都是由于不同线程的问题导致的，如果条件锁在一个线程有wait，没有其他线程signal,就会永远睡眠下去。wait后的代码不会执行。</p>
 
-<h5 id="链接模式">链接模式</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>称作CIS (LE Connected Isochronous Stream)逻辑传输通道，可将延迟数据丢弃。 不同的CIS组成CIG ( Connected Isochronous Groups ),同一个CIG内的CIS有相同的时间戳，保证同一个group内数据同步。例如一对TWS耳机
-</code></pre></div></div>
+<p><strong>队列和线程是2个概念，队列中的任务可以在不同的线程中去执行。例如用globalQueue来创建不同的线程任务，所以可以使用串行队列来实现线程锁的问题，只要保证任务都加入到队列中执行即可</strong></p>
 
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002632747277.png" alt="" /></p>
+<p>atomic 用于保证setter、 getter的操作原子性，在方法内部加上线程同步锁</p>
 
-<h5 id="广播模式">广播模式</h5>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>称作BIS (Broadcast Isochronous Stream)。 多个BIS 可组成BIG (Broadcast Isochronous Groups).通过一个周期广播的PUD实现。 该PDU包含针对每个BIS的时间戳，一旦同步，广播接收者变成同步接收者。例如，广场舞大妈蓝牙耳机听同一音源歌曲。
-</code></pre></div></div>
-
-<p><img src="http://image.smartjames.cn/mweb/20200916/16002633057507.png" alt="" /></p>
+<h3 id="读写安全方案-保证同一时间只有一个线程写可以多个线程读不能同时读写">读写安全方案 ,保证同一时间只有一个线程写，可以多个线程读，不能同时读写</h3>
+<ul>
+  <li><code class="highlighter-rouge">pthread_rwlock</code> 读写锁</li>
+  <li><code class="highlighter-rouge">dispatch_barrier_async</code> 异步栅栏调用
+  <code class="highlighter-rouge">dispatch_asyn(que)</code> 用于读操作
+  <code class="highlighter-rouge">diapatch_barrier_async(que)</code> 用于写操作，可以保证当前队列中只有栅栏中的任务在执行，其他全部暂停。</li>
+</ul>
 
 
   </section>
@@ -372,13 +366,13 @@ SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据�
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/" data-toggle="tooltip" data-placement="top" title="蓝牙协议栈">上一篇：  <span>蓝牙协议栈</span>
+            <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/" data-toggle="tooltip" data-placement="top" title="iOS底层(5)-Block">上一篇：  <span>iOS底层(5)-Block</span>
             </a>
         </li>
         
         
         <li class="next">
-            <a href="/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="TCP相关控制算法详解">下一篇：  <span>TCP相关控制算法详解</span>
+            <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" data-toggle="tooltip" data-placement="top" title="iOS底层(7)- 内存管理">下一篇：  <span>iOS底层(7)- 内存管理</span>
             </a>
         </li>
         
