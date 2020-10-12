@@ -177,6 +177,48 @@
   <ol class="post-list">
     
     <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS-%E7%BB%84%E4%BB%B6%E5%8C%96%E6%96%B9%E6%A1%88%E9%80%89%E5%9E%8B/" title="访问 iOS 组件化方案选型">iOS 组件化方案选型</a></h2>
+      <p class="excerpt">一、组件化概念1.1、项目状态各模块直接调用，耦合严重。业务模块间划分不清晰，相互引用，模块之间耦合度很大，非常难维护。所有模块代码都编写在一个项目中，测试某个模块或功能，需要编译运行整个项目，不能独立运行。1.2、解决方案所有的模块间的调用都会经过中间层中转(参考Router)，但是发现增加这个中间层后，耦合还是存在的。中间层对被调用模块存在耦合，其他模块也需要耦合中间层才能发起调用。这样还是存在之前的相互耦合的问题，虽然可解决了统一调用的问题，而且本质上比之前更麻烦了。1.3、正确的组...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-10-12 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-10-12</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/10/iOS-%E7%BB%84%E4%BB%B6%E5%8C%96%E6%96%B9%E6%A1%88%E9%80%89%E5%9E%8B/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(8)-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" title="访问 iOS底层(8)- 性能优化">iOS底层(8)- 性能优化</a></h2>
+      <p class="excerpt">减少卡顿  尽量减少视图数量和层次  减少透明的视图  尽量避免出现离屏渲染离屏渲染如果要在显示屏上显示内容，我们至少需要一块与屏幕像素数据量一样大的frame buffer，作为像素数据存储区域，而这也是GPU存储渲染结果的地方。如果有时因为面临一些限制，无法把渲染结果直接写入frame buffer，而是先暂存在另外的内存区域，之后再写入frame buffer，那么这个过程被称之为离屏渲染。GPU离屏渲染：采用画家算法，把每一层依次输出到画布，如果父layer剪裁成圆角，容器子lay...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-10-10 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-10-10</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/10/iOS%E5%BA%95%E5%B1%82(8)-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
       <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" title="访问 iOS底层(7)- 内存管理">iOS底层(7)- 内存管理</a></h2>
       <p class="excerpt">浅拷贝和深拷贝拷贝的最终目的是产生一个副本，修改副本不会对原对象产生影响。故到底是深拷贝还是浅拷贝要根据这个规则来判断。  [任意对象 copy] 产生一个不可变对象，如果原对象是不可变对象，那么就是浅拷贝，因为不可变对象本身就不能修改，所以没必要创新分配内存。原对象是可变对象，就是深拷贝。  [任意对象 mutableCopy] 产生一个可变对象，不论原对象是否是可变对象，都是深拷贝，因为要产生修改不影响原对象的副本，必须重新分配内存。定义属性时使用copy修饰词，目的是在赋值之后产生一...&hellip;</p>
       <div class="post-list__meta">        
@@ -549,48 +591,6 @@
           </div>
           <div class = "post-list-small-mate">
           <a class="btn-border-small" href=/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/>阅读全文 » </a>
-          </div>
-      </div>
-      <hr class="post-list__divider" />
-    </li>
-    
-    <li>
-      <h2 class="post-list__post-title post-title"><a href="/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/" title="访问 SIG蓝牙协议5.2版本更新内容">SIG蓝牙协议5.2版本更新内容</a></h2>
-      <p class="excerpt">主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels背景介绍PUD: Protocol Data Unit 协议数据单元 被某一层处理为指定数据格式的数据。SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据，比如输入的数据，叫SDU,封装成PDU通过层与层之间的管道传输给下一层。本层的PDU是下一层的SDU,本层的SDU是上一层的PDU一、Enhan...&hellip;</p>
-      <div class="post-list__meta">        
-        <time datetime="2020-06-05 00:00:00 +0800" class="post-list__meta--date date">
-          <img src="/images/calendar.png" width="20px" /> 
-          2020-06-05</time> 
-        <div class = "tag-img-icon">
-          <img src="/images/tag-icon.svg" width="20px" /> 
-        </div>
-        <a href="/tags">
-          <div class = "post-list-icon-mate">
-            <span class="post-list__meta--tags-right">BLE</span>
-          </div>
-          <div class = "post-list-small-mate">
-          <a class="btn-border-small" href=/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/>阅读全文 » </a>
-          </div>
-      </div>
-      <hr class="post-list__divider" />
-    </li>
-    
-    <li>
-      <h2 class="post-list__post-title post-title"><a href="/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/" title="访问 蓝牙协议栈">蓝牙协议栈</a></h2>
-      <p class="excerpt">协议栈内容PHY层Physical layer 用来指定BLE所用的无线频段，调试解调方式和方法等。LL层link layer 是协议栈的核心，选择使用哪个射频通道进行通信，怎么识别inflight数据包，在哪个时间点发送数据包，哪个时间点接收数据包，怎么保证数据完整性，ACK接收，如何重传，链路管理控制等。HCI层Host controller interface  HCI是可选的，主要用于2颗芯片实现BLE协议栈的场合，规范两者之间的通信协议和通信命令等GAP层Generic acce...&hellip;</p>
-      <div class="post-list__meta">        
-        <time datetime="2020-06-01 00:00:00 +0800" class="post-list__meta--date date">
-          <img src="/images/calendar.png" width="20px" /> 
-          2020-06-01</time> 
-        <div class = "tag-img-icon">
-          <img src="/images/tag-icon.svg" width="20px" /> 
-        </div>
-        <a href="/tags">
-          <div class = "post-list-icon-mate">
-            <span class="post-list__meta--tags-right">BLE</span>
-          </div>
-          <div class = "post-list-small-mate">
-          <a class="btn-border-small" href=/2020/06/%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE%E6%A0%88/>阅读全文 » </a>
           </div>
       </div>
       <hr class="post-list__divider" />

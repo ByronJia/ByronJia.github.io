@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>iOS底层(7)- 内存管理</title>
-  <meta name="description" content="浅拷贝和深拷贝拷贝的最终目的是产生一个副本，修改副本不会对原对象产生影响。故到底是深拷贝还是浅拷贝要根据这个规则来判断。">
+  <title>iOS底层(8)- 性能优化</title>
+  <meta name="description" content="减少卡顿  尽量减少视图数量和层次  减少透明的视图  尽量避免出现离屏渲染">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="iOS底层(7)- 内存管理">
-  <meta name="twitter:description" content="浅拷贝和深拷贝拷贝的最终目的是产生一个副本，修改副本不会对原对象产生影响。故到底是深拷贝还是浅拷贝要根据这个规则来判断。">
+  <meta name="twitter:title" content="iOS底层(8)- 性能优化">
+  <meta name="twitter:description" content="减少卡顿  尽量减少视图数量和层次  减少透明的视图  尽量避免出现离屏渲染">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="iOS底层(7)- 内存管理">
-  <meta property="og:description" content="浅拷贝和深拷贝拷贝的最终目的是产生一个副本，修改副本不会对原对象产生影响。故到底是深拷贝还是浅拷贝要根据这个规则来判断。">
+  <meta property="og:title" content="iOS底层(8)- 性能优化">
+  <meta property="og:description" content="减少卡顿  尽量减少视图数量和层次  减少透明的视图  尽量避免出现离屏渲染">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">
+  <link rel="canonical" href="http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(8)-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -192,7 +192,7 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">iOS底层(7)- 内存管理</h1>
+    <h1 class="post-title">iOS底层(8)- 性能优化</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
       <time datetime="2020-10-10 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-10-10</time>  
@@ -205,85 +205,98 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#浅拷贝和深拷贝">浅拷贝和深拷贝</a></li>
-  <li><a href="#cadisplaylink-和-nstimer使用问题">CADisplayLink 和 NSTimer使用问题</a></li>
-  <li><a href="#内存布局">内存布局</a></li>
-  <li><a href="#tagged-pointer">Tagged Pointer</a></li>
-  <li><a href="#引用计数管理">引用计数管理</a></li>
-  <li><a href="#weak-指针原理">weak 指针原理</a></li>
-  <li><a href="#自动释放池">自动释放池</a></li>
-  <li><a href="#对象释放时机">对象释放时机</a></li>
+  <li><a href="#减少卡顿">减少卡顿</a></li>
+  <li><a href="#离屏渲染">离屏渲染</a>
+    <ul>
+      <li><a href="#消耗性能原因">消耗性能原因</a></li>
+      <li><a href="#哪些会触发离屏渲染">哪些会触发离屏渲染</a></li>
+    </ul>
+  </li>
+  <li><a href="#卡顿检测">卡顿检测</a></li>
+  <li><a href="#app启动优化">APP启动优化</a></li>
 </ul>
 
   
 
   <section class="post">
-    <h2 id="浅拷贝和深拷贝">浅拷贝和深拷贝</h2>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>拷贝的最终目的是产生一个副本，修改副本不会对原对象产生影响。故到底是深拷贝还是浅拷贝要根据这个规则来判断。
-</code></pre></div></div>
-
+    <h3 id="减少卡顿">减少卡顿</h3>
 <ul>
-  <li>[任意对象 copy] 产生一个不可变对象，如果原对象是不可变对象，那么就是浅拷贝，因为不可变对象本身就不能修改，所以没必要创新分配内存。原对象是可变对象，就是深拷贝。</li>
-  <li>[任意对象 mutableCopy] 产生一个可变对象，不论原对象是否是可变对象，都是深拷贝，因为要产生修改不影响原对象的副本，必须重新分配内存。</li>
+  <li>尽量减少视图数量和层次</li>
+  <li>减少透明的视图</li>
+  <li>尽量避免出现离屏渲染</li>
 </ul>
 
-<p><img src="http://image.smartjames.cn/mweb/20201010/16023208497217.png" style="zoom=50%" /></p>
+<h3 id="离屏渲染">离屏渲染</h3>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>如果要在显示屏上显示内容，我们至少需要一块与屏幕像素数据量一样大的frame buffer，作为像素数据存储区域，而这也是GPU存储渲染结果的地方。
+如果有时因为面临一些限制，无法把渲染结果直接写入frame buffer，而是先暂存在另外的内存区域，之后再写入frame buffer，那么这个过程被称之为离屏渲染。
+</code></pre></div></div>
 
-<p>定义属性时使用copy修饰词，目的是在赋值之后产生一个不可变对象，那么在修改外部变量的时候不影响内部，例如UI控件的text都是copy修饰，防止外部修改影响内部实现。</p>
+<p>GPU离屏渲染：采用画家算法，把每一层依次输出到画布，如果父layer剪裁成圆角，容器子layer因为父容器有圆角，也要被剪裁，但这时还在渲染队列中，此时需要在新内存中，把容器以及子layer依次画好，剪裁完成，再放到<code class="highlighter-rouge">frame buffer</code>中。</p>
 
-<h2 id="cadisplaylink-和-nstimer使用问题">CADisplayLink 和 NSTimer使用问题</h2>
-<p>会对target 强引用，如果target也强引用他们，就发生循环引用问题
-解决方法是使用NSProxy，是和NSObject同一级别的基类，但是没有实现和声明多余的方法，只有alloc等。
-作用是只要方法列表里找不到方法，跳过动态方法解析，直接做转发。且NXProxy中弱引用target即可。</p>
+<h4 id="消耗性能原因">消耗性能原因</h4>
+<ul>
+  <li>需要创建新的缓冲区</li>
+  <li>整个过程需要多次切换上下文环境，从<code class="highlighter-rouge">on-screen</code> 到 <code class="highlighter-rouge">off-screen</code>，等渲染结束后，将离屏缓冲区结果显示到屏幕上，再讲上下文从<code class="highlighter-rouge">off-screen</code>切换到<code class="highlighter-rouge">on-screen</code></li>
+</ul>
 
-<h2 id="内存布局">内存布局</h2>
-<p><img src="http://image.smartjames.cn/mweb/20201010/16023208614585.png" alt="2" /></p>
+<h4 id="哪些会触发离屏渲染">哪些会触发离屏渲染</h4>
+<ul>
+  <li>光栅化   <code class="highlighter-rouge">layer.shouldRasterize= YES</code>。 隐式的创建一个位图，各种阴影遮罩效果保存在位图中缓存，如果对应的layer极其sublayers没有发生改变，在下一帧的时候可以直接复用，减少渲染频率。但是否有助于优化性能取决于缓存的位图是否被有效复用。</li>
+  <li>遮罩   <code class="highlighter-rouge">layer.mask</code></li>
+  <li>
+    <p>圆角   同时设置<code class="highlighter-rouge">layer.maskToBounds = YES</code>,  <code class="highlighter-rouge">layer.cornerRadius &gt;0</code></p>
+  </li>
+  <li>阴影 <code class="highlighter-rouge">layer.shadowoffset...</code>,    但是 <code class="highlighter-rouge">layer.shadowPath</code>不会产生离屏渲染</li>
+</ul>
 
-<h2 id="tagged-pointer">Tagged Pointer</h2>
-<p>从64位开始引入，目的是优化NSNumber, NSDate， NSString等小对象的存储，提高内存使用率<br />
-原来NSNumber占用一个对象的空间，指针还指向堆地址的值，最终可能只是为了存一个3。 就浪费很大空间</p>
+<h3 id="卡顿检测">卡顿检测</h3>
+<p>通过使用监听 runloop的状态切换的耗时达到监控卡顿的目的</p>
 
-<p>在使用Tagged pointer技术后，NSNumber 3的地址0x327, Tag+Data 的形式存储，从地址就能读到真实值，不需要额外空间。当内存地址长度超过64位后，才使用动态分配内存的方式存储数据。</p>
+<h3 id="app启动优化">APP启动优化</h3>
+<p>启动分为3大阶段</p>
+<ul>
+  <li><code class="highlighter-rouge">dyld(dynamic link editor)</code> 动态链接，装在Mach-O文件
+    <ul>
+      <li>装在APP可执行文件，递归加载所有依赖的动态库</li>
+      <li>都完毕后，通知runtime进行下一步处理</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">runtime</code>
+    <ul>
+      <li>调用<code class="highlighter-rouge">map_images</code> 进行执行文件内容的解析和处理</li>
+      <li>在<code class="highlighter-rouge">load_images</code>中调用<code class="highlighter-rouge">call_load_methods</code>， 调用所有class和<code class="highlighter-rouge">category</code>的 <code class="highlighter-rouge">+load</code>方法</li>
+      <li>进行objc结构初始化，注册类，初始化对象等</li>
+      <li>可执行文件和动态库中所有符号Class,Protocol, Selctor, IMP 都已经加载完成</li>
+      <li>调用Main函数</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">main</code>
+    <ul>
+      <li><code class="highlighter-rouge">UIApplicationMain</code>和 <code class="highlighter-rouge">didFinishLaunchingWithOptions</code>方法</li>
+    </ul>
+  </li>
+</ul>
 
-<p>如果地址最低有效位是1， 则是Tagged pointer</p>
+<p>优化方案：</p>
+<ul>
+  <li><code class="highlighter-rouge">dyld</code>
+    <ul>
+      <li>减少动态库，合并动态库</li>
+      <li>减少Objc类，分类的数量</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">runtime</code>
+    <ul>
+      <li>用<code class="highlighter-rouge">+initialize</code>方法和dispath_once代替+load方法</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">main</code>
+    <ul>
+      <li>按需加载</li>
+    </ul>
+  </li>
+</ul>
 
-<p><strong>注意</strong> ： 字符串想要使用tagged pointer, 初始化要用<code class="highlighter-rouge">[NSString stringWithFormat:]</code>，如果是@”xx”创建的是常规对象存在常量区。</p>
-<h2 id="引用计数管理">引用计数管理</h2>
-<p>新建OC对象引用计数默认是1，当调用alloc,new,copy,mutableCopy时对象引用计数会+1</p>
-
-<p><strong>引用计数存储</strong>：
-<img src="http://image.smartjames.cn/mweb/20201010/16023208775066.png" alt="3" /></p>
-
-<p>在64位优化后的isa共用体结构中，引用计数=extra_rc + sidetable_rc.refcnts[self].count,不是每个对象都会使用sidetable_rc,要看isa的标志位has_sidetable_rc.  <br />
-如果isa不是共用体结构，引用计数=sidetable_rc.refcnts[self].count
-<img src="http://image.smartjames.cn/mweb/20201010/16023208883784.png" alt="4" /></p>
-
-<p>refcnts是一个散列表，使用对象的地址为key,value为引用计数。
-获取引用计数、retain、release操作都是获取extra_rc的值+sidetable的值+1或-1. 如果是release则判断是否为0，为0就dealloc。</p>
-
-<h2 id="weak-指针原理">weak 指针原理</h2>
-<p>__weak: 弱引用对象，当对象销毁时指针置为空<br />
-__unsafe_unretain: 弱引用对象，当对象销毁时，指针不变，使用会发生坏内存访问</p>
-
-<p><strong>weak能在对象销毁置为空的原理：</strong>
-当自动调用dealloc方法时，判断是否有弱引用和<code class="highlighter-rouge">sidetable_rc</code>,（弱引用和超过计数器时都使用到了sidetable），有弱引用就将sidetable中自己对应的value取出来，得到一个__weak对象的地址集合(不确定是不是数组，因为用到C++的遍历器)， 并遍历将其置为nil
-<img src="http://image.smartjames.cn/mweb/20201010/16023209058628.png" alt="5" /></p>
-
-<h2 id="自动释放池">自动释放池</h2>
-<p>主要通过AutoreleasePoolPage来管理，结构如下</p>
-
-<p><img src="http://image.smartjames.cn/mweb/20201010/16023209189251.png" alt="6" /></p>
-
-<p>在@autoreleasePool代码开始时，调用<code class="highlighter-rouge">AutoreleasePoolPage</code>的<code class="highlighter-rouge">Push</code>方法，将<code class="highlighter-rouge">BOUNDARY</code> 添加到<code class="highlighter-rouge">Page</code>中，标记为开始，后续调用<code class="highlighter-rouge">autorelease</code>的对象也会添加到该<code class="highlighter-rouge">Page</code>中，在括号结束时，调用<code class="highlighter-rouge">Pop</code>方法时传入一个<code class="highlighter-rouge">POOL_BOUNDARY</code>的内存地址，会从最后一个入栈的对象开始发送<code class="highlighter-rouge">release</code>消息，直到遇到这个<code class="highlighter-rouge">POOL_BOUNDARY</code></p>
-
-<h2 id="对象释放时机">对象释放时机</h2>
-<p><strong>MRC</strong>: 对象创建时调用了autorelease方法   <br />
-系统在主线程的Runloop中注册了2个Observer,1个监听kCFRunLoopEntry时间，调用objc_autoreleasePoolPush()。另一个监听kCFRunLoopBeforeWaiting事件，调用objc_autoreleasePoolPop()、objc_autoreleasePoolPush()。
-监听kCFRunLoopBeforeExit事件调用objc_autoreleasePoolPop() <br />
-例如：viewdidload和viewwillappear 在一个loop中，即一次执行所有的block和sources，直到执行完毕loop睡眠，在睡眠之前会释放对象。</p>
-
-<p><strong>ARC</strong>:
-在括号结束时，LLVM编译器自动给对象release一次，而不是在runloop中执行。</p>
 
   </section>
 
@@ -353,13 +366,13 @@ __unsafe_unretain: 弱引用对象，当对象销毁时，指针不变，使用�
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" data-toggle="tooltip" data-placement="top" title="iOS底层(6)- runLoop & 多线程">上一篇：  <span>iOS底层(6)- runLoop & 多线程</span>
+            <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" data-toggle="tooltip" data-placement="top" title="iOS底层(7)- 内存管理">上一篇：  <span>iOS底层(7)- 内存管理</span>
             </a>
         </li>
         
         
         <li class="next">
-            <a href="/2020/10/iOS%E5%BA%95%E5%B1%82(8)-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" data-toggle="tooltip" data-placement="top" title="iOS底层(8)- 性能优化">下一篇：  <span>iOS底层(8)- 性能优化</span>
+            <a href="/2020/10/iOS-%E7%BB%84%E4%BB%B6%E5%8C%96%E6%96%B9%E6%A1%88%E9%80%89%E5%9E%8B/" data-toggle="tooltip" data-placement="top" title="iOS 组件化方案选型">下一篇：  <span>iOS 组件化方案选型</span>
             </a>
         </li>
         
