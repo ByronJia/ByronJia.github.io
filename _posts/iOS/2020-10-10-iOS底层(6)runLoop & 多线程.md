@@ -73,3 +73,26 @@ atomic 用于保证setter、 getter的操作原子性，在方法内部加上线
     `dispatch_asyn(que)` 用于读操作
     `diapatch_barrier_async(que)` 用于写操作，可以保证当前队列中只有栅栏中的任务在执行，其他全部暂停。
     
+### UIEvent 、UITouch 、UIResponder 和 UIControl
+
+**触摸事件的传递：**
+
+- 电容屏幕检测到电流变化，定位得到触摸点，生成`Touch Event`
+- `IOKit.framework`处理`Touch Event`,并封装为`IOHIDEvent`对象，通过内核的`mach port`机制，传递为window上当前app的主线程
+- app主线程`runloop`的`mach port`监听的就是`IOHIDEvent`的`Source1`事件，内部进一步分发为`Source0`，Source0事件是自定义的，非基于端口port,包括触摸，滚动，selector事件，并封装为`UIEvent`事件， 通过`UIApplication`对象`sendEvent`方法传递给`UIWindow`判断最佳响应者
+- Hit-Testing寻找最佳响应者，自下而上传递，即 `UIApplication -> UIWindow -> 子视图 -> ...->子视图中的子视图`;即响应链
+
+
+
+**UIEvent**: 代表一个单一类型的UIKit事件，可以是触摸，震动，按压等。
+
+**UITouch**:一次触摸生成一个`UITouch`,例如滑动由多个`UITouch`组合，所以`UIEvent`里包含多个触摸对象，通过`allTouches`获取。
+
+**UIResponder**: 继承`UIResponder`的实例对象可以对随机事件进行相应处理,例如`UIView` 、`UIViewController`、 `UIWindow`、 `UIApplication` 和`UIApplicationDelegate`, 默认实现 `touchesBegin` `touchesMove` `touchesEnded` `touchesCancelled`四个方法。
+
+**UIControl**:继承自`UIResponder`, 能够以`target-action`模式处理触摸事件，有`addTarget:action:forControlEvent:`方法，保存`target-action`到字典中，在接收到相应Event事件时取出对应action执行。
+
+
+
+
+
