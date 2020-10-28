@@ -236,40 +236,44 @@
 </code></pre></div></div>
 
 <h3 id="滑动窗口来提高传输速度">滑动窗口来提高传输速度</h3>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>原先发送发每发送一条数据，都要等待接收方的反馈才会发送下一条，这样效率太低。
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>原先发送方每发送一条数据，都要等待接收方的反馈才会发送下一条，这样效率太低。
 现在定义一个窗口大小，每次发送窗口大小内数据不等待反馈，全部发送完毕等待一次反馈，相比原来节约很多时。
 </code></pre></div></div>
 
 <p><img src="http://image.smartjames.cn/mweb/20200916/16002713341011.png" alt="截屏2020-07-27 下午11.11.45" /></p>
 
 <h3 id="滑动窗口与重发机制">滑动窗口与重发机制</h3>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>在使用窗口控制中，出现段丢失或者应答丢失会不会出发重传？ - **==数据应答丢失==** ![截屏2020-07-27 下午11.14.25](http://image.smartjames.cn/mweb/20200916/16002713675070.png)
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>在使用窗口控制中，出现段丢失或者应答丢失会不会出发重传？
 </code></pre></div></div>
 
 <ul>
-  <li><strong>==数据段丢失==</strong>
-<img src="http://image.smartjames.cn/mweb/20200916/16002713787395.png" alt="截屏2020-07-27 下午11.14.45" /></li>
+  <li>
+    <p><strong>数据应答丢失</strong>
+<img src="http://image.smartjames.cn/mweb/20200916/16002713675070.png" alt="截屏2020-07-27 下午11.14.25" /></p>
+  </li>
+  <li>
+    <p><strong>数据段丢失</strong>
+<img src="http://image.smartjames.cn/mweb/20200916/16002713787395.png" alt="截屏2020-07-27 下午11.14.45" /></p>
+  </li>
 </ul>
 
 <h3 id="流控制-flow-control">流控制 flow control</h3>
 <p>主要利用滑动窗口和上面相关设计实现，滑动窗口主要由接收方反馈缓存情况来维护，维护接收方的承受能力</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>接收端主机向发送端通知自己可以接收数据的大小，于是发送端会发生不超过这个限度的数据，
+<p>接收端主机向发送端通知自己可以接收数据的大小，于是发送端会发生不超过这个限度的数据，
 这个限度就是窗口大小，由接收端确定的。值越大说明网络的吞吐量越高。
-如果接收端数据缓冲区一旦溢出，窗口大小也会减小并发给发送端。
+如果接收端数据缓冲区一旦溢出，窗口大小也会减小并发给发送端。</p>
 
-若接收端无法及时清理缓冲区，导致缓冲区没有多于空间，发送方会等待接收方通知新的有效窗口值，
-如果过了超时时间没有收到新通知，会发送一个窗口探测包，获取窗口大小。
-</code></pre></div></div>
+<p>若接收端无法及时清理缓冲区，导致缓冲区没有多于空间，发送方会等待接收方通知新的有效窗口值，
+如果过了超时时间没有收到新通知，会发送一个窗口探测包，获取窗口大小。</p>
 
 <p><img src="http://image.smartjames.cn/mweb/20200916/16002714362536.png" alt="截屏2020-09-16 下午11.50.12" /></p>
 
 <h3 id="拥塞控制-congestion-control">拥塞控制 congestion control</h3>
 <p>主要利用拥塞窗口实现，拥塞窗口主要由发送方的拥塞控制算法检测出的网络拥塞程度来决定的，维护网络带宽的承受能力</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>慢启动的时候，初始大小设为1个MSS，发送后收到一个ACK，拥塞窗口增加1。
-在发送数据包时将拥塞窗口和滑动窗口做比较，用较小值继续作为阈值继续发送。
-</code></pre></div></div>
+<p>慢启动的时候，初始大小设为1个MSS，发送后收到一个ACK，拥塞窗口增加1。
+在发送数据包时将拥塞窗口和滑动窗口做比较，用较小值继续作为阈值继续发送。</p>
 
 <p><img src="http://image.smartjames.cn/mweb/20200916/16002714935699.png" alt="截屏2020-07-27 下午11.28.36" /></p>
 
@@ -277,8 +281,8 @@
 
 <p><img src="http://image.smartjames.cn/mweb/20200916/16002715071116.png" alt="截屏2020-07-27 下午11.28.42" /></p>
 
-<p>TCP刚开始没有设置慢启动阈值，所以会指数型上升直到遇到超时（采用重发机制,不同于下面的高速重发机制）(==①慢启动阶段==)。
-超出带宽上限。此时设置拥塞窗口为当时窗口一半的大小，cwnd缓慢增加( ==②拥塞避免阶段==)。</p>
+<p>TCP刚开始没有设置慢启动阈值，所以会指数型上升直到遇到超时（采用重发机制,不同于下面的高速重发机制）(<strong>①慢启动阶段</strong>)。
+超出带宽上限。此时设置拥塞窗口为当时窗口一半的大小，cwnd缓慢增加( <strong>②拥塞避免阶段</strong>)。</p>
 
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>超时重发： 数据段发送后，在一个时间周期内没有收到ACK，则自动重发
 快速重发： 在一个滑动窗口内，收到3次重复ACK,则启动重发，不需要等待超时

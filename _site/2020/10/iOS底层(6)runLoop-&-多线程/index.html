@@ -216,6 +216,7 @@
       <li><a href="#线程死锁">线程死锁</a></li>
       <li><a href="#线程锁">线程锁</a></li>
       <li><a href="#读写安全方案-保证同一时间只有一个线程写可以多个线程读不能同时读写">读写安全方案 ,保证同一时间只有一个线程写，可以多个线程读，不能同时读写</a></li>
+      <li><a href="#uievent-uitouch-uiresponder-和-uicontrol">UIEvent 、UITouch 、UIResponder 和 UIControl</a></li>
     </ul>
   </li>
 </ul>
@@ -296,6 +297,25 @@ while (1){
   <code class="highlighter-rouge">dispatch_asyn(que)</code> 用于读操作
   <code class="highlighter-rouge">diapatch_barrier_async(que)</code> 用于写操作，可以保证当前队列中只有栅栏中的任务在执行，其他全部暂停。</li>
 </ul>
+
+<h3 id="uievent-uitouch-uiresponder-和-uicontrol">UIEvent 、UITouch 、UIResponder 和 UIControl</h3>
+
+<p><strong>触摸事件的传递：</strong></p>
+
+<ul>
+  <li>电容屏幕检测到电流变化，定位得到触摸点，生成<code class="highlighter-rouge">Touch Event</code></li>
+  <li><code class="highlighter-rouge">IOKit.framework</code>处理<code class="highlighter-rouge">Touch Event</code>,并封装为<code class="highlighter-rouge">IOHIDEvent</code>对象，通过内核的<code class="highlighter-rouge">mach port</code>机制，传递为window上当前app的主线程</li>
+  <li>app主线程<code class="highlighter-rouge">runloop</code>的<code class="highlighter-rouge">mach port</code>监听的就是<code class="highlighter-rouge">IOHIDEvent</code>的<code class="highlighter-rouge">Source1</code>事件，内部进一步分发为<code class="highlighter-rouge">Source0</code>，Source0事件是自定义的，非基于端口port,包括触摸，滚动，selector事件，并封装为<code class="highlighter-rouge">UIEvent</code>事件， 通过<code class="highlighter-rouge">UIApplication</code>对象<code class="highlighter-rouge">sendEvent</code>方法传递给<code class="highlighter-rouge">UIWindow</code>判断最佳响应者</li>
+  <li>Hit-Testing寻找最佳响应者，自下而上传递，即 <code class="highlighter-rouge">UIApplication -&gt; UIWindow -&gt; 子视图 -&gt; ...-&gt;子视图中的子视图</code>;即响应链</li>
+</ul>
+
+<p><strong>UIEvent</strong>: 代表一个单一类型的UIKit事件，可以是触摸，震动，按压等。</p>
+
+<p><strong>UITouch</strong>:一次触摸生成一个<code class="highlighter-rouge">UITouch</code>,例如滑动由多个<code class="highlighter-rouge">UITouch</code>组合，所以<code class="highlighter-rouge">UIEvent</code>里包含多个触摸对象，通过<code class="highlighter-rouge">allTouches</code>获取。</p>
+
+<p><strong>UIResponder</strong>: 继承<code class="highlighter-rouge">UIResponder</code>的实例对象可以对随机事件进行相应处理,例如<code class="highlighter-rouge">UIView</code> 、<code class="highlighter-rouge">UIViewController</code>、 <code class="highlighter-rouge">UIWindow</code>、 <code class="highlighter-rouge">UIApplication</code> 和<code class="highlighter-rouge">UIApplicationDelegate</code>, 默认实现 <code class="highlighter-rouge">touchesBegin</code> <code class="highlighter-rouge">touchesMove</code> <code class="highlighter-rouge">touchesEnded</code> <code class="highlighter-rouge">touchesCancelled</code>四个方法。</p>
+
+<p><strong>UIControl</strong>:继承自<code class="highlighter-rouge">UIResponder</code>, 能够以<code class="highlighter-rouge">target-action</code>模式处理触摸事件，有<code class="highlighter-rouge">addTarget:action:forControlEvent:</code>方法，保存<code class="highlighter-rouge">target-action</code>到字典中，在接收到相应Event事件时取出对应action执行。</p>
 
 
   </section>

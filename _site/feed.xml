@@ -5,8 +5,8 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 12 Oct 2020 16:23:38 +0800</pubDate>
-    <lastBuildDate>Mon, 12 Oct 2020 16:23:38 +0800</lastBuildDate>
+    <pubDate>Tue, 27 Oct 2020 14:29:47 +0800</pubDate>
+    <lastBuildDate>Tue, 27 Oct 2020 14:29:47 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -459,6 +459,25 @@ while (1){
   &lt;code class=&quot;highlighter-rouge&quot;&gt;dispatch_asyn(que)&lt;/code&gt; 用于读操作
   &lt;code class=&quot;highlighter-rouge&quot;&gt;diapatch_barrier_async(que)&lt;/code&gt; 用于写操作，可以保证当前队列中只有栅栏中的任务在执行，其他全部暂停。&lt;/li&gt;
 &lt;/ul&gt;
+
+&lt;h3 id=&quot;uievent-uitouch-uiresponder-和-uicontrol&quot;&gt;UIEvent 、UITouch 、UIResponder 和 UIControl&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;触摸事件的传递：&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;电容屏幕检测到电流变化，定位得到触摸点，生成&lt;code class=&quot;highlighter-rouge&quot;&gt;Touch Event&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;IOKit.framework&lt;/code&gt;处理&lt;code class=&quot;highlighter-rouge&quot;&gt;Touch Event&lt;/code&gt;,并封装为&lt;code class=&quot;highlighter-rouge&quot;&gt;IOHIDEvent&lt;/code&gt;对象，通过内核的&lt;code class=&quot;highlighter-rouge&quot;&gt;mach port&lt;/code&gt;机制，传递为window上当前app的主线程&lt;/li&gt;
+  &lt;li&gt;app主线程&lt;code class=&quot;highlighter-rouge&quot;&gt;runloop&lt;/code&gt;的&lt;code class=&quot;highlighter-rouge&quot;&gt;mach port&lt;/code&gt;监听的就是&lt;code class=&quot;highlighter-rouge&quot;&gt;IOHIDEvent&lt;/code&gt;的&lt;code class=&quot;highlighter-rouge&quot;&gt;Source1&lt;/code&gt;事件，内部进一步分发为&lt;code class=&quot;highlighter-rouge&quot;&gt;Source0&lt;/code&gt;，Source0事件是自定义的，非基于端口port,包括触摸，滚动，selector事件，并封装为&lt;code class=&quot;highlighter-rouge&quot;&gt;UIEvent&lt;/code&gt;事件， 通过&lt;code class=&quot;highlighter-rouge&quot;&gt;UIApplication&lt;/code&gt;对象&lt;code class=&quot;highlighter-rouge&quot;&gt;sendEvent&lt;/code&gt;方法传递给&lt;code class=&quot;highlighter-rouge&quot;&gt;UIWindow&lt;/code&gt;判断最佳响应者&lt;/li&gt;
+  &lt;li&gt;Hit-Testing寻找最佳响应者，自下而上传递，即 &lt;code class=&quot;highlighter-rouge&quot;&gt;UIApplication -&amp;gt; UIWindow -&amp;gt; 子视图 -&amp;gt; ...-&amp;gt;子视图中的子视图&lt;/code&gt;;即响应链&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;UIEvent&lt;/strong&gt;: 代表一个单一类型的UIKit事件，可以是触摸，震动，按压等。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;UITouch&lt;/strong&gt;:一次触摸生成一个&lt;code class=&quot;highlighter-rouge&quot;&gt;UITouch&lt;/code&gt;,例如滑动由多个&lt;code class=&quot;highlighter-rouge&quot;&gt;UITouch&lt;/code&gt;组合，所以&lt;code class=&quot;highlighter-rouge&quot;&gt;UIEvent&lt;/code&gt;里包含多个触摸对象，通过&lt;code class=&quot;highlighter-rouge&quot;&gt;allTouches&lt;/code&gt;获取。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;UIResponder&lt;/strong&gt;: 继承&lt;code class=&quot;highlighter-rouge&quot;&gt;UIResponder&lt;/code&gt;的实例对象可以对随机事件进行相应处理,例如&lt;code class=&quot;highlighter-rouge&quot;&gt;UIView&lt;/code&gt; 、&lt;code class=&quot;highlighter-rouge&quot;&gt;UIViewController&lt;/code&gt;、 &lt;code class=&quot;highlighter-rouge&quot;&gt;UIWindow&lt;/code&gt;、 &lt;code class=&quot;highlighter-rouge&quot;&gt;UIApplication&lt;/code&gt; 和&lt;code class=&quot;highlighter-rouge&quot;&gt;UIApplicationDelegate&lt;/code&gt;, 默认实现 &lt;code class=&quot;highlighter-rouge&quot;&gt;touchesBegin&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;touchesMove&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;touchesEnded&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;touchesCancelled&lt;/code&gt;四个方法。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;UIControl&lt;/strong&gt;:继承自&lt;code class=&quot;highlighter-rouge&quot;&gt;UIResponder&lt;/code&gt;, 能够以&lt;code class=&quot;highlighter-rouge&quot;&gt;target-action&lt;/code&gt;模式处理触摸事件，有&lt;code class=&quot;highlighter-rouge&quot;&gt;addTarget:action:forControlEvent:&lt;/code&gt;方法，保存&lt;code class=&quot;highlighter-rouge&quot;&gt;target-action&lt;/code&gt;到字典中，在接收到相应Event事件时取出对应action执行。&lt;/p&gt;
 
 </description>
         <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
