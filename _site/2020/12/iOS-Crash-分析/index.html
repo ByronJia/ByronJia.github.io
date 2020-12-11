@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <title>iOS Crash 分析</title>
+  <meta name="description" content="关于Crash当app发生crash时，系统会生成crash report 存储在设备上，其中会描述app在何种情况下被系统终止，一般会包括完整的线程调用堆栈。包括以下2种report:  Crash report:包含堆栈信息，被符号化之前是运行内容中的实际函数地址，需要将report与 .dSYM或 .app...">
+  <meta name="author" content="leopardpan">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="iOS Crash 分析">
+  <meta name="twitter:description" content="关于Crash当app发生crash时，系统会生成crash report 存储在设备上，其中会描述app在何种情况下被系统终止，一般会包括完整的线程调用堆栈。包括以下2种report:  Crash report:包含堆栈信息，被符号化之前是运行内容中的实际函数地址，需要将report与 .dSYM或 .app...">
+  
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="iOS Crash 分析">
+  <meta property="og:description" content="关于Crash当app发生crash时，系统会生成crash report 存储在设备上，其中会描述app在何种情况下被系统终止，一般会包括完整的线程调用堆栈。包括以下2种report:  Crash report:包含堆栈信息，被符号化之前是运行内容中的实际函数地址，需要将report与 .dSYM或 .app...">
+  
+  <link rel="icon" type="image/png" href="/images/favicon.png" />
+  <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link rel="canonical" href="http://localhost:4000/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/">
+  <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
+  
+  <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
+
+  <!-- google 广告代码 -->
+  <script data-ad-client="ca-pub-1488511477321962" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  
+<!-- 站点统计 不蒜子 -->
+  <script 
+  async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>  
+
+<!-- 百度统计 -->
+  
+  <script>
+      var _hmt = _hmt || [];
+      (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?04766feadab5e00060a50dc5959c98e2";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+      })();
+  </script>
+  
+
+<!-- google 统计 -->
+  
+  <!-- <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-177644508-1', 'auto');
+      ga('send', 'pageview');
+  </script> -->
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-177644508-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-177644508-1');
+  </script>
+
+  
+
+  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-9005224472374751",
+    enable_page_level_ads: true
+  });
+</script>
+
+</head>
+
+
+  <body>
+
+    <span class="mobile btn-mobile-menu">        
+      <div class="nav_container">
+         <nav class="nav-menu-item" style = "float:right">
+            <i class="nav-menu-item">
+              <a href="/#blog" title="" class="blog-button">  博客主页
+              </a>
+            </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/archive" title="archive" class="btn-mobile-menu__icon">
+                      所有文章
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/tags" title="tags" class="btn-mobile-menu__icon">
+                      标签
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/about" title="about" class="btn-mobile-menu__icon">
+                      关于我
+                  </a>
+                </i>
+            
+          </nav>
+      </div>
+    </span>
+    
+    <header class="panel-cover panel-cover--collapsed" style="background-image: url('/images/background-cover.jpg')">
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+        <!-- 头像效果-start -->
+        <div class="ih-item circle effect">            
+            <a href="/#blog" title="前往 拜伦的博客 的主页" class="blog-button">
+                <div class="img"><img src="/images/avatar.jpg" alt="img"></div>
+            </a>
+        </div>
+        <!-- 头像效果-end -->
+        <h1 class="panel-cover__title panel-title"><a href="/#blog" title="link to homepage for 拜伦的博客" class="blog-button">拜伦的博客</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">Coder Byron</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">这里有关于iOS,机器学习的笔记心得,欢迎交流</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        
+        
+
+        <div class="navigation-wrapper">
+          <div>
+            <nav class="cover-navigation cover-navigation--primary">
+              <ul class="navigation">
+                <li class="navigation__item"><a href="/#blog" title="" class="blog-button">博客主页</a></li>
+                
+                  <li class="navigation__item"><a href="/archive" title="archive">所有文章</a></li>
+                
+                  <li class="navigation__item"><a href="/tags" title="tags">标签</a></li>
+                
+                  <li class="navigation__item"><a href="/about" title="about">关于我</a></li>
+                
+              </ul>
+            </nav>
+          </div>          
+        </div>
+
+
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class="panel-cover--overlay cover-gray"></div>
+    
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <head>
+  <link rel="stylesheet" href="/css/post.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.0.0/mermaid.min.js"></script>
+<script>
+  var config = {
+    startOnLoad:true,
+    theme: 'forest',
+    flowchart:{
+            useMaxWidth:false,
+            htmlLabels:true
+        }
+  };
+  mermaid.initialize(config);
+  window.mermaid.init(undefined, document.querySelectorAll('.language-mermaid'));
+</script>
+
+</head>
+
+<article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
+  <header class="post-header">
+    <h1 class="post-title">iOS Crash 分析</h1>
+    <div class="post-meta">
+      <img src="/images/calendar.png" width="20px"/> 
+      <time datetime="2020-12-11 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-12-11</time>  
+
+      <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
+    </p>
+    </div>
+  </header>
+
+  
+    <h2 class="post-title">目录</h2>
+    <ul>
+  <li><a href="#关于crash">关于Crash</a></li>
+  <li><a href="#符号化">符号化</a></li>
+  <li><a href="#异常信息">异常信息</a></li>
+  <li><a href="#看门狗">看门狗</a></li>
+  <li><a href="#常见异常类型">常见异常类型</a>
+    <ul>
+      <li><a href="#bad-memory-access-exc_bad_access--sigsegv--sigbus">Bad Memory Access [EXC_BAD_ACCESS // SIGSEGV // SIGBUS]</a></li>
+      <li><a href="#abnormal-exit-exc_crash--sigabrt">Abnormal Exit [EXC_CRASH // SIGABRT]</a></li>
+      <li><a href="#trace-trap-exc_breakpoint--sigtrap">Trace Trap [EXC_BREAKPOINT // SIGTRAP]</a></li>
+      <li><a href="#illegal-instruction-exc_bad_instruction--sigill">Illegal Instruction [EXC_BAD_INSTRUCTION // SIGILL]</a></li>
+      <li><a href="#quit-sigquit">Quit [SIGQUIT]</a></li>
+      <li><a href="#killedsigkill">Killed[SIGKILL]</a></li>
+      <li><a href="#guarded-resource-violation-exc_guard">Guarded Resource Violation [EXC_GUARD]</a></li>
+      <li><a href="#resource-limit-exc_resource">Resource Limit [EXC_RESOURCE]</a></li>
+      <li><a href="#other-exception-types">Other Exception Types</a></li>
+    </ul>
+  </li>
+</ul>
+
+  
+
+  <section class="post">
+    <h3 id="关于crash">关于Crash</h3>
+<p>当app发生crash时，系统会生成crash report 存储在设备上，其中会描述app在何种情况下被系统终止，一般会包括完整的线程调用堆栈。包括以下2种report:</p>
+<ul>
+  <li>Crash report:包含堆栈信息，被符号化之前是运行内容中的实际函数地址，需要将report与 .dSYM或 .app共同分析出内存中的实际地址映射的函数方法，从而便于定位问题。</li>
+  <li>Low Memory report:没有堆栈信息，由于低内存引发crash，下面会详细介绍</li>
+</ul>
+
+<h3 id="符号化">符号化</h3>
+<p>crash符号化常用的3个文件</p>
+<ul>
+  <li>symbolicatecrash：是系统提供的符号化执行程序，依赖于.dSYM、.crash 和.app  3个文件</li>
+  <li>.dSYM : 编译器在把你的源代码转换成机器码的同时，也会生成一份对应的Debug符号表,保存十六进制函数地址映射信息，通过他能得知log中的堆栈地址与具体方法的地址的映射关系</li>
+  <li>.crash : 是系统保存的崩溃日志文件，包括所有线程状态，和方法调用堆栈</li>
+</ul>
+
+<p>也可使用atos命令符号化， 只需要.crash和 .dSYM和app其中一个即可。
+以下是符号化之前和符号化之后的堆栈信息，第3行符号化之后即可看到自己实现的函数名
+<img src="http://image.smartjames.cn/mweb/20201211/16076544840576.png" style="zoom:80%" /></p>
+
+<p><img src="http://image.smartjames.cn/mweb/20201211/16076544907887.png" style="zoom:80%" /></p>
+
+<p>为什么系统函数的堆栈能打印出来？
+因为系统函数的符号表在xcode中已经内置，且不同系统版本不一样，所以每次我们在升级xcode后，就会包含xcode支持的最新iOS系统的符号表。</p>
+
+<h3 id="异常信息">异常信息</h3>
+<p>carsh report 中的字段能提供异常信息，便于从宏观角度分析crash的原因。</p>
+
+<p>下面是由于<code class="highlighter-rouge">uncaught Objective-C exception</code>而导致的进程被停止的crash report的摘录</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Exception Type: EXC_CRASH (SIGABRT)
+Exception Codes: 0x0000000000000000, 0x0000000000000000
+Exception Note: EXC_CORPSE_NOTIFY
+Triggered by Thread: 0
+</code></pre></div></div>
+
+<p>下面是由于反向引用了一个NULL指针而造成进程被终止的crash report的摘录</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Exception Type: EXC_BAD_ACCESS (SIGSEGV)
+Exception Subtype: KERN_INVALID_ADDRESS at 0x0000000000000000
+Termination Signal: Segmentation fault: 11
+Termination Reason: Namespace SIGNAL, Code 0xb
+Terminating Process: exc handler [0]
+Triggered by Thread: 0
+</code></pre></div></div>
+
+<p>其中
+<code class="highlighter-rouge">Exception Type</code>: 异常类型，下面会详细定义不同类型的含义。
+<code class="highlighter-rouge">Exception Codes</code> ：和异常是有关的处理器指定信息，这些信息会被编码成一个或者多个64位二进制数字。一般来说，这个字段不应该存在，因为crash report生成时会把exception code转化成可读的信息并在其它字段进行体现。</p>
+
+<p><code class="highlighter-rouge">Exception Subtype</code>：可读的exception code的名称。</p>
+
+<p><code class="highlighter-rouge">Exception Message</code>：从exception code中解析出来的附加的可读信息。</p>
+
+<p><code class="highlighter-rouge">Exception Note</code>：不特指某一种异常的额外信息。如果这个字段包含”SIMULATED”(不是Crash)，则进程并没有发生crash，而是在系统层面被kill掉了，比如看门狗机制。</p>
+
+<p><code class="highlighter-rouge">Termination Reason</code>：当进程被终止时的原因及信息。关键的信息模块，不论是进程内还是进程外，当遇到一个致命错误（fatal error，例如bad code signature，缺失依赖库，不恰当的访问私有敏感信息等）。MacOS Sierra,iOS 10, watch OS3和tvOS 10 已经采用新的架构去记录这些错误信息，所以这些系统之下的crash report会在Termination Reason这个字段里描述error message信息。</p>
+
+<p><code class="highlighter-rouge">Triggered by Thread</code>：指出异常是在哪个线程发生的</p>
+
+<h3 id="看门狗">看门狗</h3>
+<p>为了防止应用占用过多系统资源，看门狗机制能检测应用性能，若超出阈值，看门狗会强制终结这个应用的进程。</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>触发时机</th>
+      <th>看门狗出动的时间</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>启动</td>
+      <td>20秒</td>
+    </tr>
+    <tr>
+      <td>恢复运行</td>
+      <td>10秒</td>
+    </tr>
+    <tr>
+      <td>挂起进程</td>
+      <td>10秒</td>
+    </tr>
+    <tr>
+      <td>退出应用</td>
+      <td>6秒</td>
+    </tr>
+    <tr>
+      <td>后台运行</td>
+      <td>10分钟</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="常见异常类型">常见异常类型</h3>
+<h4 id="bad-memory-access-exc_bad_access--sigsegv--sigbus">Bad Memory Access [EXC_BAD_ACCESS // SIGSEGV // SIGBUS]</h4>
+<p>进程试图访问无效的内存空间，或尝试访问的方法不允许(例如去写只读的内存空间)</p>
+
+<h4 id="abnormal-exit-exc_crash--sigabrt">Abnormal Exit [EXC_CRASH // SIGABRT]</h4>
+<p>进程异常退出，常见原因是<code class="highlighter-rouge">uncaught Objective-C/C++ exception</code> 并且调用了abort()。</p>
+
+<h4 id="trace-trap-exc_breakpoint--sigtrap">Trace Trap [EXC_BREAKPOINT // SIGTRAP]</h4>
+<p>和<code class="highlighter-rouge">Abnormal Exit</code>类似，这种异常是由于在特殊的节点加入debugger调试节点的原因。</p>
+
+<h4 id="illegal-instruction-exc_bad_instruction--sigill">Illegal Instruction [EXC_BAD_INSTRUCTION // SIGILL]</h4>
+<p>尝试执行一个非法或者未定义的指令时会触发该异常。</p>
+
+<h4 id="quit-sigquit">Quit [SIGQUIT]</h4>
+<p>这个异常是由于其他进程拥有高优先级且可以管理本进程所导致（被高优先级进程kill掉）。</p>
+
+<h4 id="killedsigkill">Killed[SIGKILL]</h4>
+<p>进程收到系统指令被干掉，可以自行查看Termination Reason来定位线程被干掉的原因。</p>
+
+<h4 id="guarded-resource-violation-exc_guard">Guarded Resource Violation [EXC_GUARD]</h4>
+<p>进程访问了一个被保护的资源。</p>
+
+<h4 id="resource-limit-exc_resource">Resource Limit [EXC_RESOURCE]</h4>
+<p>进程的资源超过限定阈值，表示进程占用太多资源，<code class="highlighter-rouge">Exception Subtype</code>会提示原因，例如</p>
+<ul>
+  <li><code class="highlighter-rouge">MEMORY</code>:暗示了进程占用已经超过系统限制。如果之后出现由于系统占用过多进程被Kill，可能和这有关。</li>
+  <li><code class="highlighter-rouge">WAKEUP</code>:暗示线程每秒被进程唤醒太多次了，进而导致CPU被频繁唤醒并且造成电量损耗。
+通常，这种事发生在线程间通信（通过<code class="highlighter-rouge">peformSelector:onThread:</code>或者<code class="highlighter-rouge">dispatch_async</code>），而且会远比预想的发生的更频繁。因为发生这种异常的通信被触发的如此频繁，所以很多后台线程会出现彼此高度雷同的堆栈信息——恰恰暗示了它们是从哪儿来的。</li>
+</ul>
+
+<h4 id="other-exception-types">Other Exception Types</h4>
+<p>有些report可能出现无名的<code class="highlighter-rouge">Exception Type</code>，取而代之出现的是16进制的地址(0x12387617823)，下面列举一些</p>
+
+<ul>
+  <li><code class="highlighter-rouge">0xbaaaaaad</code>: 则说明此条logs是系统堆栈快照，并非crash report。可以通过同时按（手机）侧边按钮和音量键来记录堆栈快照。通常情况下，这些logs是用户无意中生成的，并非表示错误。</li>
+  <li><code class="highlighter-rouge">0xbad22222</code>: 表示一个VoIP应用因为频繁暂停被iOS系统终止掉。</li>
+  <li><code class="highlighter-rouge">0x8badf00d</code>:（读起来像badfood）则说明一个应用因为触发了看门狗机制被iOS系统终止掉，有可能是应用花了太长时间启动，终止，或者是响应系统事件。一种常见原因是在主线程上做网络同步逻辑。不论Thread0上（也就是主线程）想做什么（重要的事），都应该转移到后台线程，或者换一种方式触发，这样它才不会阻塞主线程。</li>
+  <li><code class="highlighter-rouge">0xc00010ff</code>: 则说明app因为环境过热（的事件）被iOS系统干掉了。这个也许是和发生crash的特定设备有关，或者是和它所在的环境有关。</li>
+  <li><code class="highlighter-rouge">0xdead10cc</code>: (读起来像deadlock)则说明一个应用被系统终止掉，原因是在应用挂起时拿到了文件锁或者sqlite数据库所长期不释放直到被冻结。如果你的app在挂起时拿到了文件锁或者sqlite数据库锁，它必须请求额外的后台执行时间(request additional background execution time )并在被挂起前完成解锁操作。</li>
+  <li><code class="highlighter-rouge">0x2bad45ec</code>: 则说明app因为违规操作（安全违规）被iOS系统终止。终止描述会写：“进程被查到在安全模式进行非安全操作”，暗示app尝试在禁止屏幕绘制的时候绘制屏幕，例如当屏幕锁定时。用户可能会忽略这种异常，尤其当屏幕是关闭的或者当这种终止发生时正好锁屏。</li>
+</ul>
+
+
+  </section>
+
+</article>
+
+<section>
+
+            <div class="content-play">
+              <!-- <p><a href="javascript:void(0)" onclick="dashangToggle()" class="dashang" title="打赏，支持一下">打赏一个呗</a></p> -->
+              <div class="hide_box-play"></div>
+              <div class="shang_box-play">
+                <a class="shang_close-play" href="javascript:void(0)" onclick="dashangToggle()" title="关闭"><img src="/images/payimg/close.jpg" alt="取消" /></a>
+                <div class="shang_tit-play">
+                  <p>感谢您的支持，我会继续努力的!</p>
+                </div>
+                <div class="shang_payimg">
+                    <img src="/images/payimg/alipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+              <div class="shang_payimg">    
+                    <img src="/images/payimg/weipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+                <div class="pay_explain">扫码打赏，你说多少就多少</div>
+                <div class="shang_payselect">
+                  <div class="pay_item checked" data-id="alipay">
+                    <span class="pay_logo"><img src="/images/payimg/alipay.jpg" alt="支付宝" /></span>
+                  </div>
+                  <div class="pay_item" data-id="weipay">
+                    <span class="pay_logo"><img src="/images/payimg/wechat.jpg" alt="微信" /></span>
+                  </div>
+                </div>
+                <div class="shang_info-play">
+                  <p>打开<span id="shang_pay_txt">支付宝</span>扫一扫，即可进行扫码打赏哦</p>
+                </div>
+              </div>
+            </div>
+            <script type="text/javascript">
+            function dashangToggle(){
+              $(".hide_box-play").fadeToggle();
+              $(".shang_box-play").fadeToggle();
+            }
+            </script>
+
+            <div style="text-align:center;margin:50px 0; font:normal 14px/24px 'MicroSoft YaHei';"></div>
+
+            <style type="text/css">
+              .content-play{width:80%;margin-top: 20px;margin-bottom: 10px;height:40px;}
+              .hide_box-play{z-index:999;filter:alpha(opacity=50);background:#666;opacity: 0.5;-moz-opacity: 0.5;left:0;top:0;height:99%;width:100%;position:fixed;display:none;}
+              .shang_box-play{width:540px;height:540px;padding:10px;background-color:#fff;border-radius:10px;position:fixed;z-index:1000;left:50%;top:50%;margin-left:-280px;margin-top:-280px;border:1px dotted #dedede;display:none;}
+              .shang_box-play img{border:none;border-width:0;}
+              .dashang{display:block;width:100px;margin:5px auto;height:25px;line-height:25px;padding:10px;background-color:#E74851;color:#fff;text-align:center;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;transition: all 0.3s;}
+              .dashang:hover{opacity:0.8;padding:15px;font-size:18px;}
+              .shang_close-play{float:right;display:inline-block;
+                margin-right: 10px;margin-top: 20px;
+              }
+              .shang_logo{display:block;text-align:center;margin:20px auto;}
+              .shang_tit-play{width: 100%;height: 75px;text-align: center;line-height: 66px;color: #a3a3a3;font-size: 16px;background: url('/images/payimg/cy-reward-title-bg.jpg');font-family: 'Microsoft YaHei';margin-top: 7px;margin-right:2px;}
+              .shang_tit-play p{color:#a3a3a3;text-align:center;font-size:16px;}
+              .shang_payimg{width:140px;padding:10px;padding-left: 80px; /*border:6px solid #EA5F00;**/margin:0 auto;border-radius:3px;height:140px;display:inline-block;}
+              .shang_payimg img{display:inline-block;margin-right:10px;float:left;text-align:center;width:140px;height:140px; }
+              .pay_explain{text-align:center;margin:10px auto;font-size:12px;color:#545454;}
+              .shang_payselect{text-align:center;margin:0 auto;margin-top:40px;cursor:pointer;height:60px;width:500px;margin-left:110px;}
+              .shang_payselect .pay_item{display:inline-block;margin-right:140px;float:left;}
+              .shang_info-play{clear:both;}
+              .shang_info-play p,.shang_info-play a{color:#C3C3C3;text-align:center;font-size:12px;text-decoration:none;line-height:2em;}
+            </style>
+
+       <ul class="pager">
+        
+        <li class="previous">
+            <a href="/2020/12/%E8%A7%86%E9%A2%91%E7%A7%92%E5%BC%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88/" data-toggle="tooltip" data-placement="top" title="视频秒开优化方案">上一篇：  <span>视频秒开优化方案</span>
+            </a>
+        </li>
+        
+        
+        <li class="next">
+            <a href="/2020/12/%E9%9F%B3%E8%A7%86%E9%A2%91%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" data-toggle="tooltip" data-placement="top" title="音视频基础知识">下一篇：  <span>音视频基础知识</span>
+            </a>
+        </li>
+        
+    </ul>
+</section>
+
+<section class="post-comments">
+
+  
+  
+</section>
+
+
+            <section class="footer">
+    <footer>
+        <div class = "footer_div">  
+        <nav class="cover-navigation navigation--social">
+          <ul class="navigation">
+
+          
+          <!-- Github -->
+          <li class="navigation__item_social">
+            <a href="https://github.com/ByronJia" title="@ByronJia 的 Github" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/github.png);"></div>
+            </a>
+          </li>
+          
+
+          
+          <!-- Zhihu -->
+          <li class="navigation__item_social">
+            <a href="https://www.zhihu.com/people/byronjia" title="@byronjia" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/zhihu.png);"></div>
+            </a>
+          </li>
+
+          
+
+          
+
+          
+
+          
+
+          
+          
+
+
+          
+          <!-- Email -->
+          <li class="navigation__item_social">
+            <a href="mailto:jiachaoning@163.com" title="Contact me">
+              <div class="footer-social-icon" style="background:url(/images/email.png);"></div>
+            </a>
+          </li>
+          
+          
+          <!-- RSS -->
+          <!-- <li class="navigation__item_social">
+            <a href="/feed.xml" rel="author" title="RSS" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/rss.png);"></div>
+              <span class="label">RSS</span>
+            </a>
+          </li> -->
+
+          </ul>
+        </nav>
+
+        </div>
+
+        <div class = "footer_div">  
+           <p class="copyright text-muted">
+            Copyright &copy; 拜伦的博客 2020 Theme by <a href="https://github.com/ByronJia/ByronJia.github.io">Byron</a> |
+            <iframe
+                style="margin-left: 2px; margin-bottom:-5px;"
+                frameborder="0" scrolling="0" width="91px" height="20px"
+                src="https://ghbtns.com/github-btn.html?user=ByronJia&repo=ByronJia.github.io&type=star&count=true" >
+            </iframe>
+            </p>
+        	<!-- <div align="right">
+    			<link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.3.0/css/font-awesome.min.css"> -->
+
+          <!-- 访问统计 -->
+          <!-- <span id="busuanzi_container_site_pv">
+            本站总访问量
+            <span id="busuanzi_value_site_pv"></span>次
+          </span> -->
+
+        <!-- </div>
+        <script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/Epsilon2.1.model.json"},"display":{"position":"right","width":145,"height":315},"mobile":{"show":true,"scale":0.5},"react":{"opacityDefault":0.7,"opacityOnHover":0.8},"log":false,"pluginJsPath":"lib/","pluginRootPath":"live2dw/"});</script></body>
+        <div> -->
+    </footer>
+</section>
+
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="/js/main.js"></script>
+
+<script type="text/javascript" src="/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+  </body>
+
+</html>

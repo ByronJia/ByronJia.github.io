@@ -5,9 +5,375 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 02 Nov 2020 17:51:18 +0800</pubDate>
-    <lastBuildDate>Mon, 02 Nov 2020 17:51:18 +0800</lastBuildDate>
+    <pubDate>Fri, 11 Dec 2020 14:20:21 +0800</pubDate>
+    <lastBuildDate>Fri, 11 Dec 2020 14:20:21 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>音视频基础知识</title>
+        <description>&lt;h3 id=&quot;码率&quot;&gt;码率：&lt;/h3&gt;
+&lt;p&gt;也叫比特率， Bits per second 每秒传输的数据量。 可以理解成吞吐量或带宽。 目的是用最低的比特率达到最少的失真&lt;/p&gt;
+
+&lt;p&gt;###帧率：
+Frames per second 每秒显示帧数。&lt;/p&gt;
+
+&lt;h3 id=&quot;常见编码标准&quot;&gt;常见编码标准:&lt;/h3&gt;
+&lt;p&gt;MPEG-4， 其中第10部分提出新的视频编码方案，即与另一个组织共同开发的H.264。第三部分提出AAC音频编码方案，旨在替代MP3。  第14部分提出MP4封装格式包括音频编码方案和视频编码方案。&lt;/p&gt;
+
+&lt;h3 id=&quot;h264&quot;&gt;H.264:&lt;/h3&gt;
+&lt;p&gt;定义了三种帧，I帧 P帧 B帧
+1）I 帧：I帧即帧内编码帧、关键帧，可以理解为一帧画面的完整保留，解码时只需要本帧数据就可以完成，不需要参考其他画面，数据量比较大；
+2）P 帧：P帧即前向预测编码帧，记录当前帧跟上一关键帧（或P帧）的差别，解码时依赖之前缓存的画面，叠加上本帧定义的差别，才能生成最终画面，数据量较 I 帧小很多；
+3）B 帧：B帧即双向预测编码帧，记录当前帧跟前后帧的差别，解码时依赖前面的I帧（或P帧）和后面的P帧，数据量比I帧和P帧小很多。
+直播场景中一般不适用B帧，因为受到一个B帧后还要等待之后的P帧才能解码，会有滞后性。&lt;/p&gt;
+
+&lt;p&gt;编码计算复杂度是H.263的3倍， 解码复杂度是H.263的2倍。但是相同视频 质量，可以比H.263节省50%码率&lt;/p&gt;
+
+&lt;h3 id=&quot;h265&quot;&gt;H.265:&lt;/h3&gt;
+&lt;p&gt;High Efficiency Video Coding 简称HEVC。  与H.264类似，包含帧内预测，帧间预测，转化，量化，滤波，熵编码等。
+在H.264基础上使用先进技术用以改善码流，编码质量，延时和算法复杂度之间的关系。
+在码率减少51-74%情况下，265的视频质量与264近似甚至更好。
+iOS11开始原生支持HEVC   H.265&lt;/p&gt;
+
+&lt;h3 id=&quot;gop&quot;&gt;GOP:&lt;/h3&gt;
+&lt;p&gt;Group of Pictures 一组连续的画面，由一张I帧和多张B/P帧组成，是视频编解码存取的基本单位。GOP组的长度格式也决定了码流的大小,形容一个I帧到下一个I帧之间间隔多少帧，增大GOP能有效减少编码后视频体积，但也会降低视频质量。&lt;/p&gt;
+
+&lt;h3 id=&quot;idr帧&quot;&gt;IDR帧：&lt;/h3&gt;
+&lt;p&gt;一个序列的首个I帧叫做IDR帧，IDR帧都是I帧.
+引入目的是为了解码的重同步,如果前序列出现重大错误，这里可以获得重新同步机会。
+当解码到IDR帧时，会立即将参考帧队列清空，将已解码的数据全部输出或抛弃，重新查找参数集，开始新序列。&lt;/p&gt;
+
+&lt;h3 id=&quot;nal&quot;&gt;NAL:&lt;/h3&gt;
+&lt;p&gt;Network abstract layer 网络抽象层&lt;/p&gt;
+
+&lt;h3 id=&quot;sps&quot;&gt;SPS:&lt;/h3&gt;
+&lt;p&gt;Sequence Parameter Set ，序列参数集，保存了一组编码视频序列的全局参数，一般SPS 和PPS在整个码流的起始位置，特殊情况下也可能在中间出现，例如中间需要重新解码，或者参数信息发生编发例如屏幕宽高比变化。&lt;/p&gt;
+
+&lt;h3 id=&quot;pps&quot;&gt;PPS:&lt;/h3&gt;
+&lt;p&gt;Picture Parameter Set  图形参数集，类似于SPS， 在马六周年单独保存在一个NAL Unit中，保存在视频文件的文件头中。&lt;/p&gt;
+
+&lt;h3 id=&quot;dts&quot;&gt;DTS&lt;/h3&gt;
+&lt;p&gt;Decoding Time Stamp 解码时间戳，表示送入解码器的顺序&lt;/p&gt;
+
+&lt;h3 id=&quot;pts&quot;&gt;PTS&lt;/h3&gt;
+&lt;p&gt;Presentation Time Stamp 显示时间戳，表示解码后的帧显示时间
+在没有B帧情况下，DTS和PTS输出顺序一致。 因为B帧需要依赖后续的帧，所以B帧解码要在后续P帧之后，但是显示又在后续P帧之前&lt;/p&gt;
+
+&lt;h3 id=&quot;音视频同步&quot;&gt;音视频同步：&lt;/h3&gt;
+&lt;p&gt;音频没有类似视频中的B帧，所以音频帧的DTS 和PTS顺序是一致的。
+通常需要选择一个参考时钟，参考时间的时间是线性递增的，编码音视频流时一句参考时钟上的时间给每个数据打上时间戳，播放时读取数据帧上的时间戳，同时参考PTS安排播放。&lt;/p&gt;
+
+&lt;h3 id=&quot;视频传输协议优化&quot;&gt;视频传输协议优化：&lt;/h3&gt;
+&lt;ol&gt;
+  &lt;li&gt;服务端节点之间尽量使用RTMP，降低整体传输延迟&lt;/li&gt;
+  &lt;li&gt;如果终端使用RTMP播放，应该在尽量靠近收流节点进行转码，这样传输的视频流从一开始就是最优大小&lt;/li&gt;
+  &lt;li&gt;如有必要，使用定制的UDP协议替换TCP协议，省去弱网环境下的丢包重传。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;视频传输网络优化&quot;&gt;视频传输网络优化：&lt;/h3&gt;
+&lt;ol&gt;
+  &lt;li&gt;在服务端节点中缓存GOP，配合播放器端的首开优化&lt;/li&gt;
+  &lt;li&gt;服务端实时记录每个视频流在每个环节的帧率和码率，检测波动&lt;/li&gt;
+  &lt;li&gt;客户端通过查询服务端准实时获取当前最优节点(5秒一次)， 准实时下线当前故障节点和线路&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;推流播放优化&quot;&gt;推流、播放优化：&lt;/h3&gt;
+&lt;ol&gt;
+  &lt;li&gt;考察发送端系统的网络buffer大小&lt;/li&gt;
+  &lt;li&gt;播放端的缓存对首开延迟也有较大影响，甚至可以在0缓存的情况下，将第一帧数据直接解码显示。但是如果弱网状态下，需要考虑网络波动造成的卡顿，还是需要增加一定的缓存。&lt;/li&gt;
+  &lt;li&gt;可以使用动态缓存策略，参考第一帧的下载耗时决定后续播放过程中的缓存大小。&lt;/li&gt;
+  &lt;li&gt;动态码率，在增加缓存依然无法满足当前码率的情况下，采用动态码率，减少延迟，当网络有所改善后，再动态增加码率。&lt;/li&gt;
+&lt;/ol&gt;
+
+</description>
+        <pubDate>Fri, 11 Dec 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/12/%E9%9F%B3%E8%A7%86%E9%A2%91%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/12/%E9%9F%B3%E8%A7%86%E9%A2%91%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>iOS Crash 分析</title>
+        <description>&lt;h3 id=&quot;关于crash&quot;&gt;关于Crash&lt;/h3&gt;
+&lt;p&gt;当app发生crash时，系统会生成crash report 存储在设备上，其中会描述app在何种情况下被系统终止，一般会包括完整的线程调用堆栈。包括以下2种report:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Crash report:包含堆栈信息，被符号化之前是运行内容中的实际函数地址，需要将report与 .dSYM或 .app共同分析出内存中的实际地址映射的函数方法，从而便于定位问题。&lt;/li&gt;
+  &lt;li&gt;Low Memory report:没有堆栈信息，由于低内存引发crash，下面会详细介绍&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;符号化&quot;&gt;符号化&lt;/h3&gt;
+&lt;p&gt;crash符号化常用的3个文件&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;symbolicatecrash：是系统提供的符号化执行程序，依赖于.dSYM、.crash 和.app  3个文件&lt;/li&gt;
+  &lt;li&gt;.dSYM : 编译器在把你的源代码转换成机器码的同时，也会生成一份对应的Debug符号表,保存十六进制函数地址映射信息，通过他能得知log中的堆栈地址与具体方法的地址的映射关系&lt;/li&gt;
+  &lt;li&gt;.crash : 是系统保存的崩溃日志文件，包括所有线程状态，和方法调用堆栈&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;也可使用atos命令符号化， 只需要.crash和 .dSYM和app其中一个即可。
+以下是符号化之前和符号化之后的堆栈信息，第3行符号化之后即可看到自己实现的函数名
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201211/16076544840576.png&quot; style=&quot;zoom:80%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201211/16076544907887.png&quot; style=&quot;zoom:80%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;为什么系统函数的堆栈能打印出来？
+因为系统函数的符号表在xcode中已经内置，且不同系统版本不一样，所以每次我们在升级xcode后，就会包含xcode支持的最新iOS系统的符号表。&lt;/p&gt;
+
+&lt;h3 id=&quot;异常信息&quot;&gt;异常信息&lt;/h3&gt;
+&lt;p&gt;carsh report 中的字段能提供异常信息，便于从宏观角度分析crash的原因。&lt;/p&gt;
+
+&lt;p&gt;下面是由于&lt;code class=&quot;highlighter-rouge&quot;&gt;uncaught Objective-C exception&lt;/code&gt;而导致的进程被停止的crash report的摘录&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Exception Type: EXC_CRASH (SIGABRT)
+Exception Codes: 0x0000000000000000, 0x0000000000000000
+Exception Note: EXC_CORPSE_NOTIFY
+Triggered by Thread: 0
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;下面是由于反向引用了一个NULL指针而造成进程被终止的crash report的摘录&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Exception Type: EXC_BAD_ACCESS (SIGSEGV)
+Exception Subtype: KERN_INVALID_ADDRESS at 0x0000000000000000
+Termination Signal: Segmentation fault: 11
+Termination Reason: Namespace SIGNAL, Code 0xb
+Terminating Process: exc handler [0]
+Triggered by Thread: 0
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;其中
+&lt;code class=&quot;highlighter-rouge&quot;&gt;Exception Type&lt;/code&gt;: 异常类型，下面会详细定义不同类型的含义。
+&lt;code class=&quot;highlighter-rouge&quot;&gt;Exception Codes&lt;/code&gt; ：和异常是有关的处理器指定信息，这些信息会被编码成一个或者多个64位二进制数字。一般来说，这个字段不应该存在，因为crash report生成时会把exception code转化成可读的信息并在其它字段进行体现。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Exception Subtype&lt;/code&gt;：可读的exception code的名称。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Exception Message&lt;/code&gt;：从exception code中解析出来的附加的可读信息。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Exception Note&lt;/code&gt;：不特指某一种异常的额外信息。如果这个字段包含”SIMULATED”(不是Crash)，则进程并没有发生crash，而是在系统层面被kill掉了，比如看门狗机制。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Termination Reason&lt;/code&gt;：当进程被终止时的原因及信息。关键的信息模块，不论是进程内还是进程外，当遇到一个致命错误（fatal error，例如bad code signature，缺失依赖库，不恰当的访问私有敏感信息等）。MacOS Sierra,iOS 10, watch OS3和tvOS 10 已经采用新的架构去记录这些错误信息，所以这些系统之下的crash report会在Termination Reason这个字段里描述error message信息。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Triggered by Thread&lt;/code&gt;：指出异常是在哪个线程发生的&lt;/p&gt;
+
+&lt;h3 id=&quot;看门狗&quot;&gt;看门狗&lt;/h3&gt;
+&lt;p&gt;为了防止应用占用过多系统资源，看门狗机制能检测应用性能，若超出阈值，看门狗会强制终结这个应用的进程。&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;触发时机&lt;/th&gt;
+      &lt;th&gt;看门狗出动的时间&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;启动&lt;/td&gt;
+      &lt;td&gt;20秒&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;恢复运行&lt;/td&gt;
+      &lt;td&gt;10秒&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;挂起进程&lt;/td&gt;
+      &lt;td&gt;10秒&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;退出应用&lt;/td&gt;
+      &lt;td&gt;6秒&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;后台运行&lt;/td&gt;
+      &lt;td&gt;10分钟&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&quot;常见异常类型&quot;&gt;常见异常类型&lt;/h3&gt;
+&lt;h4 id=&quot;bad-memory-access-exc_bad_access--sigsegv--sigbus&quot;&gt;Bad Memory Access [EXC_BAD_ACCESS // SIGSEGV // SIGBUS]&lt;/h4&gt;
+&lt;p&gt;进程试图访问无效的内存空间，或尝试访问的方法不允许(例如去写只读的内存空间)&lt;/p&gt;
+
+&lt;h4 id=&quot;abnormal-exit-exc_crash--sigabrt&quot;&gt;Abnormal Exit [EXC_CRASH // SIGABRT]&lt;/h4&gt;
+&lt;p&gt;进程异常退出，常见原因是&lt;code class=&quot;highlighter-rouge&quot;&gt;uncaught Objective-C/C++ exception&lt;/code&gt; 并且调用了abort()。&lt;/p&gt;
+
+&lt;h4 id=&quot;trace-trap-exc_breakpoint--sigtrap&quot;&gt;Trace Trap [EXC_BREAKPOINT // SIGTRAP]&lt;/h4&gt;
+&lt;p&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;Abnormal Exit&lt;/code&gt;类似，这种异常是由于在特殊的节点加入debugger调试节点的原因。&lt;/p&gt;
+
+&lt;h4 id=&quot;illegal-instruction-exc_bad_instruction--sigill&quot;&gt;Illegal Instruction [EXC_BAD_INSTRUCTION // SIGILL]&lt;/h4&gt;
+&lt;p&gt;尝试执行一个非法或者未定义的指令时会触发该异常。&lt;/p&gt;
+
+&lt;h4 id=&quot;quit-sigquit&quot;&gt;Quit [SIGQUIT]&lt;/h4&gt;
+&lt;p&gt;这个异常是由于其他进程拥有高优先级且可以管理本进程所导致（被高优先级进程kill掉）。&lt;/p&gt;
+
+&lt;h4 id=&quot;killedsigkill&quot;&gt;Killed[SIGKILL]&lt;/h4&gt;
+&lt;p&gt;进程收到系统指令被干掉，可以自行查看Termination Reason来定位线程被干掉的原因。&lt;/p&gt;
+
+&lt;h4 id=&quot;guarded-resource-violation-exc_guard&quot;&gt;Guarded Resource Violation [EXC_GUARD]&lt;/h4&gt;
+&lt;p&gt;进程访问了一个被保护的资源。&lt;/p&gt;
+
+&lt;h4 id=&quot;resource-limit-exc_resource&quot;&gt;Resource Limit [EXC_RESOURCE]&lt;/h4&gt;
+&lt;p&gt;进程的资源超过限定阈值，表示进程占用太多资源，&lt;code class=&quot;highlighter-rouge&quot;&gt;Exception Subtype&lt;/code&gt;会提示原因，例如&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MEMORY&lt;/code&gt;:暗示了进程占用已经超过系统限制。如果之后出现由于系统占用过多进程被Kill，可能和这有关。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;WAKEUP&lt;/code&gt;:暗示线程每秒被进程唤醒太多次了，进而导致CPU被频繁唤醒并且造成电量损耗。
+通常，这种事发生在线程间通信（通过&lt;code class=&quot;highlighter-rouge&quot;&gt;peformSelector:onThread:&lt;/code&gt;或者&lt;code class=&quot;highlighter-rouge&quot;&gt;dispatch_async&lt;/code&gt;），而且会远比预想的发生的更频繁。因为发生这种异常的通信被触发的如此频繁，所以很多后台线程会出现彼此高度雷同的堆栈信息——恰恰暗示了它们是从哪儿来的。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;other-exception-types&quot;&gt;Other Exception Types&lt;/h4&gt;
+&lt;p&gt;有些report可能出现无名的&lt;code class=&quot;highlighter-rouge&quot;&gt;Exception Type&lt;/code&gt;，取而代之出现的是16进制的地址(0x12387617823)，下面列举一些&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;0xbaaaaaad&lt;/code&gt;: 则说明此条logs是系统堆栈快照，并非crash report。可以通过同时按（手机）侧边按钮和音量键来记录堆栈快照。通常情况下，这些logs是用户无意中生成的，并非表示错误。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;0xbad22222&lt;/code&gt;: 表示一个VoIP应用因为频繁暂停被iOS系统终止掉。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;0x8badf00d&lt;/code&gt;:（读起来像badfood）则说明一个应用因为触发了看门狗机制被iOS系统终止掉，有可能是应用花了太长时间启动，终止，或者是响应系统事件。一种常见原因是在主线程上做网络同步逻辑。不论Thread0上（也就是主线程）想做什么（重要的事），都应该转移到后台线程，或者换一种方式触发，这样它才不会阻塞主线程。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;0xc00010ff&lt;/code&gt;: 则说明app因为环境过热（的事件）被iOS系统干掉了。这个也许是和发生crash的特定设备有关，或者是和它所在的环境有关。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;0xdead10cc&lt;/code&gt;: (读起来像deadlock)则说明一个应用被系统终止掉，原因是在应用挂起时拿到了文件锁或者sqlite数据库所长期不释放直到被冻结。如果你的app在挂起时拿到了文件锁或者sqlite数据库锁，它必须请求额外的后台执行时间(request additional background execution time )并在被挂起前完成解锁操作。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;0x2bad45ec&lt;/code&gt;: 则说明app因为违规操作（安全违规）被iOS系统终止。终止描述会写：“进程被查到在安全模式进行非安全操作”，暗示app尝试在禁止屏幕绘制的时候绘制屏幕，例如当屏幕锁定时。用户可能会忽略这种异常，尤其当屏幕是关闭的或者当这种终止发生时正好锁屏。&lt;/li&gt;
+&lt;/ul&gt;
+
+</description>
+        <pubDate>Fri, 11 Dec 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>视频秒开优化方案</title>
+        <description>&lt;h3 id=&quot;前置metadata&quot;&gt;前置metadata：&lt;/h3&gt;
+&lt;p&gt;需要获取文件的metadata，解析出文件的编码，帧率等信息后才能开始边下边播，所以尽量让metadata或 MOOV box在靠近文件头部的位置，保证播放器尽快播放&lt;/p&gt;
+
+&lt;h3 id=&quot;选择合适的缓冲策略&quot;&gt;选择合适的缓冲策略：&lt;/h3&gt;
+&lt;p&gt;AVPlayer的 automaticallyWaitsToMinimizeStalling属性就是尽量多缓存一段时间，保证播放过程中减少卡顿&lt;/p&gt;
+
+&lt;h3 id=&quot;使用httpdns加快建连&quot;&gt;使用HTTPDNS加快建连：&lt;/h3&gt;
+&lt;p&gt;获取最优的CDN节点地址，并每隔一段时间获取一次最佳CDN节点，准实时的保证使用最佳节点。&lt;/p&gt;
+
+&lt;h3 id=&quot;提升cdn命中率&quot;&gt;提升CDN命中率：&lt;/h3&gt;
+&lt;p&gt;减少CDN的资源部命中，减少回源，比如URL中减少随机性的值，增加匹配命中概率。&lt;/p&gt;
+
+&lt;h3 id=&quot;域名解析&quot;&gt;域名解析：&lt;/h3&gt;
+&lt;p&gt;使用HTTPDNS快速获取最佳CDN节点信息。&lt;/p&gt;
+
+&lt;h3 id=&quot;socket-cache&quot;&gt;Socket cache:&lt;/h3&gt;
+&lt;p&gt;TCP的数据收发都是在缓冲区中完成拼装，通过调整缓冲区的大小。设置太小，影响效率，设置太大， 会短时间吃掉带宽(根据带宽探测原理可知),通过ffmpeg提供的api可修改。&lt;/p&gt;
+
+&lt;h3 id=&quot;探测buffer&quot;&gt;探测buffer:&lt;/h3&gt;
+&lt;p&gt;一开始需要先读一段数据，再对数据进行探测，得到封装格式、分辨率等信息。这个buffer可以设置。&lt;/p&gt;
+
+&lt;h3 id=&quot;格式探测&quot;&gt;格式探测：&lt;/h3&gt;
+&lt;p&gt;播放端开始时会探测数据格式，根据自己支持的格式探测出一个分数，得到相应的格式，如果短视频格式确定，就可以减少不必要的探测类型。&lt;/p&gt;
+
+&lt;h3 id=&quot;播放-buffer&quot;&gt;播放 buffer:&lt;/h3&gt;
+&lt;p&gt;减少播放的缓冲，一般缓冲buffer会按照帧数设置，但是短视频可以减小这个数字，达到尽快解码播放。&lt;/p&gt;
+
+&lt;h3 id=&quot;分辨率视频格式&quot;&gt;分辨率、视频格式：&lt;/h3&gt;
+&lt;p&gt;一定程度降低分辨率，减小文件大小。使用HEVC格式。&lt;/p&gt;
+
+</description>
+        <pubDate>Thu, 10 Dec 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/12/%E8%A7%86%E9%A2%91%E7%A7%92%E5%BC%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/12/%E8%A7%86%E9%A2%91%E7%A7%92%E5%BC%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>网络优化策略</title>
+        <description>&lt;h3 id=&quot;网络优化策略&quot;&gt;网络优化策略&lt;/h3&gt;
+&lt;ol&gt;
+  &lt;li&gt;NSCache缓存，Last-Modified, ETag&lt;/li&gt;
+  &lt;li&gt;DNS解析&lt;/li&gt;
+  &lt;li&gt;数据压缩，protobuf, WebP&lt;/li&gt;
+  &lt;li&gt;失败重发，缓存请求有网发送&lt;/li&gt;
+  &lt;li&gt;弱网下设置不同超时时间&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h4 id=&quot;nscache缓存&quot;&gt;NSCache缓存&lt;/h4&gt;
+&lt;p&gt;Get类似SQL查找，所以默认会缓存，Post是提交数据，类似UPDATE，所以不会缓存。
+Last-Modified：资源最后修改时间，来判断是否过期
+请求response中会包含该字段和时间，下次请求时加上if-Modified-since : xxxx， 如果资源无变化返回304 Not Changed。&lt;/p&gt;
+
+&lt;p&gt;ETag:资源文件的hash值，与当前资源文件比对是否一致，不一致则返回新值，一致则不返回。&lt;/p&gt;
+
+&lt;h4 id=&quot;dns解析&quot;&gt;DNS解析&lt;/h4&gt;
+&lt;p&gt;使用HTTPDNS 解析域名，代替从localDNS获取IP。 当HTTPDNS解析失败时再走localDNS.
+或者本地维护IP list，与HTTPDNS的结果做更新&lt;/p&gt;
+
+&lt;h4 id=&quot;数据压缩&quot;&gt;数据压缩&lt;/h4&gt;
+&lt;p&gt;webP图片格式比PNG和jpg 体积小，但是webP图片需要解析才能成为可用的jpg图片， app内解析肯定要花费一定的性能。
+在wifi条件下，较大的图片直接使用png/jpg, 减少解析时间。  4G条件下，建议用webP,对流量比较友好&lt;/p&gt;
+
+&lt;h4 id=&quot;失败重发&quot;&gt;失败重发&lt;/h4&gt;
+&lt;p&gt;超时或失败的请求建立重发机制，待网络通畅后再次发送&lt;/p&gt;
+
+&lt;h4 id=&quot;弱网下设置不同超时时间&quot;&gt;弱网下设置不同超时时间&lt;/h4&gt;
+&lt;p&gt;不同网络状态下超时时间设置不同，例如4G只需要10秒，3G需要20秒，在超时后依然无法与服务端建立连接，可排查网络链路通畅性，例如使用HTTPDNS切换新的服务器站点，尝试连接。&lt;/p&gt;
+
+&lt;h3 id=&quot;http2相比http1x的升级&quot;&gt;HTTP2相比HTTP1.x的升级：&lt;/h3&gt;
+&lt;ol&gt;
+  &lt;li&gt;HTTP/2采用二进制格式传输数据 ，而不是1.x的文本格式。&lt;/li&gt;
+  &lt;li&gt;对消息头进行压缩传输，节省消息头占用的流量。 1.x每次请求携带大量冗余头信息，浪费资源&lt;/li&gt;
+  &lt;li&gt;多路复用，一个域名下的请求可以通过一个TCP连接并发完成，毕竟新开一个TCP连接都需要慢慢提升传输速度。 1.x虽然通过pipeline也能并发请求，但是多个请求之间响应会被阻塞。采用二进制分帧，数据流可以乱序发送，接收后可以重新组装。&lt;/li&gt;
+  &lt;li&gt;server push， 服务端提前把资源推送给客户端&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+        <pubDate>Thu, 10 Dec 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/12/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/12/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>各iOS版本适配概要</title>
+        <description>&lt;h3 id=&quot;ios9&quot;&gt;iOS9：&lt;/h3&gt;
+&lt;p&gt;App Thinning: 包括slicing, bitcode都是在不同设备上打包不同的app版本，&lt;/p&gt;
+
+&lt;h3 id=&quot;ios10&quot;&gt;iOS10:&lt;/h3&gt;
+&lt;p&gt;UIRefreshControl: 原来只是TableViewController的属性，现在增加成 UIScrollView的属性。可以脱离controller使用
+跳转到设置的方式：可以用 UIApplicationOpenSettingsURLString
+UITableView和UICollectionView的 Pre-Feching 预加载和生命周期的优化，例如prepareForReuse方法比之前版本要提前，且是一个一个的加载，而不是之前的一行一行的加载，且会把滑出屏幕的cell保存一段时间，防止又滑回来导致重新走一遍cell的生命周期。
+scroolview卡顿优化方式处理离屏渲染等方式，还可以使用pre fetch方式，子线程预加载数据来实现一定的性能提升&lt;/p&gt;
+
+&lt;h3 id=&quot;ios11&quot;&gt;iOS11:&lt;/h3&gt;
+&lt;p&gt;UIScrollView: 废弃了UIViewController的 automaticllyAdjustsScrollViewInsets属性，新增contentInsetAdjustmentBehavior,当超出安全区域时系统自动跳转safeAreaInsets。 进而影响adjustContentInset。&lt;/p&gt;
+
+&lt;h3 id=&quot;ios12&quot;&gt;iOS12：&lt;/h3&gt;
+&lt;p&gt;libc++替代 libstdc++&lt;/p&gt;
+
+&lt;h3 id=&quot;ios13&quot;&gt;iOS13:&lt;/h3&gt;
+&lt;p&gt;通过KVC调用一些私有API的导致crash, 例如testField的 _placeholderLabel,    UISearchbar的 _searchField，13新增searchTextField属性
+DeviceToken格式变化了
+必须支持 Sign with apple 
+modalPresentationStyle 默认值13开始变为automatic, 之前都是fullscreen
+DarkMode 
+Xcode11新工程要支持Scene多屏， 低版本黑屏
+UIWebView废弃
+蓝牙权限需要申请&lt;/p&gt;
+
+&lt;h3 id=&quot;ios14&quot;&gt;iOS14：&lt;/h3&gt;
+&lt;p&gt;####隐私权限更新：
+*1. 照片： 增加选择部分照片权限limited，建议使用PHPicker
+*2. 通讯录: 不需要权限，可以给textfile设置contenttype，设为通讯录，这样键盘会自动提示，app无需处理
+*3. 定位： 增加精确定位和模糊定位的开关
+Mac 地址对随着连接不同wifi而变化，且24小时也会更新一次。之前mac地址不会变，目的是防止运营商对用户数据收集和追踪
+IDFA 默认关闭用户追踪开关&lt;/p&gt;
+</description>
+        <pubDate>Thu, 10 Dec 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/12/%E5%90%84iOS%E7%89%88%E6%9C%AC%E9%80%82%E9%85%8D%E6%A6%82%E8%A6%81/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/12/%E5%90%84iOS%E7%89%88%E6%9C%AC%E9%80%82%E9%85%8D%E6%A6%82%E8%A6%81/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
     
       <item>
         <title>iOS 组件化方案选型</title>
@@ -535,232 +901,6 @@ block中的&lt;code class=&quot;highlighter-rouge&quot;&gt;forwarding&lt;/code&g
         <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>iOS底层(4)-方法调用机制</title>
-        <description>&lt;h2 id=&quot;消息发送objc_msgsend&quot;&gt;消息发送objc_msgSend()&lt;/h2&gt;
-&lt;ul&gt;
-  &lt;li&gt;从&lt;code class=&quot;highlighter-rouge&quot;&gt;cache&lt;/code&gt;缓存中查找方法，找到了直接调用&lt;/li&gt;
-  &lt;li&gt;从&lt;code class=&quot;highlighter-rouge&quot;&gt;class_rw_t&lt;/code&gt;方法列表中查找，找到了缓存到&lt;code class=&quot;highlighter-rouge&quot;&gt;cache&lt;/code&gt;，再调用&lt;/li&gt;
-  &lt;li&gt;从&lt;code class=&quot;highlighter-rouge&quot;&gt;superClass&lt;/code&gt; 缓存中查找，找到了缓存到&lt;code class=&quot;highlighter-rouge&quot;&gt;cache&lt;/code&gt;，再调用&lt;/li&gt;
-  &lt;li&gt;从&lt;code class=&quot;highlighter-rouge&quot;&gt;superClass class_rw_t&lt;/code&gt;方法列表中查找，找到了缓存到&lt;code class=&quot;highlighter-rouge&quot;&gt;cache&lt;/code&gt;，再调用&lt;/li&gt;
-  &lt;li&gt;递归父类查找，直到父类为空，执行下一步动态方法解析&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;动态方法解析&quot;&gt;动态方法解析&lt;/h2&gt;
-&lt;ul&gt;
-  &lt;li&gt;若未动态解析过，则调用 &lt;code class=&quot;highlighter-rouge&quot;&gt;resolveInstanceMethod:  &lt;/code&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;resolveClassMethod:&lt;/code&gt; 来完成方法添加&lt;/li&gt;
-  &lt;li&gt;不管有没有实现，都会再次走上一步的方法查找
-    &lt;ul&gt;
-      &lt;li&gt;若找到则执行并结束&lt;/li&gt;
-      &lt;li&gt;没找到则执行下一步消息转发&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;消息转发&quot;&gt;消息转发&lt;/h2&gt;
-&lt;ul&gt;
-  &lt;li&gt;调用&lt;code class=&quot;highlighter-rouge&quot;&gt;forwardingTargetForSelector:&lt;/code&gt;
-    &lt;ul&gt;
-      &lt;li&gt;不为空则走&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSend&lt;/code&gt; 向转发的对象发送消息调用&lt;/li&gt;
-      &lt;li&gt;返回值为nil,调用 &lt;code class=&quot;highlighter-rouge&quot;&gt;methodSignatureForSelector&lt;/code&gt;&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;methodSignatureForSelector&lt;/code&gt; 返回为空 则crash&lt;/li&gt;
-  &lt;li&gt;不为空则调用 ForwardInvocation方法，在里面可以手动invoca和获取修改invoca的所有属性，包括target，methodSignature，selector&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;super-关键字&quot;&gt;super 关键字&lt;/h2&gt;
-&lt;p&gt;[self class] 与 [super class] 结果一样，因为super关键字底层实现是调用
-&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSendSuper({self, class_getSuperClass('selfClass')}&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;sel_registerName('class'))&lt;/code&gt;,  &lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSendSuper&lt;/code&gt;意义是从父类开始查找class方法，但是方法接收者还是self, 所以才能实现跳过自己，直接调用父类的方法。
-class方法的实现是objc_getClass(self), 因为前面接收者是self,所以方法实现里的参数还是自己，那么打印出来就是一样的。&lt;/p&gt;
-</description>
-        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(4)-%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E6%9C%BA%E5%88%B6/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(4)-%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E6%9C%BA%E5%88%B6/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>iOS底层(3)-KVC &amp; KVO</title>
-        <description>&lt;h2 id=&quot;kvo&quot;&gt;KVO&lt;/h2&gt;
-&lt;p&gt;Person 类的对象p 注册监听。
-原理：注册监听后，系统利用runtime动态生成一个新的子类&lt;code class=&quot;highlighter-rouge&quot;&gt;NSKVONotifying_Person&lt;/code&gt;对象，且将&lt;code class=&quot;highlighter-rouge&quot;&gt;p-&amp;gt;isa = NSKVONotifying_Person&lt;/code&gt;. 新的类重写set方法和class方法。
-在set方法中，先调用&lt;code class=&quot;highlighter-rouge&quot;&gt;willChangeValueForKey&lt;/code&gt;, 然后赋值，最后&lt;code class=&quot;highlighter-rouge&quot;&gt;didChangeValueForKey&lt;/code&gt;出发监听的方法。
-&lt;code class=&quot;highlighter-rouge&quot;&gt;NSKVONotifying_Person -&amp;gt;superClass = Person&lt;/code&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;NSKVONotifying_Person-&amp;gt;isa = meta-NSKVONotifying_Person&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;想手动调用监听方法：可以先调用&lt;code class=&quot;highlighter-rouge&quot;&gt;willChangeValueForKey&lt;/code&gt;, 再调用&lt;code class=&quot;highlighter-rouge&quot;&gt;didChangeValueForKey&lt;/code&gt;即可&lt;/p&gt;
-
-&lt;h2 id=&quot;kvc&quot;&gt;KVC&lt;/h2&gt;
-&lt;p&gt;下图是KVC获取属性和设置属性的调用原理图，例如&lt;code class=&quot;highlighter-rouge&quot;&gt;[p setValue:21 forKey:@“age”]&lt;/code&gt;,找到set方法，因为声明了一个age属性，所以通过setAge方法找到，并赋值后触发监听。如果没有age属性，则不会触发监听。
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023005369387.png&quot; alt=&quot;截屏2020-10-09 下午2.55.25&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023005401951.png&quot; alt=&quot;截屏2020-10-09 下午2.55.32&quot; /&gt;&lt;/p&gt;
-
-</description>
-        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(3)-KVC-&-KVO/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(3)-KVC-&-KVO/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>iOS底层(2)-Category类别 &amp; 关联对象</title>
-        <description>&lt;h2 id=&quot;category&quot;&gt;Category&lt;/h2&gt;
-&lt;p&gt;分类在编译的时候变成&lt;code class=&quot;highlighter-rouge&quot;&gt;category_t&lt;/code&gt; 结构体，其中包含所有方法，协议，属性等。
-运行的时候把Category数组合并到Class的大数组中，后面参与编译的在数组的前面，也解释了为什么类别能够覆盖主类的方法，因为在方法查找时先找到类别的方法而已。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;+laod()&lt;/code&gt;是在app启动时加载类、分类的时候调用。
-调用原理与普通的category方法不同，是直接按照主类，类别的方法调用专门存取load方法的指针来调用load方法，即调用顺序一定是主类，分类1，分类2。。。而且如果父类还未load，先调用父类load。&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;+initialize()&lt;/code&gt;在类第一次接受消息时调用。且方法是通过&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_msgSend()&lt;/code&gt;方法调用，则会从大数组中寻找方法，找到第一个肯定是类别的方法，则调用完毕结束。若父类还未初始化，则先调用父类initialize&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;关联对象&quot;&gt;关联对象&lt;/h2&gt;
-&lt;p&gt;可以使用runtime的关联对象给categoty添加成员变量，&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_setAssociatedObject&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;objc_getAssociatedObject&lt;/code&gt;,其中key的参数很重要，必须是不变的一个地址，有多种实现方式，可以用静态变量例如@“key”, 因为存在常量区，所以地址不变。可以用&lt;code class=&quot;highlighter-rouge&quot;&gt;static void * KEYNAEM = &amp;amp;KEYNAME&lt;/code&gt;， 取出定义的全局变量的指针用作key&lt;/p&gt;
-
-&lt;p&gt;原理: 全局保存一个&lt;code class=&quot;highlighter-rouge&quot;&gt;AssociationsManager&lt;/code&gt;，和其中的&lt;code class=&quot;highlighter-rouge&quot;&gt;hashMap&lt;/code&gt;,保存所有的对象和对象需要监听的属性。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16022999875266.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-
-</description>
-        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(2)-Category%E7%B1%BB%E5%88%AB-&-%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(2)-Category%E7%B1%BB%E5%88%AB-&-%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>iOS底层(1)-Class &amp; isa</title>
-        <description>&lt;h2 id=&quot;类初始化内存分配&quot;&gt;类初始化内存分配&lt;/h2&gt;
-&lt;p&gt;NSObject占用内存大小为16个字节，但是NSObjct只有一个属性就是isa只占用8个字节，由于底层设计原因最少需要16个字节。&lt;br /&gt;
-结构体内存对齐，(x+7)&amp;amp; ~x 是将x按照8字节对齐。不满8就补齐8字节
-malloc 中的内存分配也会有内存对齐规则，mac中是16的倍数，如果传入只需要24字节，alloc后系统会分配32个字节空间即内存对齐。 &lt;br /&gt;
-class_getInstanceSize 返回的是对象需要的内存， NSObjcet中的isa占用8， 加上继承来的每个属性的空间。
-malloc_size 返回的是实际分配的空间大小&lt;/p&gt;
-
-&lt;h2 id=&quot;oc中的对象类型&quot;&gt;OC中的对象类型&lt;/h2&gt;
-&lt;p&gt;分为3种&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;实例对象
-    &lt;ul&gt;
-      &lt;li&gt;isa&lt;/li&gt;
-      &lt;li&gt;成员变量值&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;类对象
-    &lt;ul&gt;
-      &lt;li&gt;isa&lt;/li&gt;
-      &lt;li&gt;superclass&lt;/li&gt;
-      &lt;li&gt;属性、对象方法、协议、成员变量&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;元类对象
-    &lt;ul&gt;
-      &lt;li&gt;isa&lt;/li&gt;
-      &lt;li&gt;superclass&lt;/li&gt;
-      &lt;li&gt;类方法&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;类对象是由元类对象描述的，即class-&amp;gt;isa = metaclass, 但是二者结构一致，只是存储的数据不同。    &lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;object_getClass(id)&lt;/code&gt; 传入是对象，则返回类对象，传入是类对象，返回元类对象
-&lt;code class=&quot;highlighter-rouge&quot;&gt;objc_getClass(char * className)&lt;/code&gt; 只会返回类对象。&lt;/p&gt;
-
-&lt;h2 id=&quot;对象之间的关系&quot;&gt;对象之间的关系&lt;/h2&gt;
-&lt;p&gt;有3个类 NSObjcect -&amp;gt; Person -&amp;gt; Student，
-&lt;code class=&quot;highlighter-rouge&quot;&gt;[stu studentInstanceMethod];&lt;/code&gt; stu-&amp;gt;isa = Student类寻找对象方法来执行
-&lt;code class=&quot;highlighter-rouge&quot;&gt;[stu personInstanceMethod]; &lt;/code&gt; stu-&amp;gt;isa = Student-&amp;gt;superClass = Person寻找对象方法
-&lt;code class=&quot;highlighter-rouge&quot;&gt;[stu load]; &lt;/code&gt;stu-&amp;gt;isa = Student-&amp;gt;superClass = Person-&amp;gt;superClass = NSObject寻找对象方法&lt;/p&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;[Student studentClassMethod];&lt;/code&gt; Student-&amp;gt;isa = Meta_Student 寻找Student的类方法   &lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;[Student personClassMethod];&lt;/code&gt; Student-&amp;gt;isa = Meta_Student-&amp;gt;superclass = Meta_Person 寻找person的类方法&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;[Student copy]; &lt;/code&gt;Student-&amp;gt;isa = Meta_Student-&amp;gt;superclass = Meta_Person-&amp;gt;superclass=Meta_NSObject 寻找NSObject的类方法   &lt;br /&gt;
-一旦中途找到，则停止后续寻找，这就是为什么override会覆盖父类同名方法&lt;/p&gt;
-
-&lt;p&gt;isa指针地址需要&amp;amp; isa_mask才能得到真实的class的地址
-superClass地址 直接就是真实superclass地址
-&lt;strong&gt;总结&lt;/strong&gt;
-instance调用实例方法轨迹
-isa找到class,方法不存在，就通过superclass找到父类(类对象)&lt;/p&gt;
-
-&lt;p&gt;class调用类方法轨迹
-isa找meta-class，方法不存在，就通过superclass找父类(元类对象)&lt;/p&gt;
-
-&lt;h2 id=&quot;class的结构&quot;&gt;Class的结构&lt;/h2&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022266359919.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;class_rw_t 中存放的是可读写的所有数据，class_ro_t保存的是只读的数据，主要是主类中生成的方法变量协议等property_list_t一维数组。class_rw_t中存放的是包含类别变量协议方法的一个大的二维数组property_array_t，存放主类和类别的小数组数据。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022266740521.jpg&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;方法缓存&quot;&gt;方法缓存&lt;/h2&gt;
-&lt;p&gt;class中有个cache_t cache, 用来做方法的缓存，使用哈希表实现。第一次在rw_t中的methods中遍历查找方法实现，找到就放入cache中，节省查找时间。
-插入和查询时分别用SEL按位与 mask,得到哈希表的index,解决哈希表冲突的方式是开放地址法，就是往前寻找一位。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022267154421.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;在arm64之前，isa是一个普通指针，指向class和meta-class地址
-arm64之后， ISA经过优化，使用union数据结构，使用位域来增加存储信息，增加内存利用率
-下图中bits为真正存放数据的值，struct中只是申明bits中分别多少位是什么数据。在取值时将bits按位与得到指定位数的值是多少而不受其他位数据的影响。例如shiftcls是存放类地址的，使用了33位。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022267618486.jpg&quot; alt=&quot;1&quot; /&gt;
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022267618501.jpg&quot; alt=&quot;2&quot; /&gt;
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201009/16022267618514.jpg&quot; alt=&quot;3&quot; /&gt;&lt;/p&gt;
-</description>
-        <pubDate>Fri, 09 Oct 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>JSBridge实现原理</title>
-        <description>&lt;h2 id=&quot;什么是jsbridge&quot;&gt;什么是JSBridge&lt;/h2&gt;
-&lt;p&gt;由于Native和H5的各自特性，尤其的H5的易于部署的适用与双端的特点，使得为了满足业务的需要，公司实际项目的开发过程中往往会融合两者进行 Hybrid 开发。
-JSBridge 是一种 JS 实现的 Bridge，连接着桥两端的 Native 和 H5。它在 APP 内方便地让 Native 调用 JS，JS 调用 Native ，是双向通信的通道。&lt;/p&gt;
-&lt;h2 id=&quot;为什么要做jsbridge&quot;&gt;为什么要做JSBridge&lt;/h2&gt;
-&lt;p&gt;我们知道OC调用JS的方法可以通过Webview的evaluateJavaScript:completionHandler: 方法实现，但是解决不了异步问题，当JS需要执行一些耗时操作，就无法立即给OC返回相应结果。
-同样JS调用OC的方法没有现成的方法，且也无法解决上面的异步问题。
-所以JSBridge的出现，目的是解决OC与JS相互异步调用，且当其中有多个异步回调，要能处理好各回调之间的关系，能够做到类似CS架构。
-这样能处理原先很多无法实现的能力，例如获取定位，相机拍照，手机传感器等等需要异步的接口调用能力。&lt;/p&gt;
-
-&lt;h2 id=&quot;怎么实现jsbridge&quot;&gt;怎么实现JSBridge&lt;/h2&gt;
-&lt;h3 id=&quot;10版本&quot;&gt;1.0版本&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;JS调用Native，通过自定义跳转URL协议头(例如jsbridge://)，并携带相应参数，Native拦截URL并解析来实现。&lt;/li&gt;
-  &lt;li&gt;OC调用Native，通过evaluateJavaScript:completionHandler: 且用runloop阻塞当前线程，直到返回结果&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;2端各维护一套响应回调和方法回调的映射表，从而实现在通信过程中，即使异步依然可以从映射表中查出回调地址。
-流程图如下：
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20200929/16013608341218.png&quot; style=&quot;zoom:70%&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;20版本&quot;&gt;2.0版本&lt;/h3&gt;
-&lt;p&gt;通过JavascriptCore实现,关于JSCore详见&lt;a href=&quot;https://tech.meituan.com/2018/08/23/deep-understanding-of-jscore.html&quot;&gt;深入理解JSCore&lt;/a&gt;&lt;/p&gt;
-</description>
-        <pubDate>Tue, 29 Sep 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/09/JSBridge%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/09/JSBridge%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/</guid>
         
         <category>iOS</category>
         

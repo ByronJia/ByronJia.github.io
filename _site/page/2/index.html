@@ -177,6 +177,111 @@
   <ol class="post-list">
     
     <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/09/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3HTTPS/" title="访问 深入理解HTTPS">深入理解HTTPS</a></h2>
+      <p class="excerpt">WhatHTTPS在传统的HTTP和TCP之间加了一层用于加密解密的SSL/TLS层（安全套接层Secure Sockets Layer/安全传输层Transport Layer Security）层。使用HTTPS必须要有一套自己的数字证书（包含公钥和私钥）。WhyHTTP的问题  不加密，通信是明文，可能被窃听  无法证明报文的完整性，可能被篡改  没验证通信方的身份，可能遭遇中间人伪装HTTPS解决的问题  信息加密传输：第三方无法窃听；  校验机制：一旦被篡改，通信双方会立刻发现；...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-09-13 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-09-13</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right"></span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/09/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3HTTPS/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/08/WebRTC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/" title="访问 WebRTC架构及原理">WebRTC架构及原理</a></h2>
+      <p class="excerpt">架构主体包含3个模块，音频引擎，视频引擎，传输层。最核心的在于传输层。  音频引擎包含回声消除，降噪音频编解码等。音频采集和渲染层 可override自己实现  视频引擎包含VP8，VP9，H264编解码，图形增强的算法。视频采集层 可override自己实现，不包含图像渲染层  传输层包含P2P,STUN,TURN,ICE，RTP,RTSP等传输控制协议。网络IO层可override 自己实现信令服务器NAT穿越：  设备大多在网关背后，想要简历P2P连接就要穿过网关，连接到内网的设备，...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-08-11 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-08-11</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">webRTC</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/08/WebRTC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" title="访问 GCC 拥塞控制算法详解">GCC 拥塞控制算法详解</a></h2>
+      <p class="excerpt">GCC 拥塞控制算法谷歌使用GCC (Google Congestion Control ) 在 WebRTC中的拥塞控制算法，包含2个部分，一个是基于丢包的用拥塞控制，一个是基于延迟的拥塞控制。最终基于丢包的码率估计值和基于延迟的码率估计值做比较，使用最小的码率估计值作为最终发送码率。早期实现中2部分分别在发送端和接收端实现，接收端实现延迟梯度算法计算出估计带宽，反馈给发送端，发送端再根据2个算法结果确定最终发送码率。最近的WebRTC中的GCC都在发送端来实现，所以需要接收端在RTCP...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-08-05 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-08-05</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">webRTC</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/08/GCC-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" title="访问 BBR 拥塞控制算法详解">BBR 拥塞控制算法详解</a></h2>
+      <p class="excerpt">BBR 拥塞控制算法BBR: Bottleneck Bandwidth and RTTBBR 发明的目的是解决2个问题。  在有一定丢包率的网络链路上充分利用带宽  降低网络链路上的buffer占用率，降低延迟。BBR 原理 使用极大带宽和极小延迟的乘积作为发送窗口大小。其他拥塞算法原理所有拥塞算法目标都是最大化利用网络上瓶颈链路的带宽，通常办法是不断增加数据量，直到发生丢包或者延迟增大等这些信号表明当前带宽已经使用100%。GCC等其他算法都是基于某些信号认为网络发生拥塞，例如丢包。网络...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-08-02 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-08-02</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">webRTC</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/08/BBR-%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" title="访问 TCP相关控制算法详解">TCP相关控制算法详解</a></h2>
+      <p class="excerpt">TCP相关控制算法以段为单位发送数据在TCP建立连接三次握手的时候，协议中带有自己接口最适合的MSS (Maximum Segment Size)大小，发送方以后就按照这个大写切分数据段。滑动窗口来提高传输速度原先发送方每发送一条数据，都要等待接收方的反馈才会发送下一条，这样效率太低。现在定义一个窗口大小，每次发送窗口大小内数据不等待反馈，全部发送完毕等待一次反馈，相比原来节约很多时。滑动窗口与重发机制在使用窗口控制中，出现段丢失或者应答丢失会不会出发重传？      数据应答丢失    ...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-07-28 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-07-28</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">webRTC</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/07/TCP%E7%9B%B8%E5%85%B3%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
       <h2 class="post-list__post-title post-title"><a href="/2020/06/SIG%E8%93%9D%E7%89%99%E5%8D%8F%E8%AE%AE5.2%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9/" title="访问 SIG蓝牙协议5.2版本更新内容">SIG蓝牙协议5.2版本更新内容</a></h2>
       <p class="excerpt">主要是3块新特性  Enhanced Attribute Protocol  LE Power Control  LE Isochronous Channels背景介绍PUD: Protocol Data Unit 协议数据单元 被某一层处理为指定数据格式的数据。SDU: Service Data Unit 服务数据单元 在某一层中还未处理的数据，比如输入的数据，叫SDU,封装成PDU通过层与层之间的管道传输给下一层。本层的PDU是下一层的SDU,本层的SDU是上一层的PDU一、Enhan...&hellip;</p>
       <div class="post-list__meta">        

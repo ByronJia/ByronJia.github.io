@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <title>网络优化策略</title>
+  <meta name="description" content="网络优化策略  NSCache缓存，Last-Modified, ETag  DNS解析  数据压缩，protobuf, WebP  失败重发，缓存请求有网发送  弱网下设置不同超时时间">
+  <meta name="author" content="leopardpan">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="网络优化策略">
+  <meta name="twitter:description" content="网络优化策略  NSCache缓存，Last-Modified, ETag  DNS解析  数据压缩，protobuf, WebP  失败重发，缓存请求有网发送  弱网下设置不同超时时间">
+  
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="网络优化策略">
+  <meta property="og:description" content="网络优化策略  NSCache缓存，Last-Modified, ETag  DNS解析  数据压缩，protobuf, WebP  失败重发，缓存请求有网发送  弱网下设置不同超时时间">
+  
+  <link rel="icon" type="image/png" href="/images/favicon.png" />
+  <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link rel="canonical" href="http://localhost:4000/2020/12/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5/">
+  <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
+  
+  <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
+
+  <!-- google 广告代码 -->
+  <script data-ad-client="ca-pub-1488511477321962" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  
+<!-- 站点统计 不蒜子 -->
+  <script 
+  async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>  
+
+<!-- 百度统计 -->
+  
+  <script>
+      var _hmt = _hmt || [];
+      (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?04766feadab5e00060a50dc5959c98e2";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+      })();
+  </script>
+  
+
+<!-- google 统计 -->
+  
+  <!-- <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-177644508-1', 'auto');
+      ga('send', 'pageview');
+  </script> -->
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-177644508-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-177644508-1');
+  </script>
+
+  
+
+  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-9005224472374751",
+    enable_page_level_ads: true
+  });
+</script>
+
+</head>
+
+
+  <body>
+
+    <span class="mobile btn-mobile-menu">        
+      <div class="nav_container">
+         <nav class="nav-menu-item" style = "float:right">
+            <i class="nav-menu-item">
+              <a href="/#blog" title="" class="blog-button">  博客主页
+              </a>
+            </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/archive" title="archive" class="btn-mobile-menu__icon">
+                      所有文章
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/tags" title="tags" class="btn-mobile-menu__icon">
+                      标签
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/about" title="about" class="btn-mobile-menu__icon">
+                      关于我
+                  </a>
+                </i>
+            
+          </nav>
+      </div>
+    </span>
+    
+    <header class="panel-cover panel-cover--collapsed" style="background-image: url('/images/background-cover.jpg')">
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+        <!-- 头像效果-start -->
+        <div class="ih-item circle effect">            
+            <a href="/#blog" title="前往 拜伦的博客 的主页" class="blog-button">
+                <div class="img"><img src="/images/avatar.jpg" alt="img"></div>
+            </a>
+        </div>
+        <!-- 头像效果-end -->
+        <h1 class="panel-cover__title panel-title"><a href="/#blog" title="link to homepage for 拜伦的博客" class="blog-button">拜伦的博客</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">Coder Byron</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">这里有关于iOS,机器学习的笔记心得,欢迎交流</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        
+        
+
+        <div class="navigation-wrapper">
+          <div>
+            <nav class="cover-navigation cover-navigation--primary">
+              <ul class="navigation">
+                <li class="navigation__item"><a href="/#blog" title="" class="blog-button">博客主页</a></li>
+                
+                  <li class="navigation__item"><a href="/archive" title="archive">所有文章</a></li>
+                
+                  <li class="navigation__item"><a href="/tags" title="tags">标签</a></li>
+                
+                  <li class="navigation__item"><a href="/about" title="about">关于我</a></li>
+                
+              </ul>
+            </nav>
+          </div>          
+        </div>
+
+
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class="panel-cover--overlay cover-gray"></div>
+    
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <head>
+  <link rel="stylesheet" href="/css/post.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.0.0/mermaid.min.js"></script>
+<script>
+  var config = {
+    startOnLoad:true,
+    theme: 'forest',
+    flowchart:{
+            useMaxWidth:false,
+            htmlLabels:true
+        }
+  };
+  mermaid.initialize(config);
+  window.mermaid.init(undefined, document.querySelectorAll('.language-mermaid'));
+</script>
+
+</head>
+
+<article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
+  <header class="post-header">
+    <h1 class="post-title">网络优化策略</h1>
+    <div class="post-meta">
+      <img src="/images/calendar.png" width="20px"/> 
+      <time datetime="2020-12-10 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-12-10</time>  
+
+      <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
+    </p>
+    </div>
+  </header>
+
+  
+    <h2 class="post-title">目录</h2>
+    <ul>
+  <li><a href="#网络优化策略">网络优化策略</a>
+    <ul>
+      <li><a href="#nscache缓存">NSCache缓存</a></li>
+      <li><a href="#dns解析">DNS解析</a></li>
+      <li><a href="#数据压缩">数据压缩</a></li>
+      <li><a href="#失败重发">失败重发</a></li>
+      <li><a href="#弱网下设置不同超时时间">弱网下设置不同超时时间</a></li>
+    </ul>
+  </li>
+  <li><a href="#http2相比http1x的升级">HTTP2相比HTTP1.x的升级：</a></li>
+</ul>
+
+  
+
+  <section class="post">
+    <h3 id="网络优化策略">网络优化策略</h3>
+<ol>
+  <li>NSCache缓存，Last-Modified, ETag</li>
+  <li>DNS解析</li>
+  <li>数据压缩，protobuf, WebP</li>
+  <li>失败重发，缓存请求有网发送</li>
+  <li>弱网下设置不同超时时间</li>
+</ol>
+
+<h4 id="nscache缓存">NSCache缓存</h4>
+<p>Get类似SQL查找，所以默认会缓存，Post是提交数据，类似UPDATE，所以不会缓存。
+Last-Modified：资源最后修改时间，来判断是否过期
+请求response中会包含该字段和时间，下次请求时加上if-Modified-since : xxxx， 如果资源无变化返回304 Not Changed。</p>
+
+<p>ETag:资源文件的hash值，与当前资源文件比对是否一致，不一致则返回新值，一致则不返回。</p>
+
+<h4 id="dns解析">DNS解析</h4>
+<p>使用HTTPDNS 解析域名，代替从localDNS获取IP。 当HTTPDNS解析失败时再走localDNS.
+或者本地维护IP list，与HTTPDNS的结果做更新</p>
+
+<h4 id="数据压缩">数据压缩</h4>
+<p>webP图片格式比PNG和jpg 体积小，但是webP图片需要解析才能成为可用的jpg图片， app内解析肯定要花费一定的性能。
+在wifi条件下，较大的图片直接使用png/jpg, 减少解析时间。  4G条件下，建议用webP,对流量比较友好</p>
+
+<h4 id="失败重发">失败重发</h4>
+<p>超时或失败的请求建立重发机制，待网络通畅后再次发送</p>
+
+<h4 id="弱网下设置不同超时时间">弱网下设置不同超时时间</h4>
+<p>不同网络状态下超时时间设置不同，例如4G只需要10秒，3G需要20秒，在超时后依然无法与服务端建立连接，可排查网络链路通畅性，例如使用HTTPDNS切换新的服务器站点，尝试连接。</p>
+
+<h3 id="http2相比http1x的升级">HTTP2相比HTTP1.x的升级：</h3>
+<ol>
+  <li>HTTP/2采用二进制格式传输数据 ，而不是1.x的文本格式。</li>
+  <li>对消息头进行压缩传输，节省消息头占用的流量。 1.x每次请求携带大量冗余头信息，浪费资源</li>
+  <li>多路复用，一个域名下的请求可以通过一个TCP连接并发完成，毕竟新开一个TCP连接都需要慢慢提升传输速度。 1.x虽然通过pipeline也能并发请求，但是多个请求之间响应会被阻塞。采用二进制分帧，数据流可以乱序发送，接收后可以重新组装。</li>
+  <li>server push， 服务端提前把资源推送给客户端</li>
+</ol>
+
+  </section>
+
+</article>
+
+<section>
+
+            <div class="content-play">
+              <!-- <p><a href="javascript:void(0)" onclick="dashangToggle()" class="dashang" title="打赏，支持一下">打赏一个呗</a></p> -->
+              <div class="hide_box-play"></div>
+              <div class="shang_box-play">
+                <a class="shang_close-play" href="javascript:void(0)" onclick="dashangToggle()" title="关闭"><img src="/images/payimg/close.jpg" alt="取消" /></a>
+                <div class="shang_tit-play">
+                  <p>感谢您的支持，我会继续努力的!</p>
+                </div>
+                <div class="shang_payimg">
+                    <img src="/images/payimg/alipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+              <div class="shang_payimg">    
+                    <img src="/images/payimg/weipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+                <div class="pay_explain">扫码打赏，你说多少就多少</div>
+                <div class="shang_payselect">
+                  <div class="pay_item checked" data-id="alipay">
+                    <span class="pay_logo"><img src="/images/payimg/alipay.jpg" alt="支付宝" /></span>
+                  </div>
+                  <div class="pay_item" data-id="weipay">
+                    <span class="pay_logo"><img src="/images/payimg/wechat.jpg" alt="微信" /></span>
+                  </div>
+                </div>
+                <div class="shang_info-play">
+                  <p>打开<span id="shang_pay_txt">支付宝</span>扫一扫，即可进行扫码打赏哦</p>
+                </div>
+              </div>
+            </div>
+            <script type="text/javascript">
+            function dashangToggle(){
+              $(".hide_box-play").fadeToggle();
+              $(".shang_box-play").fadeToggle();
+            }
+            </script>
+
+            <div style="text-align:center;margin:50px 0; font:normal 14px/24px 'MicroSoft YaHei';"></div>
+
+            <style type="text/css">
+              .content-play{width:80%;margin-top: 20px;margin-bottom: 10px;height:40px;}
+              .hide_box-play{z-index:999;filter:alpha(opacity=50);background:#666;opacity: 0.5;-moz-opacity: 0.5;left:0;top:0;height:99%;width:100%;position:fixed;display:none;}
+              .shang_box-play{width:540px;height:540px;padding:10px;background-color:#fff;border-radius:10px;position:fixed;z-index:1000;left:50%;top:50%;margin-left:-280px;margin-top:-280px;border:1px dotted #dedede;display:none;}
+              .shang_box-play img{border:none;border-width:0;}
+              .dashang{display:block;width:100px;margin:5px auto;height:25px;line-height:25px;padding:10px;background-color:#E74851;color:#fff;text-align:center;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;transition: all 0.3s;}
+              .dashang:hover{opacity:0.8;padding:15px;font-size:18px;}
+              .shang_close-play{float:right;display:inline-block;
+                margin-right: 10px;margin-top: 20px;
+              }
+              .shang_logo{display:block;text-align:center;margin:20px auto;}
+              .shang_tit-play{width: 100%;height: 75px;text-align: center;line-height: 66px;color: #a3a3a3;font-size: 16px;background: url('/images/payimg/cy-reward-title-bg.jpg');font-family: 'Microsoft YaHei';margin-top: 7px;margin-right:2px;}
+              .shang_tit-play p{color:#a3a3a3;text-align:center;font-size:16px;}
+              .shang_payimg{width:140px;padding:10px;padding-left: 80px; /*border:6px solid #EA5F00;**/margin:0 auto;border-radius:3px;height:140px;display:inline-block;}
+              .shang_payimg img{display:inline-block;margin-right:10px;float:left;text-align:center;width:140px;height:140px; }
+              .pay_explain{text-align:center;margin:10px auto;font-size:12px;color:#545454;}
+              .shang_payselect{text-align:center;margin:0 auto;margin-top:40px;cursor:pointer;height:60px;width:500px;margin-left:110px;}
+              .shang_payselect .pay_item{display:inline-block;margin-right:140px;float:left;}
+              .shang_info-play{clear:both;}
+              .shang_info-play p,.shang_info-play a{color:#C3C3C3;text-align:center;font-size:12px;text-decoration:none;line-height:2em;}
+            </style>
+
+       <ul class="pager">
+        
+        <li class="previous">
+            <a href="/2020/12/%E5%90%84iOS%E7%89%88%E6%9C%AC%E9%80%82%E9%85%8D%E6%A6%82%E8%A6%81/" data-toggle="tooltip" data-placement="top" title="各iOS版本适配概要">上一篇：  <span>各iOS版本适配概要</span>
+            </a>
+        </li>
+        
+        
+        <li class="next">
+            <a href="/2020/12/%E8%A7%86%E9%A2%91%E7%A7%92%E5%BC%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88/" data-toggle="tooltip" data-placement="top" title="视频秒开优化方案">下一篇：  <span>视频秒开优化方案</span>
+            </a>
+        </li>
+        
+    </ul>
+</section>
+
+<section class="post-comments">
+
+  
+  
+</section>
+
+
+            <section class="footer">
+    <footer>
+        <div class = "footer_div">  
+        <nav class="cover-navigation navigation--social">
+          <ul class="navigation">
+
+          
+          <!-- Github -->
+          <li class="navigation__item_social">
+            <a href="https://github.com/ByronJia" title="@ByronJia 的 Github" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/github.png);"></div>
+            </a>
+          </li>
+          
+
+          
+          <!-- Zhihu -->
+          <li class="navigation__item_social">
+            <a href="https://www.zhihu.com/people/byronjia" title="@byronjia" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/zhihu.png);"></div>
+            </a>
+          </li>
+
+          
+
+          
+
+          
+
+          
+
+          
+          
+
+
+          
+          <!-- Email -->
+          <li class="navigation__item_social">
+            <a href="mailto:jiachaoning@163.com" title="Contact me">
+              <div class="footer-social-icon" style="background:url(/images/email.png);"></div>
+            </a>
+          </li>
+          
+          
+          <!-- RSS -->
+          <!-- <li class="navigation__item_social">
+            <a href="/feed.xml" rel="author" title="RSS" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/rss.png);"></div>
+              <span class="label">RSS</span>
+            </a>
+          </li> -->
+
+          </ul>
+        </nav>
+
+        </div>
+
+        <div class = "footer_div">  
+           <p class="copyright text-muted">
+            Copyright &copy; 拜伦的博客 2020 Theme by <a href="https://github.com/ByronJia/ByronJia.github.io">Byron</a> |
+            <iframe
+                style="margin-left: 2px; margin-bottom:-5px;"
+                frameborder="0" scrolling="0" width="91px" height="20px"
+                src="https://ghbtns.com/github-btn.html?user=ByronJia&repo=ByronJia.github.io&type=star&count=true" >
+            </iframe>
+            </p>
+        	<!-- <div align="right">
+    			<link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.3.0/css/font-awesome.min.css"> -->
+
+          <!-- 访问统计 -->
+          <!-- <span id="busuanzi_container_site_pv">
+            本站总访问量
+            <span id="busuanzi_value_site_pv"></span>次
+          </span> -->
+
+        <!-- </div>
+        <script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/Epsilon2.1.model.json"},"display":{"position":"right","width":145,"height":315},"mobile":{"show":true,"scale":0.5},"react":{"opacityDefault":0.7,"opacityOnHover":0.8},"log":false,"pluginJsPath":"lib/","pluginRootPath":"live2dw/"});</script></body>
+        <div> -->
+    </footer>
+</section>
+
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="/js/main.js"></script>
+
+<script type="text/javascript" src="/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+  </body>
+
+</html>

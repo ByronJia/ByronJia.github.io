@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <title>音视频基础知识</title>
+  <meta name="description" content="码率：也叫比特率， Bits per second 每秒传输的数据量。 可以理解成吞吐量或带宽。 目的是用最低的比特率达到最少的失真">
+  <meta name="author" content="leopardpan">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="音视频基础知识">
+  <meta name="twitter:description" content="码率：也叫比特率， Bits per second 每秒传输的数据量。 可以理解成吞吐量或带宽。 目的是用最低的比特率达到最少的失真">
+  
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="音视频基础知识">
+  <meta property="og:description" content="码率：也叫比特率， Bits per second 每秒传输的数据量。 可以理解成吞吐量或带宽。 目的是用最低的比特率达到最少的失真">
+  
+  <link rel="icon" type="image/png" href="/images/favicon.png" />
+  <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link rel="canonical" href="http://localhost:4000/2020/12/%E9%9F%B3%E8%A7%86%E9%A2%91%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/">
+  <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
+  
+  <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
+
+  <!-- google 广告代码 -->
+  <script data-ad-client="ca-pub-1488511477321962" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  
+<!-- 站点统计 不蒜子 -->
+  <script 
+  async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>  
+
+<!-- 百度统计 -->
+  
+  <script>
+      var _hmt = _hmt || [];
+      (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?04766feadab5e00060a50dc5959c98e2";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+      })();
+  </script>
+  
+
+<!-- google 统计 -->
+  
+  <!-- <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-177644508-1', 'auto');
+      ga('send', 'pageview');
+  </script> -->
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-177644508-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-177644508-1');
+  </script>
+
+  
+
+  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-9005224472374751",
+    enable_page_level_ads: true
+  });
+</script>
+
+</head>
+
+
+  <body>
+
+    <span class="mobile btn-mobile-menu">        
+      <div class="nav_container">
+         <nav class="nav-menu-item" style = "float:right">
+            <i class="nav-menu-item">
+              <a href="/#blog" title="" class="blog-button">  博客主页
+              </a>
+            </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/archive" title="archive" class="btn-mobile-menu__icon">
+                      所有文章
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/tags" title="tags" class="btn-mobile-menu__icon">
+                      标签
+                  </a>
+                </i>
+            
+                <i class="nav-menu-item">
+
+                  <a href="/about" title="about" class="btn-mobile-menu__icon">
+                      关于我
+                  </a>
+                </i>
+            
+          </nav>
+      </div>
+    </span>
+    
+    <header class="panel-cover panel-cover--collapsed" style="background-image: url('/images/background-cover.jpg')">
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+        <!-- 头像效果-start -->
+        <div class="ih-item circle effect">            
+            <a href="/#blog" title="前往 拜伦的博客 的主页" class="blog-button">
+                <div class="img"><img src="/images/avatar.jpg" alt="img"></div>
+            </a>
+        </div>
+        <!-- 头像效果-end -->
+        <h1 class="panel-cover__title panel-title"><a href="/#blog" title="link to homepage for 拜伦的博客" class="blog-button">拜伦的博客</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">Coder Byron</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">这里有关于iOS,机器学习的笔记心得,欢迎交流</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        
+        
+
+        <div class="navigation-wrapper">
+          <div>
+            <nav class="cover-navigation cover-navigation--primary">
+              <ul class="navigation">
+                <li class="navigation__item"><a href="/#blog" title="" class="blog-button">博客主页</a></li>
+                
+                  <li class="navigation__item"><a href="/archive" title="archive">所有文章</a></li>
+                
+                  <li class="navigation__item"><a href="/tags" title="tags">标签</a></li>
+                
+                  <li class="navigation__item"><a href="/about" title="about">关于我</a></li>
+                
+              </ul>
+            </nav>
+          </div>          
+        </div>
+
+
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class="panel-cover--overlay cover-gray"></div>
+    
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <head>
+  <link rel="stylesheet" href="/css/post.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.0.0/mermaid.min.js"></script>
+<script>
+  var config = {
+    startOnLoad:true,
+    theme: 'forest',
+    flowchart:{
+            useMaxWidth:false,
+            htmlLabels:true
+        }
+  };
+  mermaid.initialize(config);
+  window.mermaid.init(undefined, document.querySelectorAll('.language-mermaid'));
+</script>
+
+</head>
+
+<article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
+  <header class="post-header">
+    <h1 class="post-title">音视频基础知识</h1>
+    <div class="post-meta">
+      <img src="/images/calendar.png" width="20px"/> 
+      <time datetime="2020-12-11 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-12-11</time>  
+
+      <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
+    </p>
+    </div>
+  </header>
+
+  
+    <h2 class="post-title">目录</h2>
+    <ul>
+  <li><a href="#码率">码率：</a></li>
+  <li><a href="#常见编码标准">常见编码标准:</a></li>
+  <li><a href="#h264">H.264:</a></li>
+  <li><a href="#h265">H.265:</a></li>
+  <li><a href="#gop">GOP:</a></li>
+  <li><a href="#idr帧">IDR帧：</a></li>
+  <li><a href="#nal">NAL:</a></li>
+  <li><a href="#sps">SPS:</a></li>
+  <li><a href="#pps">PPS:</a></li>
+  <li><a href="#dts">DTS</a></li>
+  <li><a href="#pts">PTS</a></li>
+  <li><a href="#音视频同步">音视频同步：</a></li>
+  <li><a href="#视频传输协议优化">视频传输协议优化：</a></li>
+  <li><a href="#视频传输网络优化">视频传输网络优化：</a></li>
+  <li><a href="#推流播放优化">推流、播放优化：</a></li>
+</ul>
+
+  
+
+  <section class="post">
+    <h3 id="码率">码率：</h3>
+<p>也叫比特率， Bits per second 每秒传输的数据量。 可以理解成吞吐量或带宽。 目的是用最低的比特率达到最少的失真</p>
+
+<p>###帧率：
+Frames per second 每秒显示帧数。</p>
+
+<h3 id="常见编码标准">常见编码标准:</h3>
+<p>MPEG-4， 其中第10部分提出新的视频编码方案，即与另一个组织共同开发的H.264。第三部分提出AAC音频编码方案，旨在替代MP3。  第14部分提出MP4封装格式包括音频编码方案和视频编码方案。</p>
+
+<h3 id="h264">H.264:</h3>
+<p>定义了三种帧，I帧 P帧 B帧
+1）I 帧：I帧即帧内编码帧、关键帧，可以理解为一帧画面的完整保留，解码时只需要本帧数据就可以完成，不需要参考其他画面，数据量比较大；
+2）P 帧：P帧即前向预测编码帧，记录当前帧跟上一关键帧（或P帧）的差别，解码时依赖之前缓存的画面，叠加上本帧定义的差别，才能生成最终画面，数据量较 I 帧小很多；
+3）B 帧：B帧即双向预测编码帧，记录当前帧跟前后帧的差别，解码时依赖前面的I帧（或P帧）和后面的P帧，数据量比I帧和P帧小很多。
+直播场景中一般不适用B帧，因为受到一个B帧后还要等待之后的P帧才能解码，会有滞后性。</p>
+
+<p>编码计算复杂度是H.263的3倍， 解码复杂度是H.263的2倍。但是相同视频 质量，可以比H.263节省50%码率</p>
+
+<h3 id="h265">H.265:</h3>
+<p>High Efficiency Video Coding 简称HEVC。  与H.264类似，包含帧内预测，帧间预测，转化，量化，滤波，熵编码等。
+在H.264基础上使用先进技术用以改善码流，编码质量，延时和算法复杂度之间的关系。
+在码率减少51-74%情况下，265的视频质量与264近似甚至更好。
+iOS11开始原生支持HEVC   H.265</p>
+
+<h3 id="gop">GOP:</h3>
+<p>Group of Pictures 一组连续的画面，由一张I帧和多张B/P帧组成，是视频编解码存取的基本单位。GOP组的长度格式也决定了码流的大小,形容一个I帧到下一个I帧之间间隔多少帧，增大GOP能有效减少编码后视频体积，但也会降低视频质量。</p>
+
+<h3 id="idr帧">IDR帧：</h3>
+<p>一个序列的首个I帧叫做IDR帧，IDR帧都是I帧.
+引入目的是为了解码的重同步,如果前序列出现重大错误，这里可以获得重新同步机会。
+当解码到IDR帧时，会立即将参考帧队列清空，将已解码的数据全部输出或抛弃，重新查找参数集，开始新序列。</p>
+
+<h3 id="nal">NAL:</h3>
+<p>Network abstract layer 网络抽象层</p>
+
+<h3 id="sps">SPS:</h3>
+<p>Sequence Parameter Set ，序列参数集，保存了一组编码视频序列的全局参数，一般SPS 和PPS在整个码流的起始位置，特殊情况下也可能在中间出现，例如中间需要重新解码，或者参数信息发生编发例如屏幕宽高比变化。</p>
+
+<h3 id="pps">PPS:</h3>
+<p>Picture Parameter Set  图形参数集，类似于SPS， 在马六周年单独保存在一个NAL Unit中，保存在视频文件的文件头中。</p>
+
+<h3 id="dts">DTS</h3>
+<p>Decoding Time Stamp 解码时间戳，表示送入解码器的顺序</p>
+
+<h3 id="pts">PTS</h3>
+<p>Presentation Time Stamp 显示时间戳，表示解码后的帧显示时间
+在没有B帧情况下，DTS和PTS输出顺序一致。 因为B帧需要依赖后续的帧，所以B帧解码要在后续P帧之后，但是显示又在后续P帧之前</p>
+
+<h3 id="音视频同步">音视频同步：</h3>
+<p>音频没有类似视频中的B帧，所以音频帧的DTS 和PTS顺序是一致的。
+通常需要选择一个参考时钟，参考时间的时间是线性递增的，编码音视频流时一句参考时钟上的时间给每个数据打上时间戳，播放时读取数据帧上的时间戳，同时参考PTS安排播放。</p>
+
+<h3 id="视频传输协议优化">视频传输协议优化：</h3>
+<ol>
+  <li>服务端节点之间尽量使用RTMP，降低整体传输延迟</li>
+  <li>如果终端使用RTMP播放，应该在尽量靠近收流节点进行转码，这样传输的视频流从一开始就是最优大小</li>
+  <li>如有必要，使用定制的UDP协议替换TCP协议，省去弱网环境下的丢包重传。</li>
+</ol>
+
+<h3 id="视频传输网络优化">视频传输网络优化：</h3>
+<ol>
+  <li>在服务端节点中缓存GOP，配合播放器端的首开优化</li>
+  <li>服务端实时记录每个视频流在每个环节的帧率和码率，检测波动</li>
+  <li>客户端通过查询服务端准实时获取当前最优节点(5秒一次)， 准实时下线当前故障节点和线路</li>
+</ol>
+
+<h3 id="推流播放优化">推流、播放优化：</h3>
+<ol>
+  <li>考察发送端系统的网络buffer大小</li>
+  <li>播放端的缓存对首开延迟也有较大影响，甚至可以在0缓存的情况下，将第一帧数据直接解码显示。但是如果弱网状态下，需要考虑网络波动造成的卡顿，还是需要增加一定的缓存。</li>
+  <li>可以使用动态缓存策略，参考第一帧的下载耗时决定后续播放过程中的缓存大小。</li>
+  <li>动态码率，在增加缓存依然无法满足当前码率的情况下，采用动态码率，减少延迟，当网络有所改善后，再动态增加码率。</li>
+</ol>
+
+
+  </section>
+
+</article>
+
+<section>
+
+            <div class="content-play">
+              <!-- <p><a href="javascript:void(0)" onclick="dashangToggle()" class="dashang" title="打赏，支持一下">打赏一个呗</a></p> -->
+              <div class="hide_box-play"></div>
+              <div class="shang_box-play">
+                <a class="shang_close-play" href="javascript:void(0)" onclick="dashangToggle()" title="关闭"><img src="/images/payimg/close.jpg" alt="取消" /></a>
+                <div class="shang_tit-play">
+                  <p>感谢您的支持，我会继续努力的!</p>
+                </div>
+                <div class="shang_payimg">
+                    <img src="/images/payimg/alipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+              <div class="shang_payimg">    
+                    <img src="/images/payimg/weipayimg.jpg" alt="扫码支持" title="扫一扫" />
+                </div>
+                <div class="pay_explain">扫码打赏，你说多少就多少</div>
+                <div class="shang_payselect">
+                  <div class="pay_item checked" data-id="alipay">
+                    <span class="pay_logo"><img src="/images/payimg/alipay.jpg" alt="支付宝" /></span>
+                  </div>
+                  <div class="pay_item" data-id="weipay">
+                    <span class="pay_logo"><img src="/images/payimg/wechat.jpg" alt="微信" /></span>
+                  </div>
+                </div>
+                <div class="shang_info-play">
+                  <p>打开<span id="shang_pay_txt">支付宝</span>扫一扫，即可进行扫码打赏哦</p>
+                </div>
+              </div>
+            </div>
+            <script type="text/javascript">
+            function dashangToggle(){
+              $(".hide_box-play").fadeToggle();
+              $(".shang_box-play").fadeToggle();
+            }
+            </script>
+
+            <div style="text-align:center;margin:50px 0; font:normal 14px/24px 'MicroSoft YaHei';"></div>
+
+            <style type="text/css">
+              .content-play{width:80%;margin-top: 20px;margin-bottom: 10px;height:40px;}
+              .hide_box-play{z-index:999;filter:alpha(opacity=50);background:#666;opacity: 0.5;-moz-opacity: 0.5;left:0;top:0;height:99%;width:100%;position:fixed;display:none;}
+              .shang_box-play{width:540px;height:540px;padding:10px;background-color:#fff;border-radius:10px;position:fixed;z-index:1000;left:50%;top:50%;margin-left:-280px;margin-top:-280px;border:1px dotted #dedede;display:none;}
+              .shang_box-play img{border:none;border-width:0;}
+              .dashang{display:block;width:100px;margin:5px auto;height:25px;line-height:25px;padding:10px;background-color:#E74851;color:#fff;text-align:center;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;transition: all 0.3s;}
+              .dashang:hover{opacity:0.8;padding:15px;font-size:18px;}
+              .shang_close-play{float:right;display:inline-block;
+                margin-right: 10px;margin-top: 20px;
+              }
+              .shang_logo{display:block;text-align:center;margin:20px auto;}
+              .shang_tit-play{width: 100%;height: 75px;text-align: center;line-height: 66px;color: #a3a3a3;font-size: 16px;background: url('/images/payimg/cy-reward-title-bg.jpg');font-family: 'Microsoft YaHei';margin-top: 7px;margin-right:2px;}
+              .shang_tit-play p{color:#a3a3a3;text-align:center;font-size:16px;}
+              .shang_payimg{width:140px;padding:10px;padding-left: 80px; /*border:6px solid #EA5F00;**/margin:0 auto;border-radius:3px;height:140px;display:inline-block;}
+              .shang_payimg img{display:inline-block;margin-right:10px;float:left;text-align:center;width:140px;height:140px; }
+              .pay_explain{text-align:center;margin:10px auto;font-size:12px;color:#545454;}
+              .shang_payselect{text-align:center;margin:0 auto;margin-top:40px;cursor:pointer;height:60px;width:500px;margin-left:110px;}
+              .shang_payselect .pay_item{display:inline-block;margin-right:140px;float:left;}
+              .shang_info-play{clear:both;}
+              .shang_info-play p,.shang_info-play a{color:#C3C3C3;text-align:center;font-size:12px;text-decoration:none;line-height:2em;}
+            </style>
+
+       <ul class="pager">
+        
+        <li class="previous">
+            <a href="/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/" data-toggle="tooltip" data-placement="top" title="iOS Crash 分析">上一篇：  <span>iOS Crash 分析</span>
+            </a>
+        </li>
+        
+        
+    </ul>
+</section>
+
+<section class="post-comments">
+
+  
+  
+</section>
+
+
+            <section class="footer">
+    <footer>
+        <div class = "footer_div">  
+        <nav class="cover-navigation navigation--social">
+          <ul class="navigation">
+
+          
+          <!-- Github -->
+          <li class="navigation__item_social">
+            <a href="https://github.com/ByronJia" title="@ByronJia 的 Github" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/github.png);"></div>
+            </a>
+          </li>
+          
+
+          
+          <!-- Zhihu -->
+          <li class="navigation__item_social">
+            <a href="https://www.zhihu.com/people/byronjia" title="@byronjia" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/zhihu.png);"></div>
+            </a>
+          </li>
+
+          
+
+          
+
+          
+
+          
+
+          
+          
+
+
+          
+          <!-- Email -->
+          <li class="navigation__item_social">
+            <a href="mailto:jiachaoning@163.com" title="Contact me">
+              <div class="footer-social-icon" style="background:url(/images/email.png);"></div>
+            </a>
+          </li>
+          
+          
+          <!-- RSS -->
+          <!-- <li class="navigation__item_social">
+            <a href="/feed.xml" rel="author" title="RSS" target="_blank">
+              <div class="footer-social-icon" style="background:url(/images/rss.png);"></div>
+              <span class="label">RSS</span>
+            </a>
+          </li> -->
+
+          </ul>
+        </nav>
+
+        </div>
+
+        <div class = "footer_div">  
+           <p class="copyright text-muted">
+            Copyright &copy; 拜伦的博客 2020 Theme by <a href="https://github.com/ByronJia/ByronJia.github.io">Byron</a> |
+            <iframe
+                style="margin-left: 2px; margin-bottom:-5px;"
+                frameborder="0" scrolling="0" width="91px" height="20px"
+                src="https://ghbtns.com/github-btn.html?user=ByronJia&repo=ByronJia.github.io&type=star&count=true" >
+            </iframe>
+            </p>
+        	<!-- <div align="right">
+    			<link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.3.0/css/font-awesome.min.css"> -->
+
+          <!-- 访问统计 -->
+          <!-- <span id="busuanzi_container_site_pv">
+            本站总访问量
+            <span id="busuanzi_value_site_pv"></span>次
+          </span> -->
+
+        <!-- </div>
+        <script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/Epsilon2.1.model.json"},"display":{"position":"right","width":145,"height":315},"mobile":{"show":true,"scale":0.5},"react":{"opacityDefault":0.7,"opacityOnHover":0.8},"log":false,"pluginJsPath":"lib/","pluginRootPath":"live2dw/"});</script></body>
+        <div> -->
+    </footer>
+</section>
+
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="/js/main.js"></script>
+
+<script type="text/javascript" src="/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+  </body>
+
+</html>
