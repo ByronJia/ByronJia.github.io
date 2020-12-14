@@ -5,9 +5,106 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 11 Dec 2020 14:20:21 +0800</pubDate>
-    <lastBuildDate>Fri, 11 Dec 2020 14:20:21 +0800</lastBuildDate>
+    <pubDate>Mon, 14 Dec 2020 11:40:57 +0800</pubDate>
+    <lastBuildDate>Mon, 14 Dec 2020 11:40:57 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>iOS App签名原理</title>
+        <description>&lt;p&gt;iOS 签名机制挺复杂，各种证书，Provisioning Profile，entitlements，CertificateSigningRequest，p12，AppID，概念一堆，也很容易出错，本文尝试从原理出发，一步步推出为什么会有这么多概念，希望能有助于理解 iOS App 签名的原理和流程。&lt;/p&gt;
+
+&lt;h3 id=&quot;app签名10&quot;&gt;App签名1.0&lt;/h3&gt;
+&lt;p&gt;要实现这个需求很简单，最直接的方式，苹果官方生成一对公私钥，在 iOS 里内置一个公钥，私钥由苹果后台保存，我们传 App 上 AppStore 时，苹果后台用私钥对 APP 数据进行签名，iOS 系统下载这个 APP 后，用公钥验证这个签名，若签名正确，这个 APP 肯定是由苹果后台认证的，并且没有被修改过，也就达到了苹果的需求：保证安装的每一个 APP 都是经过苹果官方允许的。
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20201214/16079168080845.png&quot; style=&quot;zoom:80%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;如果我们 iOS 设备安装 APP 只有从 AppStore 下载这一种方式的话，这件事就结束了，没有任何复杂的东西，只有一个数字签名，非常简单地解决问题。
+但实际上因为除了从 AppStore 下载，我们还可以有三种方式安装一个 App：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;开发 App 时可以直接把开发中的应用安装进手机进行调试。&lt;/li&gt;
+  &lt;li&gt;In-House 企业内部分发，可以直接安装企业证书签名后的 APP。&lt;/li&gt;
+  &lt;li&gt;AD-Hoc 相当于企业分发的限制版，限制安装设备数量，较少用。
+苹果要对用这三种方式安装的 App 进行控制，就有了新的需求，无法像上面这样简单了。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;app签名20&quot;&gt;App签名2.0&lt;/h3&gt;
+&lt;p&gt;我们先来看第一个，开发时安装APP，它有两个个需求：
+安装包不需要传到苹果服务器，可以直接安装到手机上。如果你编译一个 APP 到手机前要先传到苹果服务器签名，这显然是不能接受的。
+苹果必须对这里的安装有控制权，包括
+a. 经过苹果允许才可以这样安装。
+b. 不能被滥用导致非开发app也能被安装。
+为了实现这些需求，iOS 签名的复杂度也就开始增加了。
+苹果这里给出的方案是使用了双层签名，会比较绕，流程大概是这样的：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201214/16079168652311.png&quot; style=&quot;zoom:80%&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;在你的 Mac 开发机器生成一对公私钥，这里称为&lt;code class=&quot;highlighter-rouge&quot;&gt;公钥L&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;私钥L&lt;/code&gt;。L:Local&lt;/li&gt;
+  &lt;li&gt;苹果自己有固定的一对公私钥，跟上面 AppStore 例子一样，私钥在苹果后台，公钥在每个 iOS 设备上。这里称为&lt;code class=&quot;highlighter-rouge&quot;&gt;公钥A&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;私钥A&lt;/code&gt;。A:Apple&lt;/li&gt;
+  &lt;li&gt;把公钥 L 传到苹果后台，用苹果后台里的私钥 A 去签名公钥 L。得到一份数据包含了公钥 L 以及其签名，把这份数据称为证书。&lt;/li&gt;
+  &lt;li&gt;在开发时，编译完一个 APP 后，用本地的私钥 L 对这个 APP 进行签名，同时把第三步得到的证书一起打包进 APP 里，安装到手机上。&lt;/li&gt;
+  &lt;li&gt;在安装时，iOS 系统取得证书，通过系统内置的公钥 A，去验证证书的数字签名是否正确。&lt;/li&gt;
+  &lt;li&gt;验证证书后确保了公钥 L 是苹果认证过的，再用公钥 L 去验证 APP 的签名，这里就间接验证了这个 APP 安装行为是否经过苹果官方允许。（这里只验证安装行为，不验证APP 是否被改动，因为开发阶段 APP 内容总是不断变化的，苹果不需要管。）&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;app签名30&quot;&gt;App签名3.0&lt;/h3&gt;
+&lt;p&gt;上述流程只解决了上面第一个需求，也就是需要经过苹果允许才可以安装，还未解决第二个避免被滥用的问题。怎么解决呢？苹果再加了两个限制，一是限制在苹果后台注册过的设备才可以安装，二是限制签名只能针对某一个具体的 APP。
+怎么加的？在上述第三步，苹果用私钥 A 签名我们本地公钥 L 时，实际上除了签名公钥 L，还可以加上无限多数据，这些数据都可以保证是经过苹果官方认证的，不会有被篡改的可能。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201214/16079169420158.png&quot; style=&quot;zoom:80%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;可以想到把 允许安装的设备 ID 列表 和 App对应的 AppID 等数据，都在第三步这里跟公钥L一起组成证书，再用苹果私钥 A 对这个证书签名。在最后第 5 步验证时就可以拿到设备 ID 列表，判断当前设备是否符合要求。根据数字签名的原理，只要数字签名通过验证，第 5 步这里的设备 IDs / AppID / 公钥 L 就都是经过苹果认证的，无法被修改，苹果就可以限制可安装的设备和 APP，避免滥用。&lt;/p&gt;
+
+&lt;h3 id=&quot;app签名终版&quot;&gt;App签名终版&lt;/h3&gt;
+&lt;p&gt;这里这个证书已经变得很复杂了，有很多额外信息，实际上除了 设备 ID / AppID，还有其他信息也需要在这里用苹果签名，像这个 APP 里 iCloud / push / 后台运行 等权限苹果都想控制，苹果把这些权限开关统一称为 Entitlements，它也需要通过签名去授权。
+实际上一个“证书”本来就有规定的格式规范，上面我们把各种额外信息塞入证书里是不合适的，于是苹果另外搞了个东西，叫 Provisioning Profile，一个 Provisioning Profile 里就包含了证书以及上述提到的所有额外信息，以及所有信息的签名。
+所以整个流程稍微变一下，就变成这样了：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201214/16079170366343.png&quot; style=&quot;zoom:80%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;因为步骤有小变动，这里我们不辞啰嗦重新再列一遍整个流程：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;在你的 Mac 开发机器生成一对公私钥，这里称为公钥L，私钥L。L:Local&lt;/li&gt;
+  &lt;li&gt;苹果自己有固定的一对公私钥，跟上面 AppStore 例子一样，私钥在苹果后台，公钥在每个 iOS 设备上。这里称为公钥A，私钥A。A:Apple&lt;/li&gt;
+  &lt;li&gt;把公钥 L 传到苹果后台，用苹果后台里的私钥 A 去签名公钥 L。得到一份数据包含了公钥 L 以及其签名，把这份数据称为证书。&lt;/li&gt;
+  &lt;li&gt;在苹果后台申请 AppID，配置好设备 ID 列表和 APP 可使用的权限，再加上第③步的证书，组成的数据用私钥 A 签名，把数据和签名一起组成一个 Provisioning Profile 文件，下载到本地 Mac 开发机。&lt;/li&gt;
+  &lt;li&gt;在开发时，编译完一个 APP 后，用本地的私钥 L 对这个 APP 进行签名，同时把第④步得到的 Provisioning Profile 文件打包进 APP 里，文件名为 embedded.mobileprovision，把 APP 安装到手机上。&lt;/li&gt;
+  &lt;li&gt;在安装时，iOS 系统取得证书，通过系统内置的公钥 A，去验证 embedded.mobileprovision 的数字签名是否正确，里面的证书签名也会再验一遍。&lt;/li&gt;
+  &lt;li&gt;确保了 embedded.mobileprovision 里的数据都是苹果授权以后，就可以取出里面的数据，做各种验证，包括用公钥 L 验证APP签名，验证设备 ID 是否在 ID 列表上，AppID 是否对应得上，权限开关是否跟 APP 里的 Entitlements 对应等。&lt;/li&gt;
+  &lt;li&gt;开发者证书从签名到认证最终苹果采用的流程大致是这样，还有一些细节像证书有效期/证书类型等就不细说了。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;实际操作&quot;&gt;实际操作&lt;/h3&gt;
+&lt;p&gt;上面的步骤对应到我们平常具体的操作和概念是这样的：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;第 1 步对应的是 keychain 里的 “从证书颁发机构请求证书”，这里就本地生成了一对公私钥，保存的 CertificateSigningRequest 就是公钥，私钥保存在本地电脑里。&lt;/li&gt;
+  &lt;li&gt;第 2 步苹果处理，不用管。&lt;/li&gt;
+  &lt;li&gt;第 3 步对应把 CertificateSigningRequest 传到苹果后台生成证书，并下载到本地。这时本地有两个证书，一个是第 1 步生成的，一个是这里下载回来的，keychain 会把这两个证书关联起来，因为他们公私钥是对应的，在XCode选择下载回来的证书时，实际上会找到 keychain 里对应的私钥去签名。这里私钥只有生成它的这台 Mac 有，如果别的 Mac 也要编译签名这个 App 怎么办？答案是把私钥导出给其他 Mac 用，在 keychain 里导出私钥，就会存成 .p12 文件，其他 Mac 打开后就导入了这个私钥。&lt;/li&gt;
+  &lt;li&gt;第 4 步都是在苹果网站上操作，配置 AppID / 权限 / 设备等，最后下载 Provisioning Profile 文件。&lt;/li&gt;
+  &lt;li&gt;第 5 步 XCode 会通过第 3 步下载回来的证书（存着公钥），在本地找到对应的私钥（第一步生成的），用本地私钥去签名 App，并把 Provisioning Profile 文件命名为 embedded.mobileprovision 一起打包进去。这里对 App 的签名数据保存分两部分，Mach-O 可执行文件会把签名直接写入这个文件里，其他资源文件则会保存在 _CodeSignature 目录下。&lt;/li&gt;
+  &lt;li&gt;第 6 – 7 步的打包和验证都是 Xcode 和 iOS 系统自动做的事。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;这里再总结一下这些概念：&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;证书&lt;/code&gt;：内容是公钥或私钥，由其他机构对其签名组成的数据包。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Entitlements&lt;/code&gt;：包含了 App 权限开关列表。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;CertificateSigningRequest&lt;/code&gt;：本地公钥。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;p12&lt;/code&gt;：本地私钥，可以导入到其他电脑。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Provisioning Profile&lt;/code&gt;：包含了 证书 / Entitlements 等数据，并由苹果后台私钥签名的数据包。&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 14 Dec 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/12/iOS-App%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/12/iOS-App%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
     
       <item>
         <title>音视频基础知识</title>
@@ -228,6 +325,16 @@ Triggered by Thread: 0
   &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;0xc00010ff&lt;/code&gt;: 则说明app因为环境过热（的事件）被iOS系统干掉了。这个也许是和发生crash的特定设备有关，或者是和它所在的环境有关。&lt;/li&gt;
   &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;0xdead10cc&lt;/code&gt;: (读起来像deadlock)则说明一个应用被系统终止掉，原因是在应用挂起时拿到了文件锁或者sqlite数据库所长期不释放直到被冻结。如果你的app在挂起时拿到了文件锁或者sqlite数据库锁，它必须请求额外的后台执行时间(request additional background execution time )并在被挂起前完成解锁操作。&lt;/li&gt;
   &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;0x2bad45ec&lt;/code&gt;: 则说明app因为违规操作（安全违规）被iOS系统终止。终止描述会写：“进程被查到在安全模式进行非安全操作”，暗示app尝试在禁止屏幕绘制的时候绘制屏幕，例如当屏幕锁定时。用户可能会忽略这种异常，尤其当屏幕是关闭的或者当这种终止发生时正好锁屏。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;低内存low-memory-reports&quot;&gt;低内存Low Memory Reports&lt;/h3&gt;
+&lt;p&gt;当系统检测到内存不足时，虚拟内存系统会协同各应用来做内存释放，各个应用都会接受到内存警告，要求释放内存空间。如果内存依然不够，则你的应用会被终止，并生成report 存储在设备中，没有堆栈信息，可能的原因有一下几个：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;[per-process-limit]&lt;/code&gt;:进程占用超过了它的最大内存值。每一个进程在常驻内存上的限制是早已经由系统为每个应用分配好了的。超过这个限制会导致进程被系统干掉。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;[vm-pageshortage]/[vm-thrashing]/[vm]&lt;/code&gt;:由于系统内存压力被干掉。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;[vnode-limit]&lt;/code&gt;: 打开太多文件了。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;[highwater]&lt;/code&gt;:一个系统守护进程超过过了它的内存占用高水位（就是已经很危险了）。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;[jettisoned]&lt;/code&gt;:进程因为其它不可描述的原因被杀掉。&lt;/li&gt;
 &lt;/ul&gt;
 
 </description>
@@ -849,58 +956,6 @@ while (1){
         <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>iOS底层(5)-Block</title>
-        <description>&lt;h2 id=&quot;block本质&quot;&gt;Block本质&lt;/h2&gt;
-&lt;p&gt;本质是一个OC对象，编译之后是一个结构体包含isa指针，block中封装了调用的函数和调用环境。调用环境值&lt;code class=&quot;highlighter-rouge&quot;&gt;variables&lt;/code&gt;是block捕获的变量(如果block中访问了一些需要被捕获的变量，例如局部变量)
-block的变量捕获机制：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;局部变量， &lt;code class=&quot;highlighter-rouge&quot;&gt;auto&lt;/code&gt;临时变量会捕获到block内部，且用的值传递。&lt;code class=&quot;highlighter-rouge&quot;&gt;static&lt;/code&gt; 会捕获，用的指针传递。&lt;/li&gt;
-  &lt;li&gt;全局变量，不会捕获，block运行的时候会直接访问&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;em&gt;auto临时变量代表 autorelease的在一个作用域内的临时变量&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023098593774.png&quot; alt=&quot;1&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;其中FuncPtr指的block函数的指针。 
-block分为3种类型，分别为&lt;code class=&quot;highlighter-rouge&quot;&gt;__NSGlobalBlock__&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;__NSStackBlock__&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;__NSMallocBlock__&lt;/code&gt;，分为位于以下内存区域，那么什么样的block会属于什么样的类型？&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023098896250.jpg&quot; alt=&quot;2&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023098896265.png&quot; alt=&quot;3&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;上图表示不同的block因为操作的变量类型不一样，所以block类型也不一样。因为auto变量是临时变量会存在&lt;code class=&quot;highlighter-rouge&quot;&gt;stack&lt;/code&gt;中自动销毁，所以相应block就是&lt;code class=&quot;highlighter-rouge&quot;&gt;stack&lt;/code&gt;。没访问auto变量则存在常量区&lt;code class=&quot;highlighter-rouge&quot;&gt;global&lt;/code&gt;。&lt;/p&gt;
-
-&lt;h2 id=&quot;为什么block用copy修饰&quot;&gt;为什么block用copy修饰？&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;由于&lt;/strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;stackblock&lt;/code&gt;在栈中，且捕获的是在栈中的变量，如果变量销毁，有可能block访问的就的数据就是野指针，&lt;strong&gt;所以&lt;/strong&gt;需要将&lt;code class=&quot;highlighter-rouge&quot;&gt;stackblock&lt;/code&gt;通过调用&lt;strong&gt;copy&lt;/strong&gt;方法转为&lt;code class=&quot;highlighter-rouge&quot;&gt;mallocblock&lt;/code&gt;即保存到堆中，保证由用户自己创建自己销毁，不会造成程序异常。所以block变量用&lt;strong&gt;copy&lt;/strong&gt;修饰或者直接调用&lt;strong&gt;copy&lt;/strong&gt;方法&lt;/p&gt;
-
-&lt;h2 id=&quot;block如果捕获变量&quot;&gt;block如果捕获变量&lt;/h2&gt;
-&lt;p&gt;当block内部访问了对象类型的auto变量时：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;如果block在栈上，则不会对auto变量强引用&lt;/li&gt;
-  &lt;li&gt;如果block被拷贝到堆上：会调用block内部的copy函数（&lt;code class=&quot;highlighter-rouge&quot;&gt;__block_object_assgin&lt;/code&gt;），会根据对象的修饰符__strong, __weak等作出强引用或弱引用&lt;/li&gt;
-  &lt;li&gt;如果block从堆上移除：调用block内部dispose函数，对变量release&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;__block与__weak__strong&quot;&gt;__block与__weak、__strong&lt;/h2&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;__block&lt;/code&gt;修饰一个变量会把他包装成一个结构体对象，其中的一个属性就是这个变量。且这个结构体对象会把捕获的对象进行引用，根据对象前面是否使用&lt;code class=&quot;highlighter-rouge&quot;&gt;__weak&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;__strong&lt;/code&gt; 决定是弱引用还是强引用。
-block中的&lt;code class=&quot;highlighter-rouge&quot;&gt;forwarding&lt;/code&gt;指针是指向自己位于堆中的地址，如果修饰的是对象，block中还会增加2个内存管理方法,&lt;code class=&quot;highlighter-rouge&quot;&gt;copy&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;dispose&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;__weak 和 __strong 目的是在变量被block捕获的时候以什么引用方式。&lt;/p&gt;
-
-&lt;h2 id=&quot;循环引用问题&quot;&gt;循环引用问题：&lt;/h2&gt;
-&lt;p&gt;对象 强引用 block; block  强引用  对象 导致无法释放， 解决办法是将其中一条链路变为弱引用，则能完成释放。&lt;/p&gt;
-</description>
-        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(5)-Block/</guid>
         
         <category>iOS</category>
         
