@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>iOS App签名原理</title>
-  <meta name="description" content="iOS 签名机制挺复杂，各种证书，Provisioning Profile，entitlements，CertificateSigningRequest，p12，AppID，概念一堆，也很容易出错，本文尝试从原理出发，一步步推出为什么会有这么多概念，希望能有助于理解 iOS App 签名的原理和流程。">
+  <title>Linux文件权限详解</title>
+  <meta name="description" content="查看文件权限：ls -l  在目录下列出文件列表和权限信息">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="iOS App签名原理">
-  <meta name="twitter:description" content="iOS 签名机制挺复杂，各种证书，Provisioning Profile，entitlements，CertificateSigningRequest，p12，AppID，概念一堆，也很容易出错，本文尝试从原理出发，一步步推出为什么会有这么多概念，希望能有助于理解 iOS App 签名的原理和流程。">
+  <meta name="twitter:title" content="Linux文件权限详解">
+  <meta name="twitter:description" content="查看文件权限：ls -l  在目录下列出文件列表和权限信息">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="iOS App签名原理">
-  <meta property="og:description" content="iOS 签名机制挺复杂，各种证书，Provisioning Profile，entitlements，CertificateSigningRequest，p12，AppID，概念一堆，也很容易出错，本文尝试从原理出发，一步步推出为什么会有这么多概念，希望能有助于理解 iOS App 签名的原理和流程。">
+  <meta property="og:title" content="Linux文件权限详解">
+  <meta property="og:description" content="查看文件权限：ls -l  在目录下列出文件列表和权限信息">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/12/iOS-App%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86/">
+  <link rel="canonical" href="http://localhost:4000/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -192,10 +192,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">iOS App签名原理</h1>
+    <h1 class="post-title">Linux文件权限详解</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-12-14 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-12-14</time>  
+      <time datetime="2020-12-24 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-12-24</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -205,101 +205,95 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#app签名10">App签名1.0</a></li>
-  <li><a href="#app签名20">App签名2.0</a></li>
-  <li><a href="#app签名30">App签名3.0</a></li>
-  <li><a href="#app签名终版">App签名终版</a></li>
-  <li><a href="#实际操作">实际操作</a></li>
+  <li><a href="#查看文件权限">查看文件权限：</a></li>
+  <li><a href="#修改文件权限">修改文件权限</a></li>
 </ul>
 
   
 
   <section class="post">
-    <p>iOS 签名机制挺复杂，各种证书，Provisioning Profile，entitlements，CertificateSigningRequest，p12，AppID，概念一堆，也很容易出错，本文尝试从原理出发，一步步推出为什么会有这么多概念，希望能有助于理解 iOS App 签名的原理和流程。</p>
+    <h3 id="查看文件权限">查看文件权限：</h3>
+<p>ls -l  在目录下列出文件列表和权限信息</p>
 
-<h3 id="app签名10">App签名1.0</h3>
-<p>要实现这个需求很简单，最直接的方式，苹果官方生成一对公私钥，在 iOS 里内置一个公钥，私钥由苹果后台保存，我们传 App 上 AppStore 时，苹果后台用私钥对 APP 数据进行签名，iOS 系统下载这个 APP 后，用公钥验证这个签名，若签名正确，这个 APP 肯定是由苹果后台认证的，并且没有被修改过，也就达到了苹果的需求：保证安装的每一个 APP 都是经过苹果官方允许的。
-<img src="http://image.smartjames.cn/mweb/20201214/16079168080845.png" style="zoom:100%" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rw-r--r--   1 byron  staff    89  8 11 10:47 OWNERS
+-rwxr-xr-x   1 byron  staff  4034  8 11 10:47 ensure_gn_version.py
+drwxr-xr-x   3 byron  staff    96  8 11 10:47 linux64
+</code></pre></div></div>
 
-<p>如果我们 iOS 设备安装 APP 只有从 AppStore 下载这一种方式的话，这件事就结束了，没有任何复杂的东西，只有一个数字签名，非常简单地解决问题。
-但实际上因为除了从 AppStore 下载，我们还可以有三种方式安装一个 App：</p>
+<p>权限信息通用格式：</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rwxr-xr-x　number　user　group　filesize　updatetime　filename
+</code></pre></div></div>
+<p>通用格式分为7个部分，分别是：</p>
+<ol>
+  <li>文件属性，共10个字符,第1个表示类型，<code class="highlighter-rouge">-</code>表示文件， <code class="highlighter-rouge">d</code>表示文件夹。后9个字符分3组，分别表示对于当前用户，当前用户所在组，其他用户的 读/写/执行权限。 <code class="highlighter-rouge">r</code>可读， <code class="highlighter-rouge">w</code>可写， <code class="highlighter-rouge">x</code>可执行 ，<code class="highlighter-rouge">-</code>无权限</li>
+  <li><code class="highlighter-rouge">number</code>表示文件的数量</li>
+  <li><code class="highlighter-rouge">user</code>表示当前用户名</li>
+  <li><code class="highlighter-rouge">group</code>表示当前用户所在组的名字</li>
+  <li><code class="highlighter-rouge">filesize</code>表示该文件大小，单位byte</li>
+  <li><code class="highlighter-rouge">updatetime</code>表示文件最后修改时间</li>
+  <li><code class="highlighter-rouge">filename</code> 文件名</li>
+</ol>
+
+<p>上面例子中，<code class="highlighter-rouge">-rw-r--r--</code> 表示OWNERS是一个文件，对当前用户有读写权限，没有执行权限， 当前用户所在组其他用户只有读权限，没有写和执行权限。
+<code class="highlighter-rouge">drwxr-xr-x</code>表示linux64是一个文件夹，对当前用户有读写执行权限，用户组和其他用户有读和执行权限，没有写权限，且文件夹中有3个文件。</p>
+
+<h3 id="修改文件权限">修改文件权限</h3>
+<p>修改权限的命令格式：
+<code class="highlighter-rouge">chmod &lt;权限范围&gt;&lt;权限操作&gt;&lt;具体权限&gt; &lt;文件或目录&gt;</code></p>
+
+<p><code class="highlighter-rouge">权限范围</code>：</p>
 <ul>
-  <li>开发 App 时可以直接把开发中的应用安装进手机进行调试。</li>
-  <li>In-House 企业内部分发，可以直接安装企业证书签名后的 APP。</li>
-  <li>AD-Hoc 相当于企业分发的限制版，限制安装设备数量，较少用。
-苹果要对用这三种方式安装的 App 进行控制，就有了新的需求，无法像上面这样简单了。</li>
+  <li>u ： user,当前用户</li>
+  <li>g ：Group,当前用户所在组</li>
+  <li>o ：Other,其他用户</li>
+  <li>a ：All,全部用户</li>
 </ul>
 
-<h3 id="app签名20">App签名2.0</h3>
-<p>我们先来看第一个，开发时安装APP，它有两个个需求：
-安装包不需要传到苹果服务器，可以直接安装到手机上。如果你编译一个 APP 到手机前要先传到苹果服务器签名，这显然是不能接受的。
-苹果必须对这里的安装有控制权，包括
-a. 经过苹果允许才可以这样安装。
-b. 不能被滥用导致非开发app也能被安装。
-为了实现这些需求，iOS 签名的复杂度也就开始增加了。
-苹果这里给出的方案是使用了双层签名，会比较绕，流程大概是这样的：</p>
+<p><code class="highlighter-rouge">权限操作</code>：</p>
 
-<p><img src="http://image.smartjames.cn/mweb/20201214/16079168652311.png" style="zoom:100%" /></p>
+<p><code class="highlighter-rouge">+</code> ：增加权限,
+<code class="highlighter-rouge">-</code> ：取消权限,
+<code class="highlighter-rouge">=</code> ：设置拥有权限,</p>
 
+<p><code class="highlighter-rouge">具体权限</code>：</p>
 <ul>
-  <li>在你的 Mac 开发机器生成一对公私钥，这里称为<code class="highlighter-rouge">公钥L</code>，<code class="highlighter-rouge">私钥L</code>。L:Local</li>
-  <li>苹果自己有固定的一对公私钥，跟上面 AppStore 例子一样，私钥在苹果后台，公钥在每个 iOS 设备上。这里称为<code class="highlighter-rouge">公钥A</code>，<code class="highlighter-rouge">私钥A</code>。A:Apple</li>
-  <li>把公钥 L 传到苹果后台，用苹果后台里的私钥 A 去签名公钥 L。得到一份数据包含了公钥 L 以及其签名，把这份数据称为证书。</li>
-  <li>在开发时，编译完一个 APP 后，用本地的私钥 L 对这个 APP 进行签名，同时把第三步得到的证书一起打包进 APP 里，安装到手机上。</li>
-  <li>在安装时，iOS 系统取得证书，通过系统内置的公钥 A，去验证证书的数字签名是否正确。</li>
-  <li>验证证书后确保了公钥 L 是苹果认证过的，再用公钥 L 去验证 APP 的签名，这里就间接验证了这个 APP 安装行为是否经过苹果官方允许。（这里只验证安装行为，不验证APP 是否被改动，因为开发阶段 APP 内容总是不断变化的，苹果不需要管。）</li>
+  <li>r ：可读</li>
+  <li>w ：可写</li>
+  <li>x ：可执行</li>
 </ul>
 
-<h3 id="app签名30">App签名3.0</h3>
-<p>上述流程只解决了上面第一个需求，也就是需要经过苹果允许才可以安装，还未解决第二个避免被滥用的问题。怎么解决呢？苹果再加了两个限制，一是限制在苹果后台注册过的设备才可以安装，二是限制签名只能针对某一个具体的 APP。
-怎么加的？在上述第三步，苹果用私钥 A 签名我们本地公钥 L 时，实际上除了签名公钥 L，还可以加上无限多数据，这些数据都可以保证是经过苹果官方认证的，不会有被篡改的可能。</p>
+<p>举个例子：</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rw-r--r--  1 byron  staff  0 12 27 12:04 text.txt  // 文件原始权限
+chmod u+x text.txt      // 执行修改权限
+-rwxr--r--  1 byron  staff  0 12 27 12:04 text.txt  // 修改后的权限
+</code></pre></div></div>
 
-<p><img src="http://image.smartjames.cn/mweb/20201214/16079169420158.png" style="zoom:100%" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rw-r--r--  1 byron  staff  0 12 27 12:04 text.txt // 文件原始权限
+chmod a=rwx text.txt    // 执行修改权限
+-rwxrwxrwx  1 byron  staff  0 12 27 12:04 text.txt // 修改后的权限
+</code></pre></div></div>
 
-<p>可以想到把 允许安装的设备 ID 列表 和 App对应的 AppID 等数据，都在第三步这里跟公钥L一起组成证书，再用苹果私钥 A 对这个证书签名。在最后第 5 步验证时就可以拿到设备 ID 列表，判断当前设备是否符合要求。根据数字签名的原理，只要数字签名通过验证，第 5 步这里的设备 IDs / AppID / 公钥 L 就都是经过苹果认证的，无法被修改，苹果就可以限制可安装的设备和 APP，避免滥用。</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rw-rw-rw-  1 byron  staff  0 12 27 12:04 text.txt // 文件原始权限
+chmod u+x-w text.txt    // 执行修改权限
+-r-xrw-rw-  1 byron  staff  0 12 27 12:04 text.txt // 修改后的权限
+</code></pre></div></div>
 
-<h3 id="app签名终版">App签名终版</h3>
-<p>这里这个证书已经变得很复杂了，有很多额外信息，实际上除了 设备 ID / AppID，还有其他信息也需要在这里用苹果签名，像这个 APP 里 iCloud / push / 后台运行 等权限苹果都想控制，苹果把这些权限开关统一称为 Entitlements，它也需要通过签名去授权。
-实际上一个“证书”本来就有规定的格式规范，上面我们把各种额外信息塞入证书里是不合适的，于是苹果另外搞了个东西，叫 Provisioning Profile，一个 Provisioning Profile 里就包含了证书以及上述提到的所有额外信息，以及所有信息的签名。
-所以整个流程稍微变一下，就变成这样了：</p>
+<p>还有一种修改权限的命令格式：
+<code class="highlighter-rouge">chmod &lt;数字&gt; &lt;文件名&gt;</code>
+3位数字分别表示user, group,other的权限</p>
 
-<p><img src="http://image.smartjames.cn/mweb/20201214/16079170366343.png" style="zoom:100%" /></p>
+<p>r = 4, w = 2, x = 1</p>
 
-<p>因为步骤有小变动，这里我们不辞啰嗦重新再列一遍整个流程：</p>
-<ul>
-  <li>在你的 Mac 开发机器生成一对公私钥，这里称为公钥L，私钥L。L:Local</li>
-  <li>苹果自己有固定的一对公私钥，跟上面 AppStore 例子一样，私钥在苹果后台，公钥在每个 iOS 设备上。这里称为公钥A，私钥A。A:Apple</li>
-  <li>把公钥 L 传到苹果后台，用苹果后台里的私钥 A 去签名公钥 L。得到一份数据包含了公钥 L 以及其签名，把这份数据称为证书。</li>
-  <li>在苹果后台申请 AppID，配置好设备 ID 列表和 APP 可使用的权限，再加上第③步的证书，组成的数据用私钥 A 签名，把数据和签名一起组成一个 Provisioning Profile 文件，下载到本地 Mac 开发机。</li>
-  <li>在开发时，编译完一个 APP 后，用本地的私钥 L 对这个 APP 进行签名，同时把第④步得到的 Provisioning Profile 文件打包进 APP 里，文件名为 embedded.mobileprovision，把 APP 安装到手机上。</li>
-  <li>在安装时，iOS 系统取得证书，通过系统内置的公钥 A，去验证 embedded.mobileprovision 的数字签名是否正确，里面的证书签名也会再验一遍。</li>
-  <li>确保了 embedded.mobileprovision 里的数据都是苹果授权以后，就可以取出里面的数据，做各种验证，包括用公钥 L 验证APP签名，验证设备 ID 是否在 ID 列表上，AppID 是否对应得上，权限开关是否跟 APP 里的 Entitlements 对应等。</li>
-  <li>开发者证书从签名到认证最终苹果采用的流程大致是这样，还有一些细节像证书有效期/证书类型等就不细说了。</li>
-</ul>
+<p>则 rwx为 4+2+1=7, rw-为 4+2=6, r-x为4+1=5,-wx为2+1=3等等</p>
 
-<h3 id="实际操作">实际操作</h3>
-<p>上面的步骤对应到我们平常具体的操作和概念是这样的：</p>
-<ul>
-  <li>第 1 步对应的是 keychain 里的 “从证书颁发机构请求证书”，这里就本地生成了一对公私钥，保存的 CertificateSigningRequest 就是公钥，私钥保存在本地电脑里。</li>
-  <li>第 2 步苹果处理，不用管。</li>
-  <li>第 3 步对应把 CertificateSigningRequest 传到苹果后台生成证书，并下载到本地。这时本地有两个证书，一个是第 1 步生成的，一个是这里下载回来的，keychain 会把这两个证书关联起来，因为他们公私钥是对应的，在XCode选择下载回来的证书时，实际上会找到 keychain 里对应的私钥去签名。这里私钥只有生成它的这台 Mac 有，如果别的 Mac 也要编译签名这个 App 怎么办？答案是把私钥导出给其他 Mac 用，在 keychain 里导出私钥，就会存成 .p12 文件，其他 Mac 打开后就导入了这个私钥。</li>
-  <li>第 4 步都是在苹果网站上操作，配置 AppID / 权限 / 设备等，最后下载 Provisioning Profile 文件。</li>
-  <li>第 5 步 XCode 会通过第 3 步下载回来的证书（存着公钥），在本地找到对应的私钥（第一步生成的），用本地私钥去签名 App，并把 Provisioning Profile 文件命名为 embedded.mobileprovision 一起打包进去。这里对 App 的签名数据保存分两部分，Mach-O 可执行文件会把签名直接写入这个文件里，其他资源文件则会保存在 _CodeSignature 目录下。</li>
-  <li>第 6 – 7 步的打包和验证都是 Xcode 和 iOS 系统自动做的事。</li>
-</ul>
+<p>所以我们常见的755代表<code class="highlighter-rouge">rwxr-xr-x</code>,777代表<code class="highlighter-rouge">rwxrwxrwx</code></p>
 
-<p>这里再总结一下这些概念：</p>
+<p>所以前面的<code class="highlighter-rouge">chmod a=rwx filename</code> 可以简化为<code class="highlighter-rouge">chmod 777 filename</code></p>
 
-<p><code class="highlighter-rouge">证书</code>：内容是公钥或私钥，由其他机构对其签名组成的数据包。</p>
-
-<p><code class="highlighter-rouge">Entitlements</code>：包含了 App 权限开关列表。</p>
-
-<p><code class="highlighter-rouge">CertificateSigningRequest</code>：本地公钥。</p>
-
-<p><code class="highlighter-rouge">p12</code>：本地私钥，可以导入到其他电脑。</p>
-
-<p><code class="highlighter-rouge">Provisioning Profile</code>：包含了 证书 / Entitlements 等数据，并由苹果后台私钥签名的数据包。</p>
-
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rw-r--r--  1 byron  staff  0 12 27 12:04 text.txt // 文件原始权限
+chmod 777 text.txt    // 执行修改权限
+-rwxrwxrwx  1 byron  staff  0 12 27 12:04 text.txt // 修改后的权限
+</code></pre></div></div>
 
   </section>
 
@@ -369,15 +363,10 @@ b. 不能被滥用导致非开发app也能被安装。
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/12/%E9%9F%B3%E8%A7%86%E9%A2%91%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" data-toggle="tooltip" data-placement="top" title="音视频基础知识">上一篇：  <span>音视频基础知识</span>
+            <a href="/2020/12/iOS-App%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86/" data-toggle="tooltip" data-placement="top" title="iOS App签名原理">上一篇：  <span>iOS App签名原理</span>
             </a>
         </li>
         
-        
-        <li class="next">
-            <a href="/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="Linux文件权限详解">下一篇：  <span>Linux文件权限详解</span>
-            </a>
-        </li>
         
     </ul>
 </section>

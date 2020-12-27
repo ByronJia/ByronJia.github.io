@@ -5,9 +5,103 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 14 Dec 2020 14:21:00 +0800</pubDate>
-    <lastBuildDate>Mon, 14 Dec 2020 14:21:00 +0800</lastBuildDate>
+    <pubDate>Sun, 27 Dec 2020 12:26:02 +0800</pubDate>
+    <lastBuildDate>Sun, 27 Dec 2020 12:26:02 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>Linux文件权限详解</title>
+        <description>&lt;h3 id=&quot;查看文件权限&quot;&gt;查看文件权限：&lt;/h3&gt;
+&lt;p&gt;ls -l  在目录下列出文件列表和权限信息&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-rw-r--r--   1 byron  staff    89  8 11 10:47 OWNERS
+-rwxr-xr-x   1 byron  staff  4034  8 11 10:47 ensure_gn_version.py
+drwxr-xr-x   3 byron  staff    96  8 11 10:47 linux64
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;权限信息通用格式：&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-rwxr-xr-x　number　user　group　filesize　updatetime　filename
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;通用格式分为7个部分，分别是：&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;文件属性，共10个字符,第1个表示类型，&lt;code class=&quot;highlighter-rouge&quot;&gt;-&lt;/code&gt;表示文件， &lt;code class=&quot;highlighter-rouge&quot;&gt;d&lt;/code&gt;表示文件夹。后9个字符分3组，分别表示对于当前用户，当前用户所在组，其他用户的 读/写/执行权限。 &lt;code class=&quot;highlighter-rouge&quot;&gt;r&lt;/code&gt;可读， &lt;code class=&quot;highlighter-rouge&quot;&gt;w&lt;/code&gt;可写， &lt;code class=&quot;highlighter-rouge&quot;&gt;x&lt;/code&gt;可执行 ，&lt;code class=&quot;highlighter-rouge&quot;&gt;-&lt;/code&gt;无权限&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;number&lt;/code&gt;表示文件的数量&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;user&lt;/code&gt;表示当前用户名&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;group&lt;/code&gt;表示当前用户所在组的名字&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;filesize&lt;/code&gt;表示该文件大小，单位byte&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;updatetime&lt;/code&gt;表示文件最后修改时间&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;filename&lt;/code&gt; 文件名&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;上面例子中，&lt;code class=&quot;highlighter-rouge&quot;&gt;-rw-r--r--&lt;/code&gt; 表示OWNERS是一个文件，对当前用户有读写权限，没有执行权限， 当前用户所在组其他用户只有读权限，没有写和执行权限。
+&lt;code class=&quot;highlighter-rouge&quot;&gt;drwxr-xr-x&lt;/code&gt;表示linux64是一个文件夹，对当前用户有读写执行权限，用户组和其他用户有读和执行权限，没有写权限，且文件夹中有3个文件。&lt;/p&gt;
+
+&lt;h3 id=&quot;修改文件权限&quot;&gt;修改文件权限&lt;/h3&gt;
+&lt;p&gt;修改权限的命令格式：
+&lt;code class=&quot;highlighter-rouge&quot;&gt;chmod &amp;lt;权限范围&amp;gt;&amp;lt;权限操作&amp;gt;&amp;lt;具体权限&amp;gt; &amp;lt;文件或目录&amp;gt;&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;权限范围&lt;/code&gt;：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;u ： user,当前用户&lt;/li&gt;
+  &lt;li&gt;g ：Group,当前用户所在组&lt;/li&gt;
+  &lt;li&gt;o ：Other,其他用户&lt;/li&gt;
+  &lt;li&gt;a ：All,全部用户&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;权限操作&lt;/code&gt;：&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;+&lt;/code&gt; ：增加权限,
+&lt;code class=&quot;highlighter-rouge&quot;&gt;-&lt;/code&gt; ：取消权限,
+&lt;code class=&quot;highlighter-rouge&quot;&gt;=&lt;/code&gt; ：设置拥有权限,&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;具体权限&lt;/code&gt;：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;r ：可读&lt;/li&gt;
+  &lt;li&gt;w ：可写&lt;/li&gt;
+  &lt;li&gt;x ：可执行&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;举个例子：&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-rw-r--r--  1 byron  staff  0 12 27 12:04 text.txt  // 文件原始权限
+chmod u+x text.txt      // 执行修改权限
+-rwxr--r--  1 byron  staff  0 12 27 12:04 text.txt  // 修改后的权限
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-rw-r--r--  1 byron  staff  0 12 27 12:04 text.txt // 文件原始权限
+chmod a=rwx text.txt    // 执行修改权限
+-rwxrwxrwx  1 byron  staff  0 12 27 12:04 text.txt // 修改后的权限
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-rw-rw-rw-  1 byron  staff  0 12 27 12:04 text.txt // 文件原始权限
+chmod u+x-w text.txt    // 执行修改权限
+-r-xrw-rw-  1 byron  staff  0 12 27 12:04 text.txt // 修改后的权限
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;还有一种修改权限的命令格式：
+&lt;code class=&quot;highlighter-rouge&quot;&gt;chmod &amp;lt;数字&amp;gt; &amp;lt;文件名&amp;gt;&lt;/code&gt;
+3位数字分别表示user, group,other的权限&lt;/p&gt;
+
+&lt;p&gt;r = 4, w = 2, x = 1&lt;/p&gt;
+
+&lt;p&gt;则 rwx为 4+2+1=7, rw-为 4+2=6, r-x为4+1=5,-wx为2+1=3等等&lt;/p&gt;
+
+&lt;p&gt;所以我们常见的755代表&lt;code class=&quot;highlighter-rouge&quot;&gt;rwxr-xr-x&lt;/code&gt;,777代表&lt;code class=&quot;highlighter-rouge&quot;&gt;rwxrwxrwx&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以前面的&lt;code class=&quot;highlighter-rouge&quot;&gt;chmod a=rwx filename&lt;/code&gt; 可以简化为&lt;code class=&quot;highlighter-rouge&quot;&gt;chmod 777 filename&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-rw-r--r--  1 byron  staff  0 12 27 12:04 text.txt // 文件原始权限
+chmod 777 text.txt    // 执行修改权限
+-rwxrwxrwx  1 byron  staff  0 12 27 12:04 text.txt // 修改后的权限
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+</description>
+        <pubDate>Thu, 24 Dec 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
     
       <item>
         <title>iOS App签名原理</title>
@@ -851,111 +945,6 @@ __unsafe_unretain: 弱引用对象，当对象销毁时，指针不变，使用�
         <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>iOS底层(6)- runLoop &amp; 多线程</title>
-        <description>&lt;h2 id=&quot;runloop&quot;&gt;runloop&lt;/h2&gt;
-&lt;h3 id=&quot;常见类型&quot;&gt;常见类型&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;runloop&lt;/strong&gt; 和线程一一对应，子线程默认不开启runloop,当第一次获取runloop时就会创建runloop。存在全局map中，key是线程，value是runloop&lt;/p&gt;
-
-&lt;p&gt;runloopModel结构体如下
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023184791593.png&quot; alt=&quot;1&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;常见2种Mode:&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;kCFRunLoopDefaultMode&lt;/code&gt;（&lt;code class=&quot;highlighter-rouge&quot;&gt;NSDefaultRunLoopMode&lt;/code&gt;）：App的默认Mode，通常主线程是在这个Mode下运行&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;UITrackingRunLoopMode&lt;/code&gt;：界面跟踪 Mode，用于 ScrollView 追踪触摸滑动，保证界面滑动时不受其他 Mode 影响&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;目的是不同组的&lt;code class=&quot;highlighter-rouge&quot;&gt;Source0&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Source1&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Timer&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Observer&lt;/code&gt;能分隔开来，互不影响，处理不同的事件，只能同一时间运行一种模式&lt;/p&gt;
-
-&lt;h3 id=&quot;线程保活&quot;&gt;线程保活&lt;/h3&gt;
-
-&lt;p&gt;一般线程启动后，如果事情做完会直接销毁，因为启动runloop 如果Mode里没有任何&lt;code class=&quot;highlighter-rouge&quot;&gt;Source0&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Source1&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Timer&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;Observer&lt;/code&gt;，RunLoop会立马退出。 唯一办法是在runloop中添加前面所说的几个事件。
-做法：
-在当前线程中调用以下代码&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[[NSRunLoop currentRunLoop] addPort:[[NSPort alloc] init]   forMode:NSDefaultRunLoopMode];
-while (1){
-    [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;这样添加一个port的 &lt;code class=&quot;highlighter-rouge&quot;&gt;source1&lt;/code&gt; 事件，并启动本次runMode, 一旦响应一次事件后本次会结束，所以需要while 运行runModel 。其实就是阻塞了当前runloop的一个事件，导致后续事件无法运行，以此保证runloop和线程的存活&lt;/p&gt;
-
-&lt;h2 id=&quot;多线程&quot;&gt;多线程&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023185008204.png&quot; alt=&quot;2&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;线程死锁&quot;&gt;线程死锁&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;使用&lt;code class=&quot;highlighter-rouge&quot;&gt;sync&lt;/code&gt;函数往当前串行队列中添加任务，会卡住当前的串行队列（产生死锁)&lt;/strong&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;performSelector:withObject:afterDelay: &lt;/code&gt;方法是用你NSTimer实现定时，且是加在当前线程runloop中，但是如果当前是&lt;code class=&quot;highlighter-rouge&quot;&gt;asyn&lt;/code&gt;产生的线程runloop没启动的话这种方法无效。需要手动启动&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;线程锁&quot;&gt;线程锁&lt;/h3&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;OSSpinLock&lt;/code&gt; 自旋锁，一直处于忙等状态&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;os_unfair_lock&lt;/code&gt; 互斥锁，等待锁的线程处于休眠状态，节省资源&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023185133777.jpg&quot; alt=&quot;3&quot; /&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pthread_mutex&lt;/code&gt; 互斥锁，等待锁的线程处于休眠状态
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023185345005.jpg&quot; alt=&quot;4&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pthread_mutex&lt;/code&gt;的条件锁
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023185451423.jpg&quot; alt=&quot;5&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;NSLock&lt;/code&gt;  对于pthread_mutex的OC封装&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;NSRecursiveLock&lt;/code&gt;  对于pthread_mutex的OC封装&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;NSCondition&lt;/code&gt;  对于pthread_mutex 和 condition的OC封装&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;dispatch_queue(DISPATCH_QUEUE_SERIAL)&lt;/code&gt; 把不同线程的任务放在同步队列中执行，能达到锁的效果&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;dispatch_semaphore&lt;/code&gt; 信号量， 初始化赋一个最多同时执行线程数量，如果是1就实现了锁的效果&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;锁都是由于不同线程的问题导致的，如果条件锁在一个线程有wait，没有其他线程signal,就会永远睡眠下去。wait后的代码不会执行。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;队列和线程是2个概念，队列中的任务可以在不同的线程中去执行。例如用globalQueue来创建不同的线程任务，所以可以使用串行队列来实现线程锁的问题，只要保证任务都加入到队列中执行即可&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;atomic 用于保证setter、 getter的操作原子性，在方法内部加上线程同步锁&lt;/p&gt;
-
-&lt;h3 id=&quot;读写安全方案-保证同一时间只有一个线程写可以多个线程读不能同时读写&quot;&gt;读写安全方案 ,保证同一时间只有一个线程写，可以多个线程读，不能同时读写&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pthread_rwlock&lt;/code&gt; 读写锁&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;dispatch_barrier_async&lt;/code&gt; 异步栅栏调用
-  &lt;code class=&quot;highlighter-rouge&quot;&gt;dispatch_asyn(que)&lt;/code&gt; 用于读操作
-  &lt;code class=&quot;highlighter-rouge&quot;&gt;diapatch_barrier_async(que)&lt;/code&gt; 用于写操作，可以保证当前队列中只有栅栏中的任务在执行，其他全部暂停。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;uievent-uitouch-uiresponder-和-uicontrol&quot;&gt;UIEvent 、UITouch 、UIResponder 和 UIControl&lt;/h3&gt;
-
-&lt;p&gt;&lt;strong&gt;触摸事件的传递：&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;电容屏幕检测到电流变化，定位得到触摸点，生成&lt;code class=&quot;highlighter-rouge&quot;&gt;Touch Event&lt;/code&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;IOKit.framework&lt;/code&gt;处理&lt;code class=&quot;highlighter-rouge&quot;&gt;Touch Event&lt;/code&gt;,并封装为&lt;code class=&quot;highlighter-rouge&quot;&gt;IOHIDEvent&lt;/code&gt;对象，通过内核的&lt;code class=&quot;highlighter-rouge&quot;&gt;mach port&lt;/code&gt;机制，传递为window上当前app的主线程&lt;/li&gt;
-  &lt;li&gt;app主线程&lt;code class=&quot;highlighter-rouge&quot;&gt;runloop&lt;/code&gt;的&lt;code class=&quot;highlighter-rouge&quot;&gt;mach port&lt;/code&gt;监听的就是&lt;code class=&quot;highlighter-rouge&quot;&gt;IOHIDEvent&lt;/code&gt;的&lt;code class=&quot;highlighter-rouge&quot;&gt;Source1&lt;/code&gt;事件，内部进一步分发为&lt;code class=&quot;highlighter-rouge&quot;&gt;Source0&lt;/code&gt;，Source0事件是自定义的，非基于端口port,包括触摸，滚动，selector事件，并封装为&lt;code class=&quot;highlighter-rouge&quot;&gt;UIEvent&lt;/code&gt;事件， 通过&lt;code class=&quot;highlighter-rouge&quot;&gt;UIApplication&lt;/code&gt;对象&lt;code class=&quot;highlighter-rouge&quot;&gt;sendEvent&lt;/code&gt;方法传递给&lt;code class=&quot;highlighter-rouge&quot;&gt;UIWindow&lt;/code&gt;判断最佳响应者&lt;/li&gt;
-  &lt;li&gt;Hit-Testing寻找最佳响应者，自下而上传递，即 &lt;code class=&quot;highlighter-rouge&quot;&gt;UIApplication -&amp;gt; UIWindow -&amp;gt; 子视图 -&amp;gt; ...-&amp;gt;子视图中的子视图&lt;/code&gt;;即响应链&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;UIEvent&lt;/strong&gt;: 代表一个单一类型的UIKit事件，可以是触摸，震动，按压等。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;UITouch&lt;/strong&gt;:一次触摸生成一个&lt;code class=&quot;highlighter-rouge&quot;&gt;UITouch&lt;/code&gt;,例如滑动由多个&lt;code class=&quot;highlighter-rouge&quot;&gt;UITouch&lt;/code&gt;组合，所以&lt;code class=&quot;highlighter-rouge&quot;&gt;UIEvent&lt;/code&gt;里包含多个触摸对象，通过&lt;code class=&quot;highlighter-rouge&quot;&gt;allTouches&lt;/code&gt;获取。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;UIResponder&lt;/strong&gt;: 继承&lt;code class=&quot;highlighter-rouge&quot;&gt;UIResponder&lt;/code&gt;的实例对象可以对随机事件进行相应处理,例如&lt;code class=&quot;highlighter-rouge&quot;&gt;UIView&lt;/code&gt; 、&lt;code class=&quot;highlighter-rouge&quot;&gt;UIViewController&lt;/code&gt;、 &lt;code class=&quot;highlighter-rouge&quot;&gt;UIWindow&lt;/code&gt;、 &lt;code class=&quot;highlighter-rouge&quot;&gt;UIApplication&lt;/code&gt; 和&lt;code class=&quot;highlighter-rouge&quot;&gt;UIApplicationDelegate&lt;/code&gt;, 默认实现 &lt;code class=&quot;highlighter-rouge&quot;&gt;touchesBegin&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;touchesMove&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;touchesEnded&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;touchesCancelled&lt;/code&gt;四个方法。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;UIControl&lt;/strong&gt;:继承自&lt;code class=&quot;highlighter-rouge&quot;&gt;UIResponder&lt;/code&gt;, 能够以&lt;code class=&quot;highlighter-rouge&quot;&gt;target-action&lt;/code&gt;模式处理触摸事件，有&lt;code class=&quot;highlighter-rouge&quot;&gt;addTarget:action:forControlEvent:&lt;/code&gt;方法，保存&lt;code class=&quot;highlighter-rouge&quot;&gt;target-action&lt;/code&gt;到字典中，在接收到相应Event事件时取出对应action执行。&lt;/p&gt;
-
-</description>
-        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(6)runLoop-&-%E5%A4%9A%E7%BA%BF%E7%A8%8B/</guid>
         
         <category>iOS</category>
         
