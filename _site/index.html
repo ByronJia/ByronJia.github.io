@@ -177,6 +177,27 @@
   <ol class="post-list">
     
     <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/12/iOS-KVO%E8%AF%A6%E8%A7%A3/" title="访问 iOS KVO详解">iOS KVO详解</a></h2>
+      <p class="excerpt">提出疑问首先抛出问题，KVO的原理有很多文章写过，大致原理是一个Test类，添加了观察者后，会动态生成NSKVONotifying_Test类，重写了set方法。但为什么当我们对这个对象调用class方法的时候依然返回的是Test类，为什么不是NSKVONotifying_Test？ 我们能理解设计者是故意屏蔽内部实现，但是究竟是怎么做到的呢？同样问题，superclass方法，获取的应该是Test和NSObject，为什么是2个都是NSObject？Test *t = [Test new...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-12-28 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-12-28</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/12/iOS-KVO%E8%AF%A6%E8%A7%A3/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
       <h2 class="post-list__post-title post-title"><a href="/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/" title="访问 Linux文件权限详解">Linux文件权限详解</a></h2>
       <p class="excerpt">查看文件权限：ls -l  在目录下列出文件列表和权限信息-rw-r--r--   1 byron  staff    89  8 11 10:47 OWNERS-rwxr-xr-x   1 byron  staff  4034  8 11 10:47 ensure_gn_version.pydrwxr-xr-x   3 byron  staff    96  8 11 10:47 linux64权限信息通用格式：-rwxr-xr-x　number　user　group　filesize　...&hellip;</p>
       <div class="post-list__meta">        
@@ -570,27 +591,6 @@
           </div>
           <div class = "post-list-small-mate">
           <a class="btn-border-small" href=/2020/09/iOS-%E5%BA%94%E7%94%A8%E5%90%AF%E5%8A%A8%E8%80%97%E6%97%B6%E5%88%86%E6%9E%90%E5%8F%8A%E4%BC%98%E5%8C%96/>阅读全文 » </a>
-          </div>
-      </div>
-      <hr class="post-list__divider" />
-    </li>
-    
-    <li>
-      <h2 class="post-list__post-title post-title"><a href="/2020/09/Mach-O%E6%96%87%E4%BB%B6%E5%88%9D%E8%AF%86/" title="访问 Mach-O文件初识">Mach-O文件初识</a></h2>
-      <p class="excerpt">Mach-o 文件  Mach-O格式全称为Mach Object文件格式的缩写，是mac上可执行文件的格式Mach-O 文件构成如下Headers保存了一些基本信息，包括了该文件运行的平台、文件类型、LoadCommands的个数等等。Headers的主要作用就是帮助系统迅速的定位Mach-O文件的运行环境，文件类型，保存了一些dyld重要的加载参数。Mach-O 文件的头部定义如下：  magic 标志符 0xfeedface 是 32 位， 0xfeedfacf 是 64 位。  c...&hellip;</p>
-      <div class="post-list__meta">        
-        <time datetime="2020-09-23 00:00:00 +0800" class="post-list__meta--date date">
-          <img src="/images/calendar.png" width="20px" /> 
-          2020-09-23</time> 
-        <div class = "tag-img-icon">
-          <img src="/images/tag-icon.svg" width="20px" /> 
-        </div>
-        <a href="/tags">
-          <div class = "post-list-icon-mate">
-            <span class="post-list__meta--tags-right">iOS</span>
-          </div>
-          <div class = "post-list-small-mate">
-          <a class="btn-border-small" href=/2020/09/Mach-O%E6%96%87%E4%BB%B6%E5%88%9D%E8%AF%86/>阅读全文 » </a>
           </div>
       </div>
       <hr class="post-list__divider" />

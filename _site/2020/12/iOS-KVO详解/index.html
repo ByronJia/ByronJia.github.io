@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>Linux文件权限详解</title>
-  <meta name="description" content="查看文件权限：ls -l  在目录下列出文件列表和权限信息">
+  <title>iOS KVO详解</title>
+  <meta name="description" content="提出疑问首先抛出问题，KVO的原理有很多文章写过，大致原理是一个Test类，添加了观察者后，会动态生成NSKVONotifying_Test类，重写了set方法。但为什么当我们对这个对象调用class方法的时候依然返回的是Test类，为什么不是NSKVONotifying_Test？ 我们能理解设计者是故意屏蔽内...">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Linux文件权限详解">
-  <meta name="twitter:description" content="查看文件权限：ls -l  在目录下列出文件列表和权限信息">
+  <meta name="twitter:title" content="iOS KVO详解">
+  <meta name="twitter:description" content="提出疑问首先抛出问题，KVO的原理有很多文章写过，大致原理是一个Test类，添加了观察者后，会动态生成NSKVONotifying_Test类，重写了set方法。但为什么当我们对这个对象调用class方法的时候依然返回的是Test类，为什么不是NSKVONotifying_Test？ 我们能理解设计者是故意屏蔽内...">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="Linux文件权限详解">
-  <meta property="og:description" content="查看文件权限：ls -l  在目录下列出文件列表和权限信息">
+  <meta property="og:title" content="iOS KVO详解">
+  <meta property="og:description" content="提出疑问首先抛出问题，KVO的原理有很多文章写过，大致原理是一个Test类，添加了观察者后，会动态生成NSKVONotifying_Test类，重写了set方法。但为什么当我们对这个对象调用class方法的时候依然返回的是Test类，为什么不是NSKVONotifying_Test？ 我们能理解设计者是故意屏蔽内...">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/">
+  <link rel="canonical" href="http://localhost:4000/2020/12/iOS-KVO%E8%AF%A6%E8%A7%A3/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -192,10 +192,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">Linux文件权限详解</h1>
+    <h1 class="post-title">iOS KVO详解</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-12-24 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-12-24</time>  
+      <time datetime="2020-12-28 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-12-28</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -205,95 +205,95 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#查看文件权限">查看文件权限：</a></li>
-  <li><a href="#修改文件权限">修改文件权限</a></li>
+  <li><a href="#提出疑问">提出疑问</a></li>
+  <li><a href="#class方法和object_getclass方法">class方法和object_getClass方法</a></li>
+  <li><a href="#证明">证明</a></li>
 </ul>
 
   
 
   <section class="post">
-    <h3 id="查看文件权限">查看文件权限：</h3>
-<p>ls -l  在目录下列出文件列表和权限信息</p>
+    <h3 id="提出疑问">提出疑问</h3>
+<p>首先抛出问题，KVO的原理有很多文章写过，大致原理是一个Test类，添加了观察者后，会动态生成NSKVONotifying_Test类，重写了set方法。但为什么当我们对这个对象调用class方法的时候依然返回的是Test类，为什么不是NSKVONotifying_Test？ 我们能理解设计者是故意屏蔽内部实现，但是究竟是怎么做到的呢？</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rw-r--r--   1 byron  staff    89  8 11 10:47 OWNERS
--rwxr-xr-x   1 byron  staff  4034  8 11 10:47 ensure_gn_version.py
-drwxr-xr-x   3 byron  staff    96  8 11 10:47 linux64
+<p>同样问题，superclass方法，获取的应该是Test和NSObject，为什么是2个都是NSObject？</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Test *t = [Test new];
+NSLog(@"before  class=%@,  object_getClass=%@,  super class=%@",t.class,object_getClass(t),t.superclass);
+[t addObserver:self forKeyPath:@"name" options:NSKeyValueObservingOptionNew context:nil];    
+NSLog(@"after  class=%@,  object_getClass=%@,  super class=%@",t.class,object_getClass(t),t.superclass);
 </code></pre></div></div>
 
-<p>权限信息通用格式：</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rwxr-xr-x　number　user　group　filesize　updatetime　filename
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>before  class=Test,  object_getClass=Test,  super class=NSObject
+after  class=Test,  object_getClass=NSKVONotifying_Test,  super class=NSObject
 </code></pre></div></div>
-<p>通用格式分为7个部分，分别是：</p>
-<ol>
-  <li>文件属性，共10个字符,第1个表示类型，<code class="highlighter-rouge">-</code>表示文件， <code class="highlighter-rouge">d</code>表示文件夹。后9个字符分3组，分别表示对于当前用户，当前用户所在组，其他用户的 读/写/执行权限。 <code class="highlighter-rouge">r</code>可读， <code class="highlighter-rouge">w</code>可写， <code class="highlighter-rouge">x</code>可执行 ，<code class="highlighter-rouge">-</code>无权限</li>
-  <li><code class="highlighter-rouge">number</code>表示文件的数量</li>
-  <li><code class="highlighter-rouge">user</code>表示当前用户名</li>
-  <li><code class="highlighter-rouge">group</code>表示当前用户所在组的名字</li>
-  <li><code class="highlighter-rouge">filesize</code>表示该文件大小，单位byte</li>
-  <li><code class="highlighter-rouge">updatetime</code>表示文件最后修改时间</li>
-  <li><code class="highlighter-rouge">filename</code> 文件名</li>
-</ol>
+<p>如上这样生成一个类，打印添加观察者前后调用class得到的结果，发现没变，可是控制台中或者理论上这个对象指向的都应该是NSKVONotifying_Test，但是object_getClass拿到的却是我们想要的，下面从class和object_getClass方法说起。</p>
 
-<p>上面例子中，<code class="highlighter-rouge">-rw-r--r--</code> 表示OWNERS是一个文件，对当前用户有读写权限，没有执行权限， 当前用户所在组其他用户只有读权限，没有写和执行权限。
-<code class="highlighter-rouge">drwxr-xr-x</code>表示linux64是一个文件夹，对当前用户有读写执行权限，用户组和其他用户有读和执行权限，没有写权限，且文件夹中有3个文件。</p>
+<p><img src="http://image.smartjames.cn/mweb/20201228/16091487018484.png" alt="截屏2020-12-28 下午5.42.01" /></p>
 
-<h3 id="修改文件权限">修改文件权限</h3>
-<p>修改权限的命令格式：
-<code class="highlighter-rouge">chmod &lt;权限范围&gt;&lt;权限操作&gt;&lt;具体权限&gt; &lt;文件或目录&gt;</code></p>
+<h3 id="class方法和object_getclass方法">class方法和object_getClass方法</h3>
+<p>class和superclass方法的实现如下</p>
 
-<p><code class="highlighter-rouge">权限范围</code>：</p>
-<ul>
-  <li>u ： user,当前用户</li>
-  <li>g ：Group,当前用户所在组</li>
-  <li>o ：Other,其他用户</li>
-  <li>a ：All,全部用户</li>
-</ul>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+ (Class)class {
+    return self;
+}
 
-<p><code class="highlighter-rouge">权限操作</code>：</p>
+- (Class)class {
+    return object_getClass(self);
+}
 
-<p><code class="highlighter-rouge">+</code> ：增加权限,
-<code class="highlighter-rouge">-</code> ：取消权限,
-<code class="highlighter-rouge">=</code> ：设置拥有权限,</p>
-
-<p><code class="highlighter-rouge">具体权限</code>：</p>
-<ul>
-  <li>r ：可读</li>
-  <li>w ：可写</li>
-  <li>x ：可执行</li>
-</ul>
-
-<p>举个例子：</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rw-r--r--  1 byron  staff  0 12 27 12:04 text.txt  // 文件原始权限
-chmod u+x text.txt      // 执行修改权限
--rwxr--r--  1 byron  staff  0 12 27 12:04 text.txt  // 修改后的权限
+- (Class)superclass {
+    return [self class]-&gt;superclass;
+}
 </code></pre></div></div>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rw-r--r--  1 byron  staff  0 12 27 12:04 text.txt // 文件原始权限
-chmod a=rwx text.txt    // 执行修改权限
--rwxrwxrwx  1 byron  staff  0 12 27 12:04 text.txt // 修改后的权限
+<p>object_getClass方法实现如下</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Class object_getClass(id obj)
+{
+    if (obj) return obj-&gt;getIsa();
+    else return Nil;
+}
 </code></pre></div></div>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rw-rw-rw-  1 byron  staff  0 12 27 12:04 text.txt // 文件原始权限
-chmod u+x-w text.txt    // 执行修改权限
--r-xrw-rw-  1 byron  staff  0 12 27 12:04 text.txt // 修改后的权限
+<p>正常情况下，一个实例对象调用class方法和调用object_getClass的结果肯定一致，因为class的实现就是通过object_getClass。
+所以这里NSKVONotifying_Test这个类肯定也重写了class方法，那么如何去证明呢？</p>
+
+<h3 id="证明">证明</h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Test *t = [Test new];
+
+IMP p1 = class_getMethodImplementation(t.class, @selector(class));
+IMP p3 = class_getMethodImplementation(t.class, @selector(name));
+IMP p5 = class_getMethodImplementation(t.class, @selector(setName:));
+IMP p7 = class_getMethodImplementation(t.class, @selector(superclass));
+NSLog(@"befor class=%p,   getName=%p,   setName=%p,   superclass=%p", p1,p3, p5,p7);
+
+[t addObserver:self forKeyPath:@"name" options:NSKeyValueObservingOptionNew context:nil];
+        
+IMP p2 = class_getMethodImplementation(object_getClass(t), @selector(class));
+IMP p4 = class_getMethodImplementation(object_getClass(t), @selector(name));
+IMP p6 = class_getMethodImplementation(object_getClass(t), @selector(setName:));
+IMP p8 = class_getMethodImplementation(object_getClass(t), @selector(superclass));
+NSLog(@"after class=%p,   getName=%p,   setName=%p,  superclass=%p", p2,p4, p6, p8);
+</code></pre></div></div>
+<p>这里证明思路是，如果NSKVONotifying_Test重写了class方法，那么IMP指针指向的实现地址肯定会改变，如果添加观察者前后地址改变了，则证明重写了该方法。</p>
+
+<p>结果如下</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>befor class=0x7fff2018ec9b,   getName=0x10a970910,   setName=0x10a970940,   superclass=0x7fff2018ecde
+after class=0x7fff207b4662,   getName=0x10a970910,   setName=0x7fff207b5b57,  superclass=0x7fff2018ecde
 </code></pre></div></div>
 
-<p>还有一种修改权限的命令格式：
-<code class="highlighter-rouge">chmod &lt;数字&gt; &lt;文件名&gt;</code>
-3位数字分别表示user, group,other的权限</p>
+<p>这能证明，class和setName方法被重写，get方法和superclass方法没重写。class的实现可能如下</p>
 
-<p>r = 4, w = 2, x = 1</p>
-
-<p>则 rwx为 4+2+1=7, rw-为 4+2=6, r-x为4+1=5,-wx为2+1=3等等</p>
-
-<p>所以我们常见的755代表<code class="highlighter-rouge">rwxr-xr-x</code>,777代表<code class="highlighter-rouge">rwxrwxrwx</code></p>
-
-<p>所以前面的<code class="highlighter-rouge">chmod a=rwx filename</code> 可以简化为<code class="highlighter-rouge">chmod 777 filename</code></p>
-
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-rw-r--r--  1 byron  staff  0 12 27 12:04 text.txt // 文件原始权限
-chmod 777 text.txt    // 执行修改权限
--rwxrwxrwx  1 byron  staff  0 12 27 12:04 text.txt // 修改后的权限
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (Class)class {
+    return objc_getClass("Test");
+}
 </code></pre></div></div>
+<p>这样就能解释为什么添加观察者之后的对象调用class拿到的依然是Test类，系统为了屏蔽内部实现，故重写了OC层面的class方法，但是依然给了我们一个runtime层面object_getClass的入口。</p>
+
+<p>并且因为superclass的实现是调用[self class]方法，调用的是重写后的，拿到的class是Test,所以可以理解了superclass也就不需要重写了。</p>
+
 
   </section>
 
@@ -363,15 +363,10 @@ chmod 777 text.txt    // 执行修改权限
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/12/iOS-App%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86/" data-toggle="tooltip" data-placement="top" title="iOS App签名原理">上一篇：  <span>iOS App签名原理</span>
+            <a href="/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="Linux文件权限详解">上一篇：  <span>Linux文件权限详解</span>
             </a>
         </li>
         
-        
-        <li class="next">
-            <a href="/2020/12/iOS-KVO%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="iOS KVO详解">下一篇：  <span>iOS KVO详解</span>
-            </a>
-        </li>
         
     </ul>
 </section>

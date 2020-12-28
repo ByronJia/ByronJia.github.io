@@ -5,9 +5,102 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 27 Dec 2020 12:26:02 +0800</pubDate>
-    <lastBuildDate>Sun, 27 Dec 2020 12:26:02 +0800</lastBuildDate>
+    <pubDate>Mon, 28 Dec 2020 18:13:58 +0800</pubDate>
+    <lastBuildDate>Mon, 28 Dec 2020 18:13:58 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>iOS KVO详解</title>
+        <description>&lt;h3 id=&quot;提出疑问&quot;&gt;提出疑问&lt;/h3&gt;
+&lt;p&gt;首先抛出问题，KVO的原理有很多文章写过，大致原理是一个Test类，添加了观察者后，会动态生成NSKVONotifying_Test类，重写了set方法。但为什么当我们对这个对象调用class方法的时候依然返回的是Test类，为什么不是NSKVONotifying_Test？ 我们能理解设计者是故意屏蔽内部实现，但是究竟是怎么做到的呢？&lt;/p&gt;
+
+&lt;p&gt;同样问题，superclass方法，获取的应该是Test和NSObject，为什么是2个都是NSObject？&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Test *t = [Test new];
+NSLog(@&quot;before  class=%@,  object_getClass=%@,  super class=%@&quot;,t.class,object_getClass(t),t.superclass);
+[t addObserver:self forKeyPath:@&quot;name&quot; options:NSKeyValueObservingOptionNew context:nil];    
+NSLog(@&quot;after  class=%@,  object_getClass=%@,  super class=%@&quot;,t.class,object_getClass(t),t.superclass);
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;before  class=Test,  object_getClass=Test,  super class=NSObject
+after  class=Test,  object_getClass=NSKVONotifying_Test,  super class=NSObject
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;如上这样生成一个类，打印添加观察者前后调用class得到的结果，发现没变，可是控制台中或者理论上这个对象指向的都应该是NSKVONotifying_Test，但是object_getClass拿到的却是我们想要的，下面从class和object_getClass方法说起。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201228/16091487018484.png&quot; alt=&quot;截屏2020-12-28 下午5.42.01&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;class方法和object_getclass方法&quot;&gt;class方法和object_getClass方法&lt;/h3&gt;
+&lt;p&gt;class和superclass方法的实现如下&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;+ (Class)class {
+    return self;
+}
+
+- (Class)class {
+    return object_getClass(self);
+}
+
+- (Class)superclass {
+    return [self class]-&amp;gt;superclass;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;object_getClass方法实现如下&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Class object_getClass(id obj)
+{
+    if (obj) return obj-&amp;gt;getIsa();
+    else return Nil;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;正常情况下，一个实例对象调用class方法和调用object_getClass的结果肯定一致，因为class的实现就是通过object_getClass。
+所以这里NSKVONotifying_Test这个类肯定也重写了class方法，那么如何去证明呢？&lt;/p&gt;
+
+&lt;h3 id=&quot;证明&quot;&gt;证明&lt;/h3&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Test *t = [Test new];
+
+IMP p1 = class_getMethodImplementation(t.class, @selector(class));
+IMP p3 = class_getMethodImplementation(t.class, @selector(name));
+IMP p5 = class_getMethodImplementation(t.class, @selector(setName:));
+IMP p7 = class_getMethodImplementation(t.class, @selector(superclass));
+NSLog(@&quot;befor class=%p,   getName=%p,   setName=%p,   superclass=%p&quot;, p1,p3, p5,p7);
+
+[t addObserver:self forKeyPath:@&quot;name&quot; options:NSKeyValueObservingOptionNew context:nil];
+        
+IMP p2 = class_getMethodImplementation(object_getClass(t), @selector(class));
+IMP p4 = class_getMethodImplementation(object_getClass(t), @selector(name));
+IMP p6 = class_getMethodImplementation(object_getClass(t), @selector(setName:));
+IMP p8 = class_getMethodImplementation(object_getClass(t), @selector(superclass));
+NSLog(@&quot;after class=%p,   getName=%p,   setName=%p,  superclass=%p&quot;, p2,p4, p6, p8);
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;这里证明思路是，如果NSKVONotifying_Test重写了class方法，那么IMP指针指向的实现地址肯定会改变，如果添加观察者前后地址改变了，则证明重写了该方法。&lt;/p&gt;
+
+&lt;p&gt;结果如下&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;befor class=0x7fff2018ec9b,   getName=0x10a970910,   setName=0x10a970940,   superclass=0x7fff2018ecde
+after class=0x7fff207b4662,   getName=0x10a970910,   setName=0x7fff207b5b57,  superclass=0x7fff2018ecde
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;这能证明，class和setName方法被重写，get方法和superclass方法没重写。class的实现可能如下&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (Class)class {
+    return objc_getClass(&quot;Test&quot;);
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;这样就能解释为什么添加观察者之后的对象调用class拿到的依然是Test类，系统为了屏蔽内部实现，故重写了OC层面的class方法，但是依然给了我们一个runtime层面object_getClass的入口。&lt;/p&gt;
+
+&lt;p&gt;并且因为superclass的实现是调用[self class]方法，调用的是重写后的，拿到的class是Test,所以可以理解了superclass也就不需要重写了。&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 28 Dec 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/12/iOS-KVO%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/12/iOS-KVO%E8%AF%A6%E8%A7%A3/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
     
       <item>
         <title>Linux文件权限详解</title>
@@ -867,84 +960,6 @@ return self.data;
         <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(8)-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(8)-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>iOS底层(7)- 内存管理</title>
-        <description>&lt;h2 id=&quot;浅拷贝和深拷贝&quot;&gt;浅拷贝和深拷贝&lt;/h2&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;拷贝的最终目的是产生一个副本，修改副本不会对原对象产生影响。故到底是深拷贝还是浅拷贝要根据这个规则来判断。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;[任意对象 copy] 产生一个不可变对象，如果原对象是不可变对象，那么就是浅拷贝，因为不可变对象本身就不能修改，所以没必要创新分配内存。原对象是可变对象，就是深拷贝。&lt;/li&gt;
-  &lt;li&gt;[任意对象 mutableCopy] 产生一个可变对象，不论原对象是否是可变对象，都是深拷贝，因为要产生修改不影响原对象的副本，必须重新分配内存。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023208497217.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;定义属性时使用copy修饰词，目的是在赋值之后产生一个不可变对象，那么在修改外部变量的时候不影响内部，例如UI控件的text都是copy修饰，防止外部修改影响内部实现。&lt;/p&gt;
-
-&lt;h2 id=&quot;cadisplaylink-和-nstimer使用问题&quot;&gt;CADisplayLink 和 NSTimer使用问题&lt;/h2&gt;
-&lt;p&gt;会对target 强引用，如果target也强引用他们，就发生循环引用问题
-解决方法是使用NSProxy，是和NSObject同一级别的基类，但是没有实现和声明多余的方法，只有alloc等。
-作用是只要方法列表里找不到方法，跳过动态方法解析，直接做转发。且NXProxy中弱引用target即可。&lt;/p&gt;
-
-&lt;h2 id=&quot;内存布局&quot;&gt;内存布局&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023208614585.png&quot; alt=&quot;2&quot; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;tagged-pointer&quot;&gt;Tagged Pointer&lt;/h2&gt;
-&lt;p&gt;从64位开始引入，目的是优化NSNumber, NSDate， NSString等小对象的存储，提高内存使用率&lt;br /&gt;
-原来NSNumber占用一个对象的空间，指针还指向堆地址的值，最终可能只是为了存一个3。 就浪费很大空间&lt;/p&gt;
-
-&lt;p&gt;在使用Tagged pointer技术后，NSNumber 3的地址0x327, Tag+Data 的形式存储，从地址就能读到真实值，不需要额外空间。当内存地址长度超过64位后，才使用动态分配内存的方式存储数据。&lt;/p&gt;
-
-&lt;p&gt;如果地址最低有效位是1， 则是Tagged pointer&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;注意&lt;/strong&gt; ： 字符串想要使用tagged pointer, 初始化要用&lt;code class=&quot;highlighter-rouge&quot;&gt;[NSString stringWithFormat:]&lt;/code&gt;，如果是@”xx”创建的是常规对象存在常量区。&lt;/p&gt;
-&lt;h2 id=&quot;引用计数管理&quot;&gt;引用计数管理&lt;/h2&gt;
-&lt;p&gt;新建OC对象引用计数默认是1，当调用alloc,new,copy,mutableCopy时对象引用计数会+1&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;引用计数存储&lt;/strong&gt;：
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023208775066.png&quot; alt=&quot;3&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;在64位优化后的isa共用体结构中，引用计数=extra_rc + sidetable_rc.refcnts[self].count,不是每个对象都会使用sidetable_rc,要看isa的标志位has_sidetable_rc.  &lt;br /&gt;
-如果isa不是共用体结构，引用计数=sidetable_rc.refcnts[self].count
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023208883784.png&quot; alt=&quot;4&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;refcnts是一个散列表，使用对象的地址为key,value为引用计数。
-获取引用计数、retain、release操作都是获取extra_rc的值+sidetable的值+1或-1. 如果是release则判断是否为0，为0就dealloc。&lt;/p&gt;
-
-&lt;h2 id=&quot;weak-指针原理&quot;&gt;weak 指针原理&lt;/h2&gt;
-&lt;p&gt;__weak: 弱引用对象，当对象销毁时指针置为空&lt;br /&gt;
-__unsafe_unretain: 弱引用对象，当对象销毁时，指针不变，使用会发生坏内存访问&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;weak能在对象销毁置为空的原理：&lt;/strong&gt;
-当自动调用dealloc方法时，判断是否有弱引用和&lt;code class=&quot;highlighter-rouge&quot;&gt;sidetable_rc&lt;/code&gt;,（弱引用和超过计数器时都使用到了sidetable），有弱引用就将sidetable中自己对应的value取出来，得到一个__weak对象的地址集合(不确定是不是数组，因为用到C++的遍历器)， 并遍历将其置为nil
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023209058628.png&quot; alt=&quot;5&quot; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;自动释放池&quot;&gt;自动释放池&lt;/h2&gt;
-&lt;p&gt;主要通过AutoreleasePoolPage来管理，结构如下&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201010/16023209189251.png&quot; alt=&quot;6&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;在@autoreleasePool代码开始时，调用&lt;code class=&quot;highlighter-rouge&quot;&gt;AutoreleasePoolPage&lt;/code&gt;的&lt;code class=&quot;highlighter-rouge&quot;&gt;Push&lt;/code&gt;方法，将&lt;code class=&quot;highlighter-rouge&quot;&gt;BOUNDARY&lt;/code&gt; 添加到&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;中，标记为开始，后续调用&lt;code class=&quot;highlighter-rouge&quot;&gt;autorelease&lt;/code&gt;的对象也会添加到该&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;中，在括号结束时，调用&lt;code class=&quot;highlighter-rouge&quot;&gt;Pop&lt;/code&gt;方法时传入一个&lt;code class=&quot;highlighter-rouge&quot;&gt;POOL_BOUNDARY&lt;/code&gt;的内存地址，会从最后一个入栈的对象开始发送&lt;code class=&quot;highlighter-rouge&quot;&gt;release&lt;/code&gt;消息，直到遇到这个&lt;code class=&quot;highlighter-rouge&quot;&gt;POOL_BOUNDARY&lt;/code&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;对象释放时机&quot;&gt;对象释放时机&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;MRC&lt;/strong&gt;: 对象创建时调用了autorelease方法   &lt;br /&gt;
-系统在主线程的Runloop中注册了2个Observer,1个监听kCFRunLoopEntry时间，调用objc_autoreleasePoolPush()。另一个监听kCFRunLoopBeforeWaiting事件，调用objc_autoreleasePoolPop()、objc_autoreleasePoolPush()。
-监听kCFRunLoopBeforeExit事件调用objc_autoreleasePoolPop() &lt;br /&gt;
-例如：viewdidload和viewwillappear 在一个loop中，即一次执行所有的block和sources，直到执行完毕loop睡眠，在睡眠之前会释放对象。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;ARC&lt;/strong&gt;:
-在括号结束时，LLVM编译器自动给对象release一次，而不是在runloop中执行。&lt;/p&gt;
-</description>
-        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(7)-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</guid>
         
         <category>iOS</category>
         
