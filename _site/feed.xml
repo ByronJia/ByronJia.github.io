@@ -5,9 +5,183 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 28 Dec 2020 18:13:58 +0800</pubDate>
-    <lastBuildDate>Mon, 28 Dec 2020 18:13:58 +0800</lastBuildDate>
+    <pubDate>Tue, 29 Dec 2020 15:43:50 +0800</pubDate>
+    <lastBuildDate>Tue, 29 Dec 2020 15:43:50 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>NSNotification详解</title>
+        <description>&lt;h3 id=&quot;实现原理&quot;&gt;实现原理&lt;/h3&gt;
+&lt;p&gt;参考GNUStep源码，了解其中实现原理，对于&lt;code class=&quot;highlighter-rouge&quot;&gt;addObserver:selector:name:object:&lt;/code&gt;会创建一个&lt;code class=&quot;highlighter-rouge&quot;&gt;Observation&lt;/code&gt;对象，是搜索和执行响应的核心对象， 包含observer和sel，&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;typedef	struct	Obs {
+  id		observer;	/* Object to receive message.	*/
+  SEL		selector;	/* Method selector.		*/
+  struct Obs	*next;		/* Next item in linked list.	*/
+  int		retained;	/* Retain count for structure.	*/
+  struct NCTbl	*link;		/* Pointer back to chunk table	*/
+} Observation;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;NSNotification&lt;/code&gt;维护了一个MapTable表，用于分类存储&lt;code class=&quot;highlighter-rouge&quot;&gt;Observation&lt;/code&gt;，分为&lt;code class=&quot;highlighter-rouge&quot;&gt;nameless&lt;/code&gt;,&lt;code class=&quot;highlighter-rouge&quot;&gt;named&lt;/code&gt;,&lt;code class=&quot;highlighter-rouge&quot;&gt;cache&lt;/code&gt;，代表无post名的通知，有名的通知，和快速缓存。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#define	CHUNKSIZE	128
+#define	CACHESIZE	16
+typedef struct NCTbl {
+  Observation		*wildcard;	/* Get ALL messages.		*/
+  GSIMapTable		nameless;	/* Get messages for any name.	*/
+  GSIMapTable		named;		/* Getting named messages only.	*/
+  unsigned		lockCount;	/* Count recursive operations.	*/
+  NSRecursiveLock	*_lock;		/* Lock out other threads.	*/
+  Observation		*freeList;
+  Observation		**chunks;
+  unsigned		numChunks;
+  GSIMapTable		cache[CACHESIZE];
+  unsigned short	chunkIndex;
+  unsigned short	cacheIndex;
+} NCTable;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;但是&lt;code class=&quot;highlighter-rouge&quot;&gt;nameless&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;named&lt;/code&gt;都是MapTable,但是存储的结构不同，即若有名字，则存储的是同名的table,其中分为不同的object对于不同的observation。若没有名字，则用object来区分不同的observation。
+所以我们知道，即使不传name,传入指定的obj,也可以实现通知的功能。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;在nameless表中：
+GSIMapTable的结构如下
+object : Observation
+object : Observation
+object : Observation
+
+----------------------------
+在named表中：
+GSIMapTable结构如下:
+name : maptable
+name : maptable
+name : maptable
+
+maptable的结构如下
+object : Observation
+object : Observation
+object : Observation
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;addObserver的逻辑如下：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;根据传入的selector和observer创建Observation，并存入maptable中，如果已存在，则是从cache中取。&lt;/li&gt;
+  &lt;li&gt;如果name存在，object存在，则向named的maptable表中插入元素，key为name,value为GSIMapTable，GSIMapTable中存key为object,value为Observation。&lt;/li&gt;
+  &lt;li&gt;如果name不存在，object存在，则向nameless的maptable表中插入元素，key为object,value为Observation。&lt;/li&gt;
+  &lt;li&gt;如果name和object都为空，则Observation-&amp;gt;next=wildcard，将老的wildcard赋值为next指针,然后Observation对象置为wildcard，wildcard = Observation&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;postNotification的机制如下：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;查找所有wildcard的Observation,加入数组&lt;/li&gt;
+  &lt;li&gt;查找相同object和空name的Observation,加入数组&lt;/li&gt;
+  &lt;li&gt;查找相同name和相同object的Observation,加入数组&lt;/li&gt;
+  &lt;li&gt;查找相同name,非空object时,所有nil object的Observation加入数组&lt;/li&gt;
+  &lt;li&gt;遍历数组,执行performSelector,情况数组&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;通知是同步or异步&quot;&gt;通知是同步or异步&lt;/h3&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;postNotificationName&lt;/code&gt;底层实现是&lt;code class=&quot;highlighter-rouge&quot;&gt;performSeletor&lt;/code&gt; 方法，所以一定是按顺序执行，是同步的。&lt;/p&gt;
+
+&lt;h3 id=&quot;如何修改发送时机&quot;&gt;如何修改发送时机&lt;/h3&gt;
+&lt;p&gt;使用&lt;code class=&quot;highlighter-rouge&quot;&gt;NSNotificationQueue&lt;/code&gt;, 顾名思义可以将NSNotification放入queue中，在适当时机再执行发送，虽然都是在主线程。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;typedef NS_ENUM(NSUInteger, NSPostingStyle) {
+    NSPostWhenIdle = 1,      // 当runloop处于空闲状态时post
+    NSPostASAP = 2,    // 当当前runloop完成之后立即post
+    NSPostNow = 3    // 立即post
+};
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;NSNotification *noti = [NSNotification notificationWithName:@&quot;111&quot; object:nil];
+[[NSNotificationQueue defaultQueue] enqueueNotification:noti postingStyle:NSPostASAP];
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;和runloop的关系&quot;&gt;和runloop的关系&lt;/h3&gt;
+&lt;p&gt;与runloop的关系仅限当postingStyle不是&lt;code class=&quot;highlighter-rouge&quot;&gt;NSPostNow&lt;/code&gt;，即需要在runloop一定的状态下再去发送，默认子线程是不启动runloop的，所以如果要在子线程使用&lt;code class=&quot;highlighter-rouge&quot;&gt;NSPostNow&lt;/code&gt;以外的类型发送通知，需要启动runloop。&lt;/p&gt;
+
+&lt;h3 id=&quot;通知的线程切换&quot;&gt;通知的线程切换&lt;/h3&gt;
+&lt;p&gt;在上面也已经聊过，&lt;code class=&quot;highlighter-rouge&quot;&gt;NSNotification&lt;/code&gt;执行是通过performSeletor方法，所以默认就是在当前线程，但是实际上我们会一个需求，在子线程发送通知，在主线程接收到通知并执行，虽然我们可以子线程接收通知后，切换到主线程执行相应的UI操作，但是如果多个接收者，都需要这种操作，就很不友好。下面来看一下，苹果官方给出的解决方案。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;@interface NotificationVC ()&amp;lt;NSMachPortDelegate&amp;gt;
+
+@property (nonatomic, strong)NSLock *notiLock;
+@property (nonatomic, strong)NSThread *notiThead; // 期望线程
+@property (nonatomic, strong)NSMutableArray *notiQueue;
+@property (nonatomic, strong)NSMachPort *notiMach;
+
+@end
+
+@implementation NotificationVC
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    
+    self.notiLock = [[NSLock alloc]init];
+    self.notiQueue = [NSMutableArray array];
+    self.notiMach = [[NSMachPort alloc] init];
+    self.notiMach.delegate = self;
+    self.notiThead = [NSThread currentThread];
+    [[NSRunLoop currentRunLoop] addPort:self.notiMach forMode:NSRunLoopCommonModes];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(processNotification:) name:@&quot;post&quot; object:nil];
+
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        NSLog(@&quot;%@&quot;, [NSThread currentThread]);
+        [[NSNotificationCenter defaultCenter] postNotificationName:@&quot;post&quot; object:nil];
+    });
+}
+
+
+- (void)processNotification:(NSNotification *)noti
+{
+    if ([NSThread currentThread] != self.notiThead) {
+        NSLog(@&quot;不在主线程  %@&quot;,[NSThread currentThread]);
+        [self.notiLock lock];
+        [self.notiQueue addObject:noti];
+        [self.notiLock unlock];
+        [self.notiMach sendBeforeDate:[NSDate date] components:nil from:nil reserved:0];
+    }else{
+        NSLog(@&quot;已经在主线程 %@&quot;,[NSThread currentThread]);
+    }
+}
+
+
+#pragma mark - NSMachPortDelegate
+- (void)handleMachMessage:(void *)msg
+{
+    NSLog(@&quot;%s   %@&quot;,__func__,[NSThread currentThread]);
+    
+    [self.notiLock lock];
+    while ([self.notiQueue count]) {
+        NSNotification *noti = self.notiQueue[0];
+        [self.notiQueue removeObjectAtIndex:0];
+        [self.notiLock unlock];
+        [self processNotification:noti];
+        [self.notiLock lock];
+    }
+    
+    [self.notiLock unlock];
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;以上方案有很大局限性，每个observer都要讲方法设为processNotification：，而且每个观察者都要实现这套逻辑。完美方案是实现NSNotificationCenter子类或者写单独的队列类来管理。&lt;/p&gt;
+
+&lt;p&gt;简单方案如下，在需要切换到主线程的观察者地方，使用&lt;code class=&quot;highlighter-rouge&quot;&gt;addObserverForName:object:queue:usingBlock:&lt;/code&gt;方式，将响应的回调拉回到主线程。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[[NSNotificationCenter defaultCenter] addObserverForName:@&quot;post&quot; object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
+    NSLog(@&quot;%@&quot;, [NSThread currentThread]);
+}];
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+</description>
+        <pubDate>Tue, 29 Dec 2020 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2020/12/NSNotification%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">http://localhost:4000/2020/12/NSNotification%E8%AF%A6%E8%A7%A3/</guid>
+        
+        <category>iOS</category>
+        
+        
+      </item>
     
       <item>
         <title>iOS KVO详解</title>
@@ -868,98 +1042,6 @@ return self.data;
         <pubDate>Mon, 12 Oct 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/10/iOS-%E7%BB%84%E4%BB%B6%E5%8C%96%E6%96%B9%E6%A1%88%E9%80%89%E5%9E%8B/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/10/iOS-%E7%BB%84%E4%BB%B6%E5%8C%96%E6%96%B9%E6%A1%88%E9%80%89%E5%9E%8B/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>iOS底层(8)- 性能优化</title>
-        <description>&lt;h3 id=&quot;减少卡顿&quot;&gt;减少卡顿&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;尽量减少视图数量和层次&lt;/li&gt;
-  &lt;li&gt;减少透明的视图&lt;/li&gt;
-  &lt;li&gt;尽量避免出现离屏渲染&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;离屏渲染&quot;&gt;离屏渲染&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;如果要在显示屏上显示内容，我们至少需要一块与屏幕像素数据量一样大的frame buffer，作为像素数据存储区域，而这也是GPU存储渲染结果的地方。
-如果有时因为面临一些限制，无法把渲染结果直接写入frame buffer，而是先暂存在另外的内存区域，之后再写入frame buffer，那么这个过程被称之为离屏渲染。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;GPU离屏渲染：采用画家算法，把每一层依次输出到画布，如果父layer剪裁成圆角，容器子layer因为父容器有圆角，也要被剪裁，但这时还在渲染队列中，此时需要在新内存中，把容器以及子layer依次画好，剪裁完成，再放到&lt;code class=&quot;highlighter-rouge&quot;&gt;frame buffer&lt;/code&gt;中。&lt;/p&gt;
-
-&lt;h4 id=&quot;消耗性能原因&quot;&gt;消耗性能原因&lt;/h4&gt;
-&lt;ul&gt;
-  &lt;li&gt;需要创建新的缓冲区&lt;/li&gt;
-  &lt;li&gt;整个过程需要多次切换上下文环境，从&lt;code class=&quot;highlighter-rouge&quot;&gt;on-screen&lt;/code&gt; 到 &lt;code class=&quot;highlighter-rouge&quot;&gt;off-screen&lt;/code&gt;，等渲染结束后，将离屏缓冲区结果显示到屏幕上，再讲上下文从&lt;code class=&quot;highlighter-rouge&quot;&gt;off-screen&lt;/code&gt;切换到&lt;code class=&quot;highlighter-rouge&quot;&gt;on-screen&lt;/code&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;哪些会触发离屏渲染&quot;&gt;哪些会触发离屏渲染&lt;/h4&gt;
-&lt;ul&gt;
-  &lt;li&gt;光栅化   &lt;code class=&quot;highlighter-rouge&quot;&gt;layer.shouldRasterize= YES&lt;/code&gt;。 隐式的创建一个位图，各种阴影遮罩效果保存在位图中缓存，如果对应的layer极其sublayers没有发生改变，在下一帧的时候可以直接复用，减少渲染频率。但是否有助于优化性能取决于缓存的位图是否被有效复用。&lt;/li&gt;
-  &lt;li&gt;遮罩   &lt;code class=&quot;highlighter-rouge&quot;&gt;layer.mask&lt;/code&gt;&lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;圆角   同时设置&lt;code class=&quot;highlighter-rouge&quot;&gt;layer.maskToBounds = YES&lt;/code&gt;,  &lt;code class=&quot;highlighter-rouge&quot;&gt;layer.cornerRadius &amp;gt;0&lt;/code&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;阴影 &lt;code class=&quot;highlighter-rouge&quot;&gt;layer.shadowoffset...&lt;/code&gt;,    但是 &lt;code class=&quot;highlighter-rouge&quot;&gt;layer.shadowPath&lt;/code&gt;不会产生离屏渲染&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;卡顿检测&quot;&gt;卡顿检测&lt;/h3&gt;
-&lt;p&gt;通过使用监听 runloop的状态切换的耗时达到监控卡顿的目的&lt;/p&gt;
-
-&lt;h3 id=&quot;app启动优化&quot;&gt;APP启动优化&lt;/h3&gt;
-&lt;p&gt;启动分为3大阶段&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;dyld(dynamic link editor)&lt;/code&gt; 动态链接，装在Mach-O文件
-    &lt;ul&gt;
-      &lt;li&gt;装在APP可执行文件，递归加载所有依赖的动态库&lt;/li&gt;
-      &lt;li&gt;都完毕后，通知runtime进行下一步处理&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;runtime&lt;/code&gt;
-    &lt;ul&gt;
-      &lt;li&gt;调用&lt;code class=&quot;highlighter-rouge&quot;&gt;map_images&lt;/code&gt; 进行执行文件内容的解析和处理&lt;/li&gt;
-      &lt;li&gt;在&lt;code class=&quot;highlighter-rouge&quot;&gt;load_images&lt;/code&gt;中调用&lt;code class=&quot;highlighter-rouge&quot;&gt;call_load_methods&lt;/code&gt;， 调用所有class和&lt;code class=&quot;highlighter-rouge&quot;&gt;category&lt;/code&gt;的 &lt;code class=&quot;highlighter-rouge&quot;&gt;+load&lt;/code&gt;方法&lt;/li&gt;
-      &lt;li&gt;进行objc结构初始化，注册类，初始化对象等&lt;/li&gt;
-      &lt;li&gt;可执行文件和动态库中所有符号Class,Protocol, Selctor, IMP 都已经加载完成&lt;/li&gt;
-      &lt;li&gt;调用Main函数&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;main&lt;/code&gt;
-    &lt;ul&gt;
-      &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;UIApplicationMain&lt;/code&gt;和 &lt;code class=&quot;highlighter-rouge&quot;&gt;didFinishLaunchingWithOptions&lt;/code&gt;方法&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;优化方案：&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;dyld&lt;/code&gt;
-    &lt;ul&gt;
-      &lt;li&gt;减少动态库，合并动态库&lt;/li&gt;
-      &lt;li&gt;减少Objc类，分类的数量&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;runtime&lt;/code&gt;
-    &lt;ul&gt;
-      &lt;li&gt;用&lt;code class=&quot;highlighter-rouge&quot;&gt;+initialize&lt;/code&gt;方法和dispath_once代替+load方法&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;main&lt;/code&gt;
-    &lt;ul&gt;
-      &lt;li&gt;按需加载&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;更多详细优化方案见&lt;a href=&quot;https://byronjia.github.io/2020/09/iOS-%E5%BA%94%E7%94%A8%E5%90%AF%E5%8A%A8%E8%80%97%E6%97%B6%E5%88%86%E6%9E%90%E5%8F%8A%E4%BC%98%E5%8C%96/&quot;&gt;iOS 应用启动耗时分析及优化&lt;/a&gt;&lt;/p&gt;
-
-</description>
-        <pubDate>Sat, 10 Oct 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(8)-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS%E5%BA%95%E5%B1%82(8)-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/</guid>
         
         <category>iOS</category>
         
