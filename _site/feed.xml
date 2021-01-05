@@ -5,9 +5,109 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Tue, 29 Dec 2020 15:43:50 +0800</pubDate>
-    <lastBuildDate>Tue, 29 Dec 2020 15:43:50 +0800</lastBuildDate>
+    <pubDate>Tue, 05 Jan 2021 13:33:27 +0800</pubDate>
+    <lastBuildDate>Tue, 05 Jan 2021 13:33:27 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>WebRTC基于GCC的拥塞控制-实现分析</title>
+        <description>&lt;h3 id=&quot;前言&quot;&gt;前言&lt;/h3&gt;
+&lt;p&gt;从源代码实现角度对WebRTC的GCC算法进行分析。主要内容包括： RTCP RR的数据源、报文构造和接收，接收端基于数据包到达延迟的码率估计，发送端码率的计算以及生效于目标模块。&lt;/p&gt;
+
+&lt;p&gt;拥塞控制是实时流媒体应用的重要服务质量保证。通过本文和文章[1][2]，从数学基础、算法步骤到实现细节，对WebRTC的拥塞控制GCC算法有一个全面深入的理解，为进一步学习WebRTC奠定良好基础。&lt;/p&gt;
+
+&lt;h3 id=&quot;1-gcc算法框架再学习&quot;&gt;1 GCC算法框架再学习&lt;/h3&gt;
+
+&lt;p&gt;本节内容基本上是文章[1]第1节的复习，目的是再次复习GCC算法的主要框架，梳理其算法流程中的数据流和控制流，以此作为后续章节的行文提纲。GCC算法的数据流和控制流如图1所示。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20210105/16098246662333.png&quot; alt=&quot;2844879-91005d8cd84ba66e&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;对发送端来讲，GCC算法主要负责两件事：1)接收来自接收端的数据包信息反馈，包括来自RTCP RR报文的丢包率和来自RTCP REMB报文的接收端估计码率，综合本地的码率配置信息，计算得到目标码率A。2)把目标码率A生效于目标模块，包括PacedSender模块，RTPSender模块和ViEEncoder模块等。&lt;/p&gt;
+
+&lt;p&gt;对于接收端来讲，GCC算法主要负责两件事：1）统计RTP数据包的接收信息，包括丢包数、接收RTP数据包的最高序列号等，构造RTCP RR报文，发送回发送端。2）针对每一个到达的RTP数据包，执行基于到达时间延迟的码率估计算法，得到接收端估计码率，构造RTCP REMB报文，发送回发送端。&lt;/p&gt;
+
+&lt;p&gt;由此可见，GCC算法由发送端和接收端配合共同实现，接收端负责码率反馈数据的生成，发送端负责根据码率反馈数据计算目标码率，并生效于目标模块。本文接下来基于本节所述的GCC算法的四项子任务，分别详细分析之。&lt;/p&gt;
+
+&lt;h3 id=&quot;2-rtcp-rr报文构造及收发&quot;&gt;2 RTCP RR报文构造及收发&lt;/h3&gt;
+&lt;p&gt;关于WebRTC上的RTP/RTCP协议的具体实现细节，可参考文章[3]。本节主要从RR报文的数据流角度，对其数据源、报文构造和收发进行分析。其数据源和报文构造如图2所示，报文接收和作用于码率控制模块如图3所示。&lt;/p&gt;
+
+&lt;p&gt;在数据接收端，RTP数据包从Network线程到达Worker线程，经过Call对象，VideoReceiveStream对象到达RtpStreamReceiver对象。在该对象中，主要执行三项任务：1)接收端码率估计；2) 转发RTP数据包到VCM模块；3)接收端数据统计。其中1)是下一节的重点，2)是RTP数据包进一步组帧和解码的地方；3)是统计RTP数据包接收信息，作为RTCP RR报文和其他数据统计模块的数据来源，是我们本节重点分析的部分。&lt;/p&gt;
+
+&lt;p&gt;在RtpStreamReceiver对象中，RTP数据包经过解析得到头部信息，作为输入参数调用ReceiveStatistianImpl::IncomingPacket()。该函数中分别调用UpdateCounters()和NotifyRtpCallback()，前者用来更新对象内部的统计信息，如接收数据包计数等，后者用来更新RTP回调对象的统计信息，该信息用来作为getStats调用的数据源。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20210105/16098246932212.png&quot; alt=&quot;2844879-ed098a4958b2ee2c&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;RTCP发送模块在ModuleProcess线程中工作，RTCP报文周期性发送。当线程判断需要发送RTCP报文时，调用SendRTCP()进行发送。接下来调用PrepareReport()准备各类型RTCP报文的数据。对于我们关心的RR报文，会调用AddReportBlock()获取数据源并构造ReportBlock对象:该函数首先通过ReceiveStatistianImpl::GetStatistics()拿到类型为RtcpStatistics的数据源，然后以此填充ReportBlock对象。GetStatistics()会调用CalculateRtcpStatistics()计算ReportBlock的每一项数据，包括丢包数、接收数据包最高序列号等。ReportBlock对象会在接下来的报文构造环节通过BuildRR()进行序列化。RTCP报文进行序列化之后，交给Network线程进行网络层发送。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20210105/16098247057859.png&quot; alt=&quot;2844879-ae80527d779c3402&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;在发送端(即RTCP报文接收端)，RTCP报文经过Network线程到达Worker线程，最后到达ModuleRtpRtcpImpl模块调用IncomingRtcpPacket()进行报文解析工作。解析完成以后，调用TriggerCallbacksFromRTCPPackets()反馈到回调模块。在码率估计方面，会反馈到BitrateController模块。ReportBlock消息最终会到达BitrateControllerImpl对象，进行下一步的目标码率确定。&lt;/p&gt;
+
+&lt;p&gt;至此，关于RTCP RR报文在拥塞控制中的执行流程分析完毕。&lt;/p&gt;
+
+&lt;h3 id=&quot;3-接收端基于延迟的码率估计&quot;&gt;3 接收端基于延迟的码率估计&lt;/h3&gt;
+&lt;p&gt;接收端基于数据包到达延迟的码率估计是整个GCC算法最复杂的部分，本节在分析WebRTC代码的基础上，阐述该部分的实现细节。&lt;/p&gt;
+
+&lt;p&gt;接收端基于延迟码率估计的基本思想是：RTP数据包的到达时间延迟m(i)反映网络拥塞状况。当延迟很小时，说明网络拥塞不严重，可以适当增大目标码率；当延迟变大时，说明网络拥塞变严重，需要减小目标码率；当延迟维持在一个低水平时，目标码率维持不变。其主要由三个模块组成：到达时间滤波器，过载检查器和速率控制器。&lt;/p&gt;
+
+&lt;p&gt;在实现上，WebRTC定义该模块为远端码率估计模块RemoteBitrateEstimator，整个模块的工作流程如图4所示。需要注意的是，该模块需要RTP报文扩展头部abs-send-time的支持，用以记录RTP数据包在发送端的绝对发送时间，详细请参考文献[4]。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20210105/16098247269312.png&quot; alt=&quot;2844879-71027dc71720dd9c&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;接收端收到RTP数据包后，经过一系列调用到RtpStreamReceiver对象，由该对象调用远端码率估计模块的总控对象RemoteBitrateEstimatorAbsSendTime，由该对象的总控函数IncomingPacketInfo()负责整个码率估计流程，如图4所示，算法从左到右依次调用子对象的功能函数。&lt;/p&gt;
+
+&lt;p&gt;总控函数首先调用InterArrival::ComputeDeltas()函数，用以计算相邻数据包组的到达时间相对延迟，该部分对应文章[1]的3.1节内容。在计算到达时间相对延迟时，用到了RTP报文头部扩展abs-send-time。另外，实现细节上要注意数据包组的划分，以及对乱序和突发时间的处理。&lt;/p&gt;
+
+&lt;p&gt;接下来算法调用OveruseEstimator::Update()函数，用以估计数据包的网络延迟，该部分对应文章[1]的3.2节内容。对网络延迟的估计用到了Kalman滤波，算法的具体细节请参考文章[2]。Kalman滤波的结果为网络延迟m(i)，作为下一阶段网络状态检测的输入参数。&lt;/p&gt;
+
+&lt;p&gt;算法接着调用OveruseDetector::Detect()，用来检测当前网络的拥塞状况，该部分对应文章[1]的3.2节内容。网络状态检测用当前网络延迟m(i)和阈值gamma_1进行比较，判断出overuse，underuse和normal三种网络状态之一。在算法细节上，要注意overuse的判定相对复杂一些：当m(i) &amp;gt; gamma_1时，计算处于当前状态的持续时间t(ou)，如果t(ou) &amp;gt; gamma_2，并且m(i) &amp;gt; m(i-1)，则发出网络过载信号Overuse。如果m(i)小于m(i-1)，即使高于阀值gamma_1也不需要发出过载信号。在判定网络拥塞状态之后，还要调用UpdateThreshold()更新阈值gamma_1。&lt;/p&gt;
+
+&lt;p&gt;算法接着调用AimdRateControl::Update()和UpdateBandwidthEstimate()函数，用以估计当前网络状态下的目标码率Ar，该部分对应文章[1]的3.3节。算法基于当前网络状态和码率变化趋势有限状态机，采用AIMD(Additive Increase Multiplicative Decrease)方法计算目标码率，具体计算公式请参考文章[1]。需要注意的是，当算法处于开始阶段时，会采用Multiplicative Increase方法快速增加码率，以加快码率估计速度。&lt;/p&gt;
+
+&lt;p&gt;此时，我们已经拿到接收端估计的目标码率Ar。接下来以Ar为参数调用VieRemb对象的OnReceiveBitrateChange()函数，发送REMB报文到发送端。REMB报文会推送到RTCP模块，并设置REMB报文发送时间为立即发送。关于REMB报文接下来的发送和接收流程，和第1节描述的RTCP报文一般处理流程是一样的，即经过序列化发送到网络，然后发送端收到以后，反序列化出描述结构，最后通过回调函数到达发送端码率控制模块BitrateControllerImpl。&lt;/p&gt;
+
+&lt;p&gt;至此，接收端基于延迟的码率估计过程描述完毕。&lt;/p&gt;
+
+&lt;h3 id=&quot;4-发送端码率计算及生效&quot;&gt;4 发送端码率计算及生效&lt;/h3&gt;
+
+&lt;p&gt;在发送端，目标码率计算和生效是异步进行的，即Worker线程从RTCP接收模块经回调函数拿到丢包率和REMB码率之后，计算得到目标码率A；然后ModuleProcess线程异步把目标码率A生效到目标模块如PacedSender和ViEEncoder等。下面分别描述码率计算和生效过程。
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20210105/16098247455890.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;码率计算过程如图5所示：Worker线程从RTCPReceiver模块经过回调函数拿到RTCP RR报文和REMB报文的数据，到达BitrateController模块。RR报文中的丢包率会进入Update()函数中计算码率，码率计算公式如文章[1]第2节所述。然后算法流程进入CapBitrateToThreshold()函数，和配置的最大最小码率和远端估计码率进行比较后，确定最终目标码率。而REMB报文的接收端估计码率Ar则直接进入CapBitrateToThreshold()函数参与目标码率的确定。目标码率由文章[1]的3.4节所示公式进行确定。需要注意的是，RR报文和REMB报文一般不在同一个RTCP报文里。
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20210105/16098247656332.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;发送端码率生效过程如图6所示：ModuleProcess线程调用拥塞控制总控对象CongestionController周期性从码率控制模块BitrateControllerImpl中获取当前最新目标码率A，然后判断目标码率是否有变化。若是，则把最新目标码率设置到相关模块中，主要包括PacedSender模块，RTPSender模块和ViEEncoder模块。&lt;/p&gt;
+
+&lt;p&gt;对于PacedSender模块，设置码率主要是为了平滑RTP数据包的发送速率，尽量避免数据包Burst造成码率波动。对于RTPSender模块，设置码率是为了给NACK模块预留码率，如果预留码率过小，则在某些情况下对于NACK报文请求选择不响应。对于ViEEncoder模块，设置码率有两个用途：1)控制发送端丢帧策略，根据设定码率和漏桶算法决定是否丢弃当前帧。2)控制编码器内部码率控制，设定码率作为参数传输到编码器内部，参与内部码率控制过程。&lt;/p&gt;
+
+&lt;p&gt;至此，发送端码率计算和生效过程分析完毕。&lt;/p&gt;
+
+&lt;h3 id=&quot;5-总结&quot;&gt;5 总结&lt;/h3&gt;
+&lt;p&gt;本文结合文章[1]，深入WebRTC代码内部，详细分析了WebRTC的GCC算法的实现细节。通过本文，对WebRTC的代码结构和拥塞控制实现细节有了更深层次的理解，为进一步学习WebRTC奠定良好基础。&lt;/p&gt;
+
+&lt;p&gt;参考文献
+[1] WebRTC基于GCC的拥塞控制(上) – 算法分析&lt;/p&gt;
+
+&lt;p&gt;http://www.jianshu.com/p/0f7ee0e0b3be&lt;/p&gt;
+
+&lt;p&gt;[2] WebRTC视频接收缓冲区基于KalmanFilter的延迟模型.&lt;/p&gt;
+
+&lt;p&gt;http://www.jianshu.com/p/bb34995c549a&lt;/p&gt;
+
+&lt;p&gt;[3] WebRTC中RTP/RTCP协议实现分析&lt;/p&gt;
+
+&lt;p&gt;http://www.jianshu.com/p/c84be6f3ddf3&lt;/p&gt;
+
+&lt;p&gt;[4] abs-send-time. https://webrtc.org/experiments/rtp-hdrext/abs-send-time/&lt;/p&gt;
+</description>
+        <pubDate>Tue, 05 Jan 2021 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/</link>
+        <guid isPermaLink="true">http://localhost:4000/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/</guid>
+        
+        <category>webRTC</category>
+        
+        
+      </item>
     
       <item>
         <title>NSNotification详解</title>
@@ -837,211 +937,6 @@ IDFA 默认关闭用户追踪开关&lt;/p&gt;
         <pubDate>Thu, 10 Dec 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/12/%E5%90%84iOS%E7%89%88%E6%9C%AC%E9%80%82%E9%85%8D%E6%A6%82%E8%A6%81/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/12/%E5%90%84iOS%E7%89%88%E6%9C%AC%E9%80%82%E9%85%8D%E6%A6%82%E8%A6%81/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>iOS 组件化方案选型</title>
-        <description>&lt;h2 id=&quot;一组件化概念&quot;&gt;一、组件化概念&lt;/h2&gt;
-&lt;h3 id=&quot;11项目状态&quot;&gt;1.1、项目状态&lt;/h3&gt;
-&lt;p&gt;各模块直接调用，耦合严重。业务模块间划分不清晰，相互引用，模块之间耦合度很大，非常难维护。
-所有模块代码都编写在一个项目中，测试某个模块或功能，需要编译运行整个项目，不能独立运行。
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201012/16024733598436.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;12解决方案&quot;&gt;1.2、解决方案&lt;/h3&gt;
-&lt;p&gt;所有的模块间的调用都会经过中间层中转(参考Router)，但是发现增加这个中间层后，耦合还是存在的。
-中间层对被调用模块存在耦合，其他模块也需要耦合中间层才能发起调用。这样还是存在之前的相互耦合的问题，虽然可解决了统一调用的问题，而且本质上比之前更麻烦了。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201012/16024734216154.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;13正确的组件化解耦&quot;&gt;1.3、正确的组件化解耦&lt;/h3&gt;
-&lt;p&gt;正确的解耦应该是，只让其他模块对中间层产生耦合关系，中间层不对其他模块发生耦合。
-对于这个问题，可以采用组件化的架构，将每个模块作为一个组件。并且建立一个主项目，这个主项目负责集成所有组件。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201012/16024734534438.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;二组件化主流方案&quot;&gt;二、组件化主流方案&lt;/h2&gt;
-&lt;h3 id=&quot;21url-block-代表蘑菇街组件化方案mgjrouter&quot;&gt;2.1、url-block (代表：蘑菇街组件化方案MGJRouter)&lt;/h3&gt;
-&lt;p&gt;蘑菇街通过&lt;code class=&quot;highlighter-rouge&quot;&gt;MGJRouter&lt;/code&gt;实现中间层，通过MGJRouter进行组件间的消息转发，从名字上来说更像是路由器。实现方式大致是，在提供服务的组件中提前注册block，然后在调用方组件中通过URL调用block，下面是调用方式。&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;架构设计
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201012/16024734970626.png&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;MGJRouter组件化架构
-&lt;img src=&quot;http://image.smartjames.cn/mweb/20201012/16024735173869.png&quot; style=&quot;zoom=20%&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;MGJRouter是一个单例对象，在其内部维护着一个“URL -&amp;gt; block”格式的注册表，通过这个注册表来保存服务方注册的block，以及使调用方可以通过URL映射出block，并通过MGJRouter对服务方发起调用。&lt;/li&gt;
-  &lt;li&gt;在程序开始运行时，需要将所有服务方的接口类实例化，以完成这个注册工作，使MGJRouter中所有服务方的block可以正常提供服务。在这个服务注册完成后，就可以被调用方调起并提供服务。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;2.1.1 、MGJRouter调用，代码模拟对详情页的注册、调用，在调用过程中传递id参数。下面是注册的示例代码。&lt;/strong&gt;&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[MGJRouter registerURLPattern:@&quot;mgj://detail?id=id&quot; toHandler:^(NSDictionary *routerParameters) {
-// 下面可以在拿到参数后，为其他组件提供对应的服务
-NSString uid = routerParameters[@&quot;id&quot;];
-}];
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;strong&gt;2.1.2、通过openURL:方法传入的URL参数，对详情页已经注册的block方法发起调用。调用方式类似于GET请求，URL地址后面拼接参数。&lt;/strong&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[MGJRouter openURL:@&quot;mgj://detail?id=404&quot;];
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;strong&gt;2.1.3、也可以通过字典方式传参，MGJRouter提供了带有字典参数的方法，这样就可以传递非字符串之外的其他类型参数。&lt;/strong&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[MGJRouter openURL:@&quot;mgj://detail?&quot; withParam:@{@&quot;id&quot; : @&quot;404&quot;}];
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;ul&gt;
-  &lt;li&gt;短链管理这时候会发现一个问题，在蘑菇街组件化架构中，存在了很多硬编码的URL和参数。&lt;/li&gt;
-  &lt;li&gt;在代码实现过程中URL编写出错会导致调用失败，而且参数是一个字典类型，调用方不知道服务方需要哪些参数，这些都是个问题。&lt;/li&gt;
-  &lt;li&gt;对于这些数据的管理，蘑菇街开发了一个web页面，这个web页面统一来管理所有的URL和参数，Android和iOS都使用这一套URL，可以保持统一性。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;22protocol方案代表阿里的beehive&quot;&gt;2.2、Protocol方案(代表：阿里的BeeHive)&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;面向接口调用，我们知道只要直接引用代码，就会有依赖，比如：&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;// A 模块
-- (void)getSomeDataFromB {
-B.getSomeData();
-}
-// B 模块
-- (void)getSomeData {
-return self.data;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;ul&gt;
-  &lt;li&gt;那么我们可以实现一个 getSomeDataFromB 的接口，让 A 只依赖这个接口，而 B 来实现这个接口，这样就实现了 A 与 B 的解耦。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;// 接口
-@protocol BService &amp;lt;NSObject&amp;gt;
-- (void)getSomeData;
-@end
-// A 模块, 只依赖接口
-- (void)getSomeDataFromB {
-id b = findService(@protocol(BService));
-b.getSomeData;
-}
-// B 模块，实现BService接口
-@interface B : NSObject &amp;lt;BService&amp;gt;
-- (void)getSomeData {
-return self.data;
-}
-@end
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;这样就可以实现了即满足了模块之间调用，也实现了解耦。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;优点：&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;接口类似代码，可以非常灵活的定义函数和回调等。&lt;/li&gt;
-  &lt;li&gt;解决了硬编码的问题。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;缺点：&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;接口定义文件需要放在一个模块以供依赖，但是这个模块不会贡献代码，所以还好。&lt;/li&gt;
-  &lt;li&gt;使用较为麻烦，每个调用都需要定义一个service，并实现, 对于一些具有普适性规律的场景不太合适，比如页面统一跳转。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;BeeHive框架&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Module负责管理模块的注册和释放&lt;/li&gt;
-  &lt;li&gt;Protocol负责公开组件开放的接口&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20201012/16024736500731.jpg&quot; style=&quot;zoom=50%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;优势：扩展组件的生命周期，大厂开源 注意：BeeHive采用GPL开源协议，若有修改，不允许私有化，必须开源分享。&lt;/p&gt;
-
-&lt;h3 id=&quot;23target-action方案casatwy组件化方案&quot;&gt;2.3、Target-Action方案(casatwy组件化方案)&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;2.3.1、调用方式&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;整体架构casatwy组件化方案分为两种调用方式，远程调用和本地调用，对于两个不同的调用方式分别对应两个接口。&lt;/li&gt;
-  &lt;li&gt;远程调用通过AppDelegate代理方法传递到当前应用后，调用远程接口并在内部做一些处理，处理完成后会在远程接口内部调用本地接口，以实现本地调用为远程调用服务。&lt;/li&gt;
-  &lt;li&gt;本地调用由performTarget:action:params:方法负责，但调用方一般不直接调用performTarget:方法。CTMediator会对外提供明确参数和方法名的方法，在方法内部调用performTarget:方法和参数的转换。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;2.3.2、架构设计思路&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;casatwy是通过CTMediator类实现组件化的，在此类中对外提供明确参数类型的接口，接口内部通过performTarget方法调用服务方组件的Target、Action。&lt;/li&gt;
-  &lt;li&gt;由于CTMediator类的调用是通过runtime主动发现服务的，所以服务方对此类是完全解耦的。&lt;/li&gt;
-  &lt;li&gt;但如果CTMediator类对外提供的方法都放在此类中，将会对CTMediator造成极大的负担和代码量。&lt;/li&gt;
-  &lt;li&gt;解决方法就是对每个服务方组件创建一个CTMediator的Category，并将对服务方的performTarget调用放在对应的Category中，这些Category都属于CTMediator中间件，从而实现了感官上的接口分离。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;2.3.3、casatwy组件化实现细节&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;对于服务方的组件来说，每个组件都提供一个或多个Target类，在Target类中声明Action方法。&lt;/li&gt;
-  &lt;li&gt;Target类是当前组件对外提供的一个“服务类”，Target将当前组件中所有的服务都定义在里面，CTMediator通过runtime主动发现服务。&lt;/li&gt;
-  &lt;li&gt;在Target中的所有Action方法，都只有一个字典参数，所以可以传递的参数很灵活，这也是casatwy提出的去Model化的概念。&lt;/li&gt;
-  &lt;li&gt;在Action的方法实现中，对传进来的字典参数进行解析，再调用组件内部的类和方法。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;三组件化方案对比&quot;&gt;三、组件化方案对比&lt;/h2&gt;
-&lt;h3 id=&quot;31url-block方式&quot;&gt;3.1、url-block方式&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;硬编码问题，每个组件参数调用都需要查找对应。蘑菇街为此开发了一个web页面，这个web页面统一来管理所有的URL和参数。&lt;/li&gt;
-  &lt;li&gt;需要在内存中维护url-block的表，组件多了可能会有内存问题。&lt;/li&gt;
-  &lt;li&gt;url的参数传递受到限制，只能传递常规的字符串参数，无法传递非常规参数，如UIImage、NSData等类型。&lt;/li&gt;
-  &lt;li&gt;没有区分本地调用和远程调用的情况，尤其是远程调用，会因为url参数受限，导致一些功能受限。&lt;/li&gt;
-  &lt;li&gt;组件本身依赖了中间件，且分散注册使的耦合较多。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;32protocol方案&quot;&gt;3.2、Protocol方案&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;0硬编码，代码可读性高;&lt;/li&gt;
-  &lt;li&gt;Protocol方案需要在启动的时候向ProtocolManager注册，侵入较大。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;33target_action方案&quot;&gt;3.3、Target_Action方案&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;侵入最小，但硬编码较多。&lt;/li&gt;
-  &lt;li&gt;runtime编译阶段不检查,运行时才检查对应类或者方法是否存在，对开发要求较高。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;四组件化实现原则&quot;&gt;四、组件化实现原则&lt;/h2&gt;
-&lt;h3 id=&quot;41抽象化原则&quot;&gt;4.1、抽象化原则&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;越底层的模块，应该越稳定，越抽象，越具有高复用度。&lt;/li&gt;
-  &lt;li&gt;稳定的最直观表现就是API很久都不用变化，所有的变化因子不要暴露出来，避免传递给依赖它的模块。&lt;/li&gt;
-  &lt;li&gt;但是要做到设计一套API很久都不用改变，那么就需要设计的时候能越抽象, 即需要我们抽象总结的能力。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;42稳定性原则&quot;&gt;4.2、稳定性原则&lt;/h3&gt;
-&lt;p&gt;不要让稳定的模块依赖不稳定的模块， 减少依赖，稳定性 还有一个特点就是会传递，比如 B 模块依赖了 A 模块，如果 B 模块很稳定，但是 A 模块不稳定，那么B模块也会变的不稳定了。&lt;/p&gt;
-
-&lt;h3 id=&quot;43自备性完整&quot;&gt;4.3、自备性完整&lt;/h3&gt;
-&lt;p&gt;提升模块的复用度，自完备性有时候要优于代码复用；什么是自完备性，就是尽可能的依赖少的模块来达到代码可复用；我有个模块 Utils 里面放了大量的category工具方法等，在日常UI产品开发中，依赖这个Utils会很方便，但是我现在要写一个比较基础的模块，应该就要求复用度更高一些，这个时候需要用到Utils里面的几个方法，那这个时候还适合直接依赖Utils吗，当然不合适了，这与我们上面的设计原则相悖了啊，因此我们这时候为了这个模块的自完备性，就可以重新实现下这几个方法，而不是依赖Utils模块。&lt;/p&gt;
-
-&lt;h3 id=&quot;44不要让common出现&quot;&gt;4.4、不要让Common出现&lt;/h3&gt;
-&lt;p&gt;每个模块只做好一件事情，不要让Common出现，按照你架构的层数从上到下依赖，不要出现下层模块依赖上层模块的现象，业务模块之间也尽量不要耦合。&lt;/p&gt;
-
-&lt;h3 id=&quot;45业务模块真正解耦&quot;&gt;4.5、业务模块真正解耦&lt;/h3&gt;
-&lt;p&gt;为什么要解耦吧，模块化并不是说你把工程的代码拆分成 50 个 pod 或者framework就算完事了，要实现模块之间真正的解耦才算真正的模块化，否则如果模块之间还都是互相调用代码，循环依赖，那么和原本放文件夹里面没啥两样。那么什么是模块间的解耦呢？模块解耦的目标就是, 在基于模块设计原则上, 让模块之间没有循环依赖, 让业务模块之间解除依赖。&lt;/p&gt;
-
-&lt;h3 id=&quot;46单向依赖&quot;&gt;4.6、单向依赖&lt;/h3&gt;
-&lt;p&gt;基础模块下沉，这块其实还是讲的模块设计，一个工程的架构可能会分为很多层，然而在开发的过程中，很容易有人不注意让应该处于较底层的模块依赖了上层的模块，这种情况下应该对模块的设计进行改造实现单向依赖。&lt;/p&gt;
-
-&lt;h2 id=&quot;五组件化具体实施步骤&quot;&gt;五、组件化具体实施步骤&lt;/h2&gt;
-&lt;h3 id=&quot;51组件化第一步剥离产品公共库和基础库&quot;&gt;5.1、组件化第一步，剥离产品公共库和基础库&lt;/h3&gt;
-&lt;p&gt;包括组件中间件，网络请求，第三方SDK管理封装，WebView(封装js，且以服务形式提供)，自定义键盘，UI基础组件，分类。然后在项目里用pod进行管理。其中，针对三方库，最好再封装一层，使我们的项目不直接依赖三方库，方便后续开发过程中的更换。&lt;/p&gt;
-
-&lt;h3 id=&quot;52组件化第二步独立业务模块单独成库&quot;&gt;5.2、组件化第二步，独立业务模块单独成库&lt;/h3&gt;
-&lt;p&gt;拆分粒度可以先粗后细，将相对独立的组件拆分出来。在开发过程中，对一些独立的模块，如：登录模块、账户模块等等，也可以封装成组件，因为这些组件是项目强依赖的，调用的频次比较多。另外，在拆分组件化的过程中，拆分的粒度要合适，尽量做到组件的独立性。同时，组件化是一个渐进的过程，不可能把一个完整的工程一下子全部组件化，要分步进行，通过不停的迭代，来最终实现项目的组件化。&lt;/p&gt;
-
-&lt;h3 id=&quot;53组件化第三步对外服务最小化&quot;&gt;5.3、组件化第三步，对外服务最小化&lt;/h3&gt;
-&lt;p&gt;在前两步都完成的情况下，我们可以根据组件被调用的需求来抽象出组件对外的最小化接口。&lt;/p&gt;
-
-</description>
-        <pubDate>Mon, 12 Oct 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/10/iOS-%E7%BB%84%E4%BB%B6%E5%8C%96%E6%96%B9%E6%A1%88%E9%80%89%E5%9E%8B/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/10/iOS-%E7%BB%84%E4%BB%B6%E5%8C%96%E6%96%B9%E6%A1%88%E9%80%89%E5%9E%8B/</guid>
         
         <category>iOS</category>
         
