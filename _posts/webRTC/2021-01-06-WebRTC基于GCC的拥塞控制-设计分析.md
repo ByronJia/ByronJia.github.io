@@ -1,7 +1,7 @@
 ---
 layout: post
-title: WebRTC基于GCC的拥塞控制-实现分析
-date: 2021-01-05
+title: WebRTC基于GCC的拥塞控制(下)-实现分析
+date: 2021-01-06
 tag: webRTC
 ---
 
@@ -17,6 +17,7 @@ tag: webRTC
 
 ![2844879-91005d8cd84ba66e](http://image.smartjames.cn/mweb/20210105/16098246662333.png)
 
+<center><font color="#808080" size="2">图1 GCC算法数据量和控制流</font></center>
 
 对发送端来讲，GCC算法主要负责两件事：1)接收来自接收端的数据包信息反馈，包括来自RTCP RR报文的丢包率和来自RTCP REMB报文的接收端估计码率，综合本地的码率配置信息，计算得到目标码率A。2)把目标码率A生效于目标模块，包括PacedSender模块，RTPSender模块和ViEEncoder模块等。
 
@@ -33,10 +34,12 @@ tag: webRTC
 在RtpStreamReceiver对象中，RTP数据包经过解析得到头部信息，作为输入参数调用ReceiveStatistianImpl::IncomingPacket()。该函数中分别调用UpdateCounters()和NotifyRtpCallback()，前者用来更新对象内部的统计信息，如接收数据包计数等，后者用来更新RTP回调对象的统计信息，该信息用来作为getStats调用的数据源。
 
 ![2844879-ed098a4958b2ee2c](http://image.smartjames.cn/mweb/20210105/16098246932212.png)
+<center><font color="#808080" size="2">图2 RTCP RR报文数据源及报文构造</font></center>
 
 RTCP发送模块在ModuleProcess线程中工作，RTCP报文周期性发送。当线程判断需要发送RTCP报文时，调用SendRTCP()进行发送。接下来调用PrepareReport()准备各类型RTCP报文的数据。对于我们关心的RR报文，会调用AddReportBlock()获取数据源并构造ReportBlock对象:该函数首先通过ReceiveStatistianImpl::GetStatistics()拿到类型为RtcpStatistics的数据源，然后以此填充ReportBlock对象。GetStatistics()会调用CalculateRtcpStatistics()计算ReportBlock的每一项数据，包括丢包数、接收数据包最高序列号等。ReportBlock对象会在接下来的报文构造环节通过BuildRR()进行序列化。RTCP报文进行序列化之后，交给Network线程进行网络层发送。
 
 ![2844879-ae80527d779c3402](http://image.smartjames.cn/mweb/20210105/16098247057859.png)
+<center><font color="#808080" size="2">图3 RTCP RR报文接收及反馈</font></center>
 
 在发送端(即RTCP报文接收端)，RTCP报文经过Network线程到达Worker线程，最后到达ModuleRtpRtcpImpl模块调用IncomingRtcpPacket()进行报文解析工作。解析完成以后，调用TriggerCallbacksFromRTCPPackets()反馈到回调模块。在码率估计方面，会反馈到BitrateController模块。ReportBlock消息最终会到达BitrateControllerImpl对象，进行下一步的目标码率确定。
 
@@ -50,6 +53,7 @@ RTCP发送模块在ModuleProcess线程中工作，RTCP报文周期性发送。�
 在实现上，WebRTC定义该模块为远端码率估计模块RemoteBitrateEstimator，整个模块的工作流程如图4所示。需要注意的是，该模块需要RTP报文扩展头部abs-send-time的支持，用以记录RTP数据包在发送端的绝对发送时间，详细请参考文献[4]。
 
 ![2844879-71027dc71720dd9c](http://image.smartjames.cn/mweb/20210105/16098247269312.png)
+<center><font color="#808080" size="2">图4 GCC算法基于延迟的码率估计</font></center>
 
 接收端收到RTP数据包后，经过一系列调用到RtpStreamReceiver对象，由该对象调用远端码率估计模块的总控对象RemoteBitrateEstimatorAbsSendTime，由该对象的总控函数IncomingPacketInfo()负责整个码率估计流程，如图4所示，算法从左到右依次调用子对象的功能函数。
 
@@ -69,9 +73,11 @@ RTCP发送模块在ModuleProcess线程中工作，RTCP报文周期性发送。�
 
 在发送端，目标码率计算和生效是异步进行的，即Worker线程从RTCP接收模块经回调函数拿到丢包率和REMB码率之后，计算得到目标码率A；然后ModuleProcess线程异步把目标码率A生效到目标模块如PacedSender和ViEEncoder等。下面分别描述码率计算和生效过程。
 ![](http://image.smartjames.cn/mweb/20210105/16098247455890.png)
+<center><font color="#808080" size="2">图5 发送端码率计算过程</font></center>
 
 码率计算过程如图5所示：Worker线程从RTCPReceiver模块经过回调函数拿到RTCP RR报文和REMB报文的数据，到达BitrateController模块。RR报文中的丢包率会进入Update()函数中计算码率，码率计算公式如文章[1]第2节所述。然后算法流程进入CapBitrateToThreshold()函数，和配置的最大最小码率和远端估计码率进行比较后，确定最终目标码率。而REMB报文的接收端估计码率Ar则直接进入CapBitrateToThreshold()函数参与目标码率的确定。目标码率由文章[1]的3.4节所示公式进行确定。需要注意的是，RR报文和REMB报文一般不在同一个RTCP报文里。
 ![](http://image.smartjames.cn/mweb/20210105/16098247656332.png)
+<center><font color="#808080" size="2">图6 发送端码率生效过程</font></center>
 
 发送端码率生效过程如图6所示：ModuleProcess线程调用拥塞控制总控对象CongestionController周期性从码率控制模块BitrateControllerImpl中获取当前最新目标码率A，然后判断目标码率是否有变化。若是，则把最新目标码率设置到相关模块中，主要包括PacedSender模块，RTPSender模块和ViEEncoder模块。
 
@@ -82,17 +88,11 @@ RTCP发送模块在ModuleProcess线程中工作，RTCP报文周期性发送。�
 ### 5 总结
 本文结合文章[1]，深入WebRTC代码内部，详细分析了WebRTC的GCC算法的实现细节。通过本文，对WebRTC的代码结构和拥塞控制实现细节有了更深层次的理解，为进一步学习WebRTC奠定良好基础。
 
-参考文献
-[1] WebRTC基于GCC的拥塞控制(上) – 算法分析
+参考文献  
+[1] [WebRTC基于GCC的拥塞控制(上) – 算法分析](http://www.jianshu.com/p/0f7ee0e0b3be)
 
-http://www.jianshu.com/p/0f7ee0e0b3be
+[2] [WebRTC视频接收缓冲区基于KalmanFilter的延迟模型.](http://www.jianshu.com/p/bb34995c549a)
 
-[2] WebRTC视频接收缓冲区基于KalmanFilter的延迟模型.
+[3] [WebRTC中RTP/RTCP协议实现分析](http://www.jianshu.com/p/c84be6f3ddf3)
 
-http://www.jianshu.com/p/bb34995c549a
-
-[3] WebRTC中RTP/RTCP协议实现分析
-
-http://www.jianshu.com/p/c84be6f3ddf3
-
-[4] abs-send-time. https://webrtc.org/experiments/rtp-hdrext/abs-send-time/
+[4] [abs-send-time.](https://webrtc.org/experiments/rtp-hdrext/abs-send-time/) 

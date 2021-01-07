@@ -177,8 +177,29 @@
   <ol class="post-list">
     
     <li>
-      <h2 class="post-list__post-title post-title"><a href="/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/" title="访问 WebRTC基于GCC的拥塞控制-实现分析">WebRTC基于GCC的拥塞控制-实现分析</a></h2>
+      <h2 class="post-list__post-title post-title"><a href="/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E8%AE%BE%E8%AE%A1%E5%88%86%E6%9E%90/" title="访问 WebRTC基于GCC的拥塞控制(下)-实现分析">WebRTC基于GCC的拥塞控制(下)-实现分析</a></h2>
       <p class="excerpt">前言从源代码实现角度对WebRTC的GCC算法进行分析。主要内容包括： RTCP RR的数据源、报文构造和接收，接收端基于数据包到达延迟的码率估计，发送端码率的计算以及生效于目标模块。拥塞控制是实时流媒体应用的重要服务质量保证。通过本文和文章[1][2]，从数学基础、算法步骤到实现细节，对WebRTC的拥塞控制GCC算法有一个全面深入的理解，为进一步学习WebRTC奠定良好基础。1 GCC算法框架再学习本节内容基本上是文章[1]第1节的复习，目的是再次复习GCC算法的主要框架，梳理其算法流...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2021-01-06 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2021-01-06</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">webRTC</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E8%AE%BE%E8%AE%A1%E5%88%86%E6%9E%90/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E7%AE%97%E6%B3%95%E5%88%86%E6%9E%90/" title="访问 WebRTC基于GCC的拥塞控制(上)-算法分析">WebRTC基于GCC的拥塞控制(上)-算法分析</a></h2>
+      <p class="excerpt">前言实时流媒体应用的最大特点是实时性，而延迟是实时性的最大敌人。从媒体收发端来讲，媒体数据的处理速度是造成延迟的重要原因；而从传输角度来讲，网络拥塞则是造成延迟的最主要原因。网络拥塞可能造成数据包丢失，也可能造成数据传输时间变长，延迟增大。拥塞控制是实时流媒体应用质量保证(QoS)的重要手段之一，它在缓解网络拥堵、减小网络延迟、平滑数据传输等质量保证方面发挥重要作用。WebRTC通控制发送端数据发送码率来达到控制网络拥塞的目的，其采用谷歌提出的拥塞控制算法(Google Congestio...&hellip;</p>
       <div class="post-list__meta">        
         <time datetime="2021-01-05 00:00:00 +0800" class="post-list__meta--date date">
           <img src="/images/calendar.png" width="20px" /> 
@@ -191,7 +212,7 @@
             <span class="post-list__meta--tags-right">webRTC</span>
           </div>
           <div class = "post-list-small-mate">
-          <a class="btn-border-small" href=/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/>阅读全文 » </a>
+          <a class="btn-border-small" href=/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E7%AE%97%E6%B3%95%E5%88%86%E6%9E%90/>阅读全文 » </a>
           </div>
       </div>
       <hr class="post-list__divider" />
@@ -570,27 +591,6 @@
           </div>
           <div class = "post-list-small-mate">
           <a class="btn-border-small" href=/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/>阅读全文 » </a>
-          </div>
-      </div>
-      <hr class="post-list__divider" />
-    </li>
-    
-    <li>
-      <h2 class="post-list__post-title post-title"><a href="/2020/09/JSBridge%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/" title="访问 JSBridge实现原理">JSBridge实现原理</a></h2>
-      <p class="excerpt">什么是JSBridge由于Native和H5的各自特性，尤其的H5的易于部署的适用与双端的特点，使得为了满足业务的需要，公司实际项目的开发过程中往往会融合两者进行 Hybrid 开发。JSBridge 是一种 JS 实现的 Bridge，连接着桥两端的 Native 和 H5。它在 APP 内方便地让 Native 调用 JS，JS 调用 Native ，是双向通信的通道。为什么要做JSBridge我们知道OC调用JS的方法可以通过Webview的evaluateJavaScript:co...&hellip;</p>
-      <div class="post-list__meta">        
-        <time datetime="2020-09-29 00:00:00 +0800" class="post-list__meta--date date">
-          <img src="/images/calendar.png" width="20px" /> 
-          2020-09-29</time> 
-        <div class = "tag-img-icon">
-          <img src="/images/tag-icon.svg" width="20px" /> 
-        </div>
-        <a href="/tags">
-          <div class = "post-list-icon-mate">
-            <span class="post-list__meta--tags-right">iOS</span>
-          </div>
-          <div class = "post-list-small-mate">
-          <a class="btn-border-small" href=/2020/09/JSBridge%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/>阅读全文 » </a>
           </div>
       </div>
       <hr class="post-list__divider" />
