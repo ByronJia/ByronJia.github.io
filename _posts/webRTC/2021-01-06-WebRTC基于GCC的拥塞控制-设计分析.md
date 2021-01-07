@@ -89,7 +89,7 @@ RTCP发送模块在ModuleProcess线程中工作，RTCP报文周期性发送。�
 本文结合文章[1]，深入WebRTC代码内部，详细分析了WebRTC的GCC算法的实现细节。通过本文，对WebRTC的代码结构和拥塞控制实现细节有了更深层次的理解，为进一步学习WebRTC奠定良好基础。
 
 参考文献  
-[1] [WebRTC基于GCC的拥塞控制(上) – 算法分析](http://www.jianshu.com/p/0f7ee0e0b3be)
+[1] [WebRTC基于GCC的拥塞控制(上) – 算法分析](https://byronjia.github.io/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E7%AE%97%E6%B3%95%E5%88%86%E6%9E%90/)
 
 [2] [WebRTC视频接收缓冲区基于KalmanFilter的延迟模型.](http://www.jianshu.com/p/bb34995c549a)
 
