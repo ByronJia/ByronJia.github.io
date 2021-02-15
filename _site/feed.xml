@@ -3,10 +3,17 @@
   <channel>
     <title>拜伦的博客</title>
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
+<<<<<<< HEAD
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
     <pubDate>Sun, 14 Feb 2021 21:29:14 +0800</pubDate>
     <lastBuildDate>Sun, 14 Feb 2021 21:29:14 +0800</lastBuildDate>
+=======
+    <link>/</link>
+    <atom:link href="/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Mon, 15 Feb 2021 11:03:21 +0800</pubDate>
+    <lastBuildDate>Mon, 15 Feb 2021 11:03:21 +0800</lastBuildDate>
+>>>>>>> 972c6d92b296665f8572a4f7f78d85c8fb409ffa
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -115,8 +122,13 @@ BinaryMessages.setMessageHandler()和setMessageHandlerOnChannel:binaryMessageHan
 &lt;p&gt;我们会不禁担心频繁调用Channel会不会有性能问题，其实channel的性能挺好，在整个调用流程中是机器码的传递，是C++层面，其中相对较耗时的是消息的编解码部分，Flutter定义了4种基本消息的编解码器类型，我们就不需要在代码中对数据进行操作了。但即便如下，Channel还是不适合做大规模的数据传输。&lt;/p&gt;
 </description>
         <pubDate>Sat, 23 Jan 2021 00:00:00 +0800</pubDate>
+<<<<<<< HEAD
         <link>http://localhost:4000/2021/01/Flutter%E5%8E%9F%E7%90%86%E8%A7%A3%E6%9E%90/</link>
         <guid isPermaLink="true">http://localhost:4000/2021/01/Flutter%E5%8E%9F%E7%90%86%E8%A7%A3%E6%9E%90/</guid>
+=======
+        <link>/2021/01/Flutter%E5%8E%9F%E7%90%86%E8%A7%A3%E6%9E%90/</link>
+        <guid isPermaLink="true">/2021/01/Flutter%E5%8E%9F%E7%90%86%E8%A7%A3%E6%9E%90/</guid>
+>>>>>>> 972c6d92b296665f8572a4f7f78d85c8fb409ffa
         
         <category>Flutter</category>
         
@@ -387,8 +399,13 @@ BinaryMessages.setMessageHandler()和setMessageHandlerOnChannel:binaryMessageHan
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 </description>
         <pubDate>Mon, 11 Jan 2021 00:00:00 +0800</pubDate>
+<<<<<<< HEAD
         <link>http://localhost:4000/2021/01/WebRTC-GCC%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E8%AF%A6%E8%A7%A3/</link>
         <guid isPermaLink="true">http://localhost:4000/2021/01/WebRTC-GCC%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E8%AF%A6%E8%A7%A3/</guid>
+=======
+        <link>/2021/01/WebRTC-GCC%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">/2021/01/WebRTC-GCC%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E8%AF%A6%E8%A7%A3/</guid>
+>>>>>>> 972c6d92b296665f8572a4f7f78d85c8fb409ffa
         
         <category>webRTC</category>
         
@@ -488,8 +505,8 @@ BinaryMessages.setMessageHandler()和setMessageHandlerOnChannel:binaryMessageHan
 &lt;p&gt;[4] &lt;a href=&quot;https://webrtc.org/experiments/rtp-hdrext/abs-send-time/&quot;&gt;abs-send-time.&lt;/a&gt;&lt;/p&gt;
 </description>
         <pubDate>Wed, 06 Jan 2021 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E8%AE%BE%E8%AE%A1%E5%88%86%E6%9E%90/</link>
-        <guid isPermaLink="true">http://localhost:4000/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E8%AE%BE%E8%AE%A1%E5%88%86%E6%9E%90/</guid>
+        <link>/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E8%AE%BE%E8%AE%A1%E5%88%86%E6%9E%90/</link>
+        <guid isPermaLink="true">/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E8%AE%BE%E8%AE%A1%E5%88%86%E6%9E%90/</guid>
         
         <category>webRTC</category>
         
@@ -623,8 +640,8 @@ K_d = 0.00018
 &lt;p&gt;[7] RTCP message for Receiver Estimated Maximum Bitrate. draft-alvestrand-rmcat-remb-03&lt;/p&gt;
 </description>
         <pubDate>Tue, 05 Jan 2021 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E7%AE%97%E6%B3%95%E5%88%86%E6%9E%90/</link>
-        <guid isPermaLink="true">http://localhost:4000/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E7%AE%97%E6%B3%95%E5%88%86%E6%9E%90/</guid>
+        <link>/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E7%AE%97%E6%B3%95%E5%88%86%E6%9E%90/</link>
+        <guid isPermaLink="true">/2021/01/WebRTC%E5%9F%BA%E4%BA%8EGCC%E7%9A%84%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6-%E7%AE%97%E6%B3%95%E5%88%86%E6%9E%90/</guid>
         
         <category>webRTC</category>
         
@@ -797,8 +814,8 @@ object : Observation
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 </description>
         <pubDate>Tue, 29 Dec 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/12/NSNotification%E8%AF%A6%E8%A7%A3/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/12/NSNotification%E8%AF%A6%E8%A7%A3/</guid>
+        <link>/2020/12/NSNotification%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">/2020/12/NSNotification%E8%AF%A6%E8%A7%A3/</guid>
         
         <category>iOS</category>
         
@@ -890,8 +907,8 @@ after class=0x7fff207b4662,   getName=0x10a970910,   setName=0x7fff207b5b57,  su
 
 </description>
         <pubDate>Mon, 28 Dec 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/12/iOS-KVO%E8%AF%A6%E8%A7%A3/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/12/iOS-KVO%E8%AF%A6%E8%A7%A3/</guid>
+        <link>/2020/12/iOS-KVO%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">/2020/12/iOS-KVO%E8%AF%A6%E8%A7%A3/</guid>
         
         <category>iOS</category>
         
@@ -984,8 +1001,8 @@ chmod 777 text.txt    // 执行修改权限
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 </description>
         <pubDate>Thu, 24 Dec 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/</guid>
+        <link>/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">/2020/12/Linux%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E8%AF%A6%E8%A7%A3/</guid>
         
         <category>iOS</category>
         
@@ -1081,8 +1098,8 @@ b. 不能被滥用导致非开发app也能被安装。
 
 </description>
         <pubDate>Mon, 14 Dec 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/12/iOS-App%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/12/iOS-App%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86/</guid>
+        <link>/2020/12/iOS-App%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86/</link>
+        <guid isPermaLink="true">/2020/12/iOS-App%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86/</guid>
         
         <category>iOS</category>
         
@@ -1167,8 +1184,8 @@ iOS11开始原生支持HEVC   H.265&lt;/p&gt;
 
 </description>
         <pubDate>Fri, 11 Dec 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/12/%E9%9F%B3%E8%A7%86%E9%A2%91%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/12/%E9%9F%B3%E8%A7%86%E9%A2%91%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</guid>
+        <link>/2020/12/%E9%9F%B3%E8%A7%86%E9%A2%91%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</link>
+        <guid isPermaLink="true">/2020/12/%E9%9F%B3%E8%A7%86%E9%A2%91%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</guid>
         
         <category>iOS</category>
         
@@ -1322,8 +1339,13 @@ Triggered by Thread: 0
 
 </description>
         <pubDate>Fri, 11 Dec 2020 00:00:00 +0800</pubDate>
+<<<<<<< HEAD
         <link>http://localhost:4000/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/</guid>
+=======
+        <link>/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/</link>
+        <guid isPermaLink="true">/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/</guid>
+>>>>>>> 972c6d92b296665f8572a4f7f78d85c8fb409ffa
         
         <category>iOS</category>
         
