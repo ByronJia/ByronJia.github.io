@@ -5,9 +5,395 @@
     <description>这里有关于iOS,机器学习的笔记心得,欢迎交流</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 07 Jan 2021 11:11:47 +0800</pubDate>
-    <lastBuildDate>Thu, 07 Jan 2021 11:11:47 +0800</lastBuildDate>
+    <pubDate>Sun, 14 Feb 2021 21:29:14 +0800</pubDate>
+    <lastBuildDate>Sun, 14 Feb 2021 21:29:14 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>Flutter原理解析</title>
+        <description>&lt;h3 id=&quot;flutter核心原理&quot;&gt;Flutter核心原理&lt;/h3&gt;
+&lt;h4 id=&quot;架构&quot;&gt;架构&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20210123/16113907879588.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Flutter架构分层设计如上图，从下到上依次为 Embedder、Engine、Framework。&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Embedder： 操作系统适配层，实现渲染surface设置、线程设置等。&lt;/li&gt;
+  &lt;li&gt;Engine: 实现Flutter渲染引擎、文字排版、事件处理、Dart运行时等功能，包括Skia图形绘制库、Dart VM、Text引擎等。其中Skia和Text为上层接口提供了调用底层渲染和排版的能力。Skia是Google开源的二维图形库，用于Chrome OS, Andoird、Firefox OS等。&lt;/li&gt;
+  &lt;li&gt;Framework：是一个用Dart实现的一套基础库，用于处理动画、绘制、手势等。
+    &lt;ol&gt;
+      &lt;li&gt;Material和Cupertino分别是安卓和iOS风格的2套UI控件库。&lt;/li&gt;
+      &lt;li&gt;Widgets是flutter渲染的基本单元&lt;/li&gt;
+      &lt;li&gt;Rendering是渲染层，运行时Rendering会将Widgets构建出Widgets Tree, 经过处理后提供给Skia即Engine层渲染。&lt;/li&gt;
+      &lt;li&gt;Animation、Painting、Gestures分别提供动画功能，基础绘制功能，手势功能。&lt;/li&gt;
+      &lt;li&gt;Foundation提供Framework基础能力，类似iOS中的UIFoundation&lt;/li&gt;
+    &lt;/ol&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h4 id=&quot;渲染流水线&quot;&gt;渲染流水线&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20210124/16114180611048.png&quot; alt=&quot;&quot; /&gt;
+渲染流水线是由垂直同步信号(VSync)驱动的，当信号到来后，flutter按照流水线执行，最后将渲染的数据传给GPU进行绘制。&lt;/p&gt;
+
+&lt;p&gt;Animation阶段： 因为动画会随着每个VSync信号的到来而改变状态，因此动画阶段是第一个阶段。
+Build阶段： 这里包括WidgetTree的build、ElementTree的build和计算重绘的差异diff阶段。 
+Layout阶段： 这里确认每个元素的位置，尺寸。
+Paint阶段： 就是绘制阶段了。
+Composition阶段：和上面2个阶段一起组成了Rendering的核心组成部分。&lt;/p&gt;
+
+&lt;h4 id=&quot;渲染过程中的数据结构&quot;&gt;渲染过程中的数据结构&lt;/h4&gt;
+
+&lt;p&gt;Widget Tree —&amp;gt; Element Tree —&amp;gt; RenderObject Tree —&amp;gt; Layers
+分别通过 createElement 、createRenderObjet和.layer 时间数据结构的变化&lt;/p&gt;
+
+&lt;p&gt;三棵树对应的关系如下图：
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20210124/16114633031322.png&quot; alt=&quot;trees&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;widget-tree&quot;&gt;Widget Tree&lt;/h4&gt;
+&lt;p&gt;第一棵树，是控件实现的基本逻辑单位，是用户对UI界面的描述方式。
+需要注意的是，Widget是不可变的,当试图配置信息发生变化时，Flutter会重建Widget来进行更新，这叫simple is fast 思想，从上到下重新创建Widget Tree来进行刷新，思路简单，也不用额外保存影响到的节点。由于Widget只是配置是数据结构，创建是轻量的，销毁也做过优化，不用担心性能问题。&lt;/p&gt;
+
+&lt;h4 id=&quot;element-tree&quot;&gt;Element Tree&lt;/h4&gt;
+&lt;p&gt;第二棵树，是Widget的实例化对象，Widget提供了createElement工程方法来创建Element, 持久存在于运行时的Dart上下文之中，它承载了构建的上下文数据，是连接结构化的配置到最终渲染的桥梁。&lt;br /&gt;
+之所以让他持久存在于Dart上下文中而不是像Widget重新构建，因为Element Tree的重新创建和渲染开销会很大所以Element Tree到Renderobject 有一 个diff环节，来计算最小重绘区域。&lt;/p&gt;
+
+&lt;h4 id=&quot;renderobject-tree&quot;&gt;RenderObject Tree&lt;/h4&gt;
+&lt;p&gt;第三棵树，渲染对象树，由Element创建并关联到Element.renderObject上，接收Element的信息同步，也是持久地存在于Dart Runtime上下文中，是主要负责实现视图渲染的对象。&lt;/p&gt;
+
+&lt;p&gt;RenderObject Tree的显示过程分为3个阶段：&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;布局：layout&lt;/li&gt;
+  &lt;li&gt;绘制：paint&lt;/li&gt;
+  &lt;li&gt;合成：composition&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20210125/16115434865809.png&quot; alt=&quot;constraints-sizes&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;其中，布局和绘制在RenderObject中完成，Flutter采用深度优先机制遍历渲染树，每个对象会在布局过程中接收父对象的Constraints参数，决定自己的大小，然后父对象就能按照自己的逻辑决定各个子对象的位置，并将它们绘制到不同的图层上，绘制完毕后，交给Skia来合成和渲染。
+子对象不存储自己在容器中的位置，位置存储在自己的parentData字段中，该字段由父对象维护，因此当它的位置发生改变时并不需要重新布局或绘制。flutter还可以设置某些节点的布局边界(Relayout boundary)，即当边界内的任何对象发生重新布局时，不会影响边界外的对象。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20210125/16115438356224.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;布局完成后，渲染树中的每个节点都有了明确的尺寸和位置，Flutter会把所有对象尽量绘制到不同的同层上，取决于绘制深度遍历的顺序和控件尺寸。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20210125/16115449093431.png&quot; alt=&quot;&quot; /&gt;
+在上图的例子中，因为是深度遍历，可以看到遍历顺序是1-&amp;gt;2-&amp;gt;3-&amp;gt;4-&amp;gt;6,
+所以1，2，3都在绿色图层中，到4这里是需要独占一个图层的内容，比如视频，因此4单独在黄色图层中。由于某些原因(视图手动合并等)导致5和6处于同一个图层中，此时如果5需要重绘的话，导致与其无关的6节点也要重绘。
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20210125/16115538489061.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;为此Flutter提出重绘边界(Repaint boundary)的机制,在重绘边界内，Flutter会强制切换新的图层，这样就避免边界内外的互相影响而引起的不必要重绘。经典场景就是ScrollView滚动时，其中的内容重绘，其他某些内容是不需要重绘的。&lt;/p&gt;
+&lt;h4 id=&quot;layers&quot;&gt;Layers&lt;/h4&gt;
+&lt;p&gt;最后是Layer,他是依附于RenderObject，是绘图操作的载体，也可以缓存绘图操作的结果。Flutter分别在不用的图层上绘图，然后将这些缓存了绘图结果的图层按照规则叠加，得到最终的渲染结果。&lt;br /&gt;
+Layer有needsAddScene和subtreeNeedsAddToScene属性，分别表示是否需要加入场景。提供了markNeedsAddToScenc()标记是否需要更新，和iOS 中layoutIfNeeded相同，都是设置需要渲染的flag。&lt;/p&gt;
+
+&lt;p&gt;statefulWidget控件发生变化的流程如下图：
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20210125/16115412635238.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;layout&quot;&gt;Layout&lt;/h3&gt;
+&lt;p&gt;只有布局类Widget会触发layout 如 container、padding、align等
+每个RenderObject节点需要做两件事：&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;调用自己的performLayout来计算layout&lt;/li&gt;
+  &lt;li&gt;调用child的layout，把parent的限制传入&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;递归下去，每个子节点都受到父节点的约束并计算出自己的size，父节点再按照size决定布局。&lt;/p&gt;
+
+&lt;h3 id=&quot;flutter与native的通信&quot;&gt;Flutter与Native的通信&lt;/h3&gt;
+&lt;h4 id=&quot;必要性&quot;&gt;必要性&lt;/h4&gt;
+&lt;p&gt;Flutter封装了很多UI层面的能力，但是其他能力却没有帮开发者封装到flutter.framework中，例如获取电池电量，网络状态，使用相机，麦克风，蓝牙，GPS，通知等等。因为一旦将这些与platform强相关的API封装进去，意味着Flutter就需要跟随iOS、Android、PC等版本更新，容易出现兼容性和碎片化问题是其次，framework包大小比现在就要大的多了。
+因此提供了一套Flutter与Native通信的能力–&amp;gt;Platform Channel&lt;/p&gt;
+
+&lt;h4 id=&quot;通信原理&quot;&gt;通信原理&lt;/h4&gt;
+&lt;p&gt;Flutter与platform通信的方式是发送异步的二进制消息，在Flutter端由BinaryMessages来实现，在iOS端是由FlutterViewController遵守的FlutterBinaryMessager协议实现。
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20210125/16115595586698.png&quot; alt=&quot;platform-channels&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;在flutter端和iOS端分别调用实现BinaryMessages.send()和sendOnChannel:message:binaryReply:方法就能实现向对端发送二进制消息。
+BinaryMessages.setMessageHandler()和setMessageHandlerOnChannel:binaryMessageHandler就能实现接收消息的handler。&lt;/p&gt;
+
+&lt;h4 id=&quot;性能如何&quot;&gt;性能如何&lt;/h4&gt;
+&lt;p&gt;我们会不禁担心频繁调用Channel会不会有性能问题，其实channel的性能挺好，在整个调用流程中是机器码的传递，是C++层面，其中相对较耗时的是消息的编解码部分，Flutter定义了4种基本消息的编解码器类型，我们就不需要在代码中对数据进行操作了。但即便如下，Channel还是不适合做大规模的数据传输。&lt;/p&gt;
+</description>
+        <pubDate>Sat, 23 Jan 2021 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2021/01/Flutter%E5%8E%9F%E7%90%86%E8%A7%A3%E6%9E%90/</link>
+        <guid isPermaLink="true">http://localhost:4000/2021/01/Flutter%E5%8E%9F%E7%90%86%E8%A7%A3%E6%9E%90/</guid>
+        
+        <category>Flutter</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>WebRTC GCC拥塞控制详解</title>
+        <description>&lt;p&gt;webrtc版本： M74&lt;/p&gt;
+
+&lt;h3 id=&quot;接收端&quot;&gt;接收端&lt;/h3&gt;
+&lt;p&gt;主要实现:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;RemoteBitrateEstimatorAbsSendTime：基于abs-send-time的接收端带宽估计，默认方式，本文只描述该方式；&lt;/li&gt;
+  &lt;li&gt;RemoteBitrateEstimatorSingleStream：基于RTP时间戳的接收端带宽估计；&lt;/li&gt;
+  &lt;li&gt;InterArrival：到达时间滤波器，计算包簇(帧)之间的时间差；&lt;/li&gt;
+  &lt;li&gt;OveruseEstimator：卡尔曼滤波器，用于估算网络延迟变化(拥塞)的最优值；&lt;/li&gt;
+  &lt;li&gt;OveruseDetector：过载检测器，检测链路是否过载；&lt;/li&gt;
+  &lt;li&gt;RateStatistics：输入码率统计；&lt;/li&gt;
+  &lt;li&gt;AimdRateControl：加增乘减码率控制器。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;51-基本流程&quot;&gt;5.1 基本流程&lt;/h4&gt;
+&lt;p&gt;接收端的带宽预测原则是以输入码率为基准，根据链路的拥塞情况进行调整，而链路的拥塞情况用延迟的变化来体现&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://image.smartjames.cn/mweb/20210111/16103494197594.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;如上图所示，RTP包进入InterArrival(到达时间滤波器)后，InterArrival会缓存最近的俩个5ms的包簇(TimestampGroup)，当缓存够俩个包簇后，计算着俩个包簇之间的发送时间差、到达时间差、尺寸差，输出给OveruseEstimator(卡尔曼滤波器)，在没有网络拥塞的情况下，网络拥塞值=到达时间差-发送时间差=0，  如果网络拥塞值&amp;gt;0,则可能是因为网络噪声造成了拥塞，或者数据尺寸变化造成了网络排队，如果网络拥塞值&amp;lt;0, 则网络拥塞情况在好转，所以OveruseEstimator就以InterArrival的网络拥塞值、数据尺寸差为观测值，结合预测值进行拟合估算，计算出网络拥塞值的最优值，输出给OveruseDetector(过载检测器)，OveruseDetector根据拥塞值（抖动）来判断当前网络是否处于拥塞状态，将拥塞状态反馈到OveruseDetector并输出给AimdRateControl(加增乘减码率控制器)， AimdRateControl使用输入码率和网络拥塞状态根据”加增乘减“原则来调整接收端当前的预估码率。&lt;/p&gt;
+
+&lt;h4 id=&quot;52-到达时间滤波器-----interarrival&quot;&gt;5.2 到达时间滤波器  -  InterArrival&lt;/h4&gt;
+
+&lt;p&gt;在不考虑NTP时间同步问题的情况下，一个数据在网络上的传输时间t=到达时间tr-发送时间ts,如果网络没有阻塞，同样的数据在相同的链路下的传输时间基本是不会变化的，如果传输时间变化，可能是以下原因：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;网络播放、噪声&lt;/li&gt;
+  &lt;li&gt;数据大小变化、排队情况变化(缓冲区)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;2个相同数据之间传输时间的差异可以被定义为拥塞值：&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;t_ts_delta = t2 - t1 = (tr2-ts2) - (tr1-ts1) = (tr2-tr1)-(ts2-ts1) = t_delta - ts_delta
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;也就说拥塞值等于2个相同数据的到达时间差-发送时间差，经过这样的变换后NTP同步问题被解决，接下来考虑：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;数据处理的频率&lt;/li&gt;
+  &lt;li&gt;突发数据的处理&lt;/li&gt;
+  &lt;li&gt;数据大小变化的影响&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;为降低处理频率，interArrival以5ms的数据为一组存储成一个包簇(TimestampGroup),缓存最近的2个包簇，计算着2个包簇之间的发送时间差、接收时间差，并根据数据到达速度来判断数据突发，避免处理短时间到来的大量数据。为了消除数据大小变化的影响，InterArrival还输出2个包簇的尺寸差，将这些值作为输入参数传给卡尔曼滤波器处理。&lt;/p&gt;
+
+&lt;p&gt;包簇结构：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;struct TimestampGroup {
+    size_t size;  // 总大小
+    uint32_t first_timestamp;  // 第1个包的发送时间戳
+    uint32_t timestamp;  // 最新包的发送时间戳作为包簇时间戳
+    int64_t first_arrival_ms;  // 第1个包的接收时间
+    int64_t complete_time_ms;  // 最新包的接收时间作为包簇接收时间
+    int64_t last_system_time_ms;  // 最新包的当前处理时间
+  };
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;计算包簇发送时间差、接收时间差、尺寸差：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bool InterArrival::ComputeDeltas(uint32_t timestamp,				// 输入，时间戳(abs-send-time或者RTP时间戳)
+                                 int64_t arrival_time_ms,			// 输入，RTP包接收时间
+                                 int64_t system_time_ms,			// 输入，RTP包当前处理时间
+                                 size_t packet_size,				// 输入，RTP包大小
+                                 uint32_t* timestamp_delta,			// 输出，发送时间差
+                                 int64_t* arrival_time_delta_ms,	// 输出，接收时间差
+                                 int* packet_size_delta) {			// 输出，尺寸差
+  assert(timestamp_delta != NULL);
+  assert(arrival_time_delta_ms != NULL);
+  assert(packet_size_delta != NULL);
+  bool calculated_deltas = false;
+  // 如果是第一个包
+  if (current_timestamp_group_.IsFirstPacket()) {
+    // We don't have enough data to update the filter, so we store it until we
+    // have two frames of data to process.
+    current_timestamp_group_.timestamp = timestamp;  // 第一个包时间戳作为包簇时间戳
+    current_timestamp_group_.first_timestamp = timestamp;  // 第一个包时间戳
+    current_timestamp_group_.first_arrival_ms = arrival_time_ms;  // 第一个包到达时间
+  } else if (!PacketInOrder(timestamp)) {  // 如果包乱序了，根据时间戳来大致估算
+    return false;  // 本次计算失败
+  } else if (NewTimestampGroup(arrival_time_ms, timestamp)) {  // 如果1个包簇满了，要创建新的包簇
+    // First packet of a later frame, the previous frame sample is ready.
+    // 如果有上个包簇
+    if (prev_timestamp_group_.complete_time_ms &amp;gt;= 0) {
+      // 发送时间差 = 当前包簇发送时间戳 - 上个包簇发送时间戳
+      *timestamp_delta =
+          current_timestamp_group_.timestamp - prev_timestamp_group_.timestamp;
+      // 接收时间差 - 当前包簇接收时间 - 上个包簇接收时间
+      *arrival_time_delta_ms = current_timestamp_group_.complete_time_ms -
+                               prev_timestamp_group_.complete_time_ms;
+      // Check system time differences to see if we have an unproportional jump
+      // in arrival time. In that case reset the inter-arrival computations.
+      // 检查接收时间和处理时间是否有过大偏差(3s)，容错
+      int64_t system_time_delta_ms =
+          current_timestamp_group_.last_system_time_ms -
+          prev_timestamp_group_.last_system_time_ms;
+      if (*arrival_time_delta_ms - system_time_delta_ms &amp;gt;=
+          kArrivalTimeOffsetThresholdMs) {
+        RTC_LOG(LS_WARNING)
+            &amp;lt;&amp;lt; &quot;The arrival time clock offset has changed (diff = &quot;
+            &amp;lt;&amp;lt; *arrival_time_delta_ms - system_time_delta_ms
+            &amp;lt;&amp;lt; &quot; ms), resetting.&quot;;
+        Reset();  // 重置
+        return false;
+      }
+      // 从Socket上报的数据先发后至？乱序？
+      if (*arrival_time_delta_ms &amp;lt; 0) {
+        // The group of packets has been reordered since receiving its local
+        // arrival timestamp.
+        ++num_consecutive_reordered_packets_;
+        if (num_consecutive_reordered_packets_ &amp;gt;= kReorderedResetThreshold) {
+          RTC_LOG(LS_WARNING)
+              &amp;lt;&amp;lt; &quot;Packets are being reordered on the path from the &quot;
+                 &quot;socket to the bandwidth estimator. Ignoring this &quot;
+                 &quot;packet for bandwidth estimation, resetting.&quot;;
+          Reset();
+        }
+        return false;
+      } else {
+        num_consecutive_reordered_packets_ = 0;
+      }
+      assert(*arrival_time_delta_ms &amp;gt;= 0);
+      // 尺寸差 = 当前包簇尺寸 - 上个包簇尺寸
+      *packet_size_delta = static_cast&amp;lt;int&amp;gt;(current_timestamp_group_.size) -
+                           static_cast&amp;lt;int&amp;gt;(prev_timestamp_group_.size);
+     // 本次计算成功
+      calculated_deltas = true;
+    }
+
+	// 当前的包簇改为上个包簇
+    prev_timestamp_group_ = current_timestamp_group_;
+    // The new timestamp is now the current frame.
+    // 重置当前包簇，记录当前包簇的第一个包的时间戳
+    current_timestamp_group_.first_timestamp = timestamp;  // 第一个包发送时间戳
+    current_timestamp_group_.timestamp = timestamp;  // 当前包簇发送时间戳
+    current_timestamp_group_.first_arrival_ms = arrival_time_ms;  // 第一个包到达时间
+    current_timestamp_group_.size = 0;  // 当前包簇尺寸清零
+  } else {
+  	// 如果不满1个包簇，设置当前包簇时间戳为较新的时间戳
+    current_timestamp_group_.timestamp =
+        LatestTimestamp(current_timestamp_group_.timestamp, timestamp);
+  }
+  // Accumulate the frame size.
+  // 累计当前包簇大小
+  current_timestamp_group_.size += packet_size;
+  // 更新当前包簇的接收时间为最新包接收时间
+  current_timestamp_group_.complete_time_ms = arrival_time_ms;
+  // 更新当前包簇的最新包处理时间
+  current_timestamp_group_.last_system_time_ms = system_time_ms;
+
+  return calculated_deltas;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;判断当前RTP包到达后当前包簇是否已满5ms并需创建新的包簇&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bool InterArrival::NewTimestampGroup(int64_t arrival_time_ms,
+                                     uint32_t timestamp) const {
+  if (current_timestamp_group_.IsFirstPacket()) {  // 第一个包
+    return false;  // 不创建新包簇
+  } else if (BelongsToBurst(arrival_time_ms, timestamp)) {  // 突发，不创建新包簇
+    return false;
+  } else {
+    // 当前时间戳 - 当前包簇的第一个包时间戳 = 当前包簇总时长，是否大于kTimestampGroupLengthTicks个时间戳单位(90 * 5，也就是5ms)
+    uint32_t timestamp_diff =
+        timestamp - current_timestamp_group_.first_timestamp;
+    return timestamp_diff &amp;gt; kTimestampGroupLengthTicks;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;判断当前RTP包是否属于突发：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bool InterArrival::BelongsToBurst(int64_t arrival_time_ms,
+                                  uint32_t timestamp) const {
+  // 默认使能
+  if (!burst_grouping_) {
+    return false;
+  }
+  assert(current_timestamp_group_.complete_time_ms &amp;gt;= 0);
+  // 当前包距当前包簇最后1个包的接收时间差
+  int64_t arrival_time_delta_ms =
+      arrival_time_ms - current_timestamp_group_.complete_time_ms;
+  // 当前包距当前包簇最后1个包的发送时间差
+  uint32_t timestamp_diff = timestamp - current_timestamp_group_.timestamp;
+  // 发送时间差换算成ms
+  int64_t ts_delta_ms = timestamp_to_ms_coeff_ * timestamp_diff + 0.5;
+  // 时间戳几乎一致，是突发
+  if (ts_delta_ms == 0)
+    return true;
+  // 传输时延 = 接收时间差 - 发送时间差
+  int propagation_delta_ms = arrival_time_delta_ms - ts_delta_ms;
+  if (propagation_delta_ms &amp;lt; 0 &amp;amp;&amp;amp;  // 如果传输时延 &amp;lt; 0
+      arrival_time_delta_ms &amp;lt;= kBurstDeltaThresholdMs &amp;amp;&amp;amp;  // 如果接收时间差 &amp;lt; 5ms
+      arrival_time_ms - current_timestamp_group_.first_arrival_ms &amp;lt;
+          kMaxBurstDurationMs)  // 如果当前包簇还不满100ms
+    return true;  // 满足这些条件为突发
+  return false;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;53-过载估计其---overuseestimator&quot;&gt;5.3 过载估计其 - OveruseEstimator&lt;/h4&gt;
+&lt;p&gt;OveruseEstimator是一个卡尔曼滤波器，建立一个线性系统，输入观测值，计算预测值，用观测值修正预测值得到最优值。
+具体到webRTC 输入值为2个包簇的发送时间差与接收时间差的差。 t_ts_delta = t_delta - ts_delta 。 以及2个包簇的尺寸差、链路拥塞情况，输出为最优的到达时间间隔增量(拥塞值)。
+&lt;img src=&quot;http://image.smartjames.cn/mweb/20210111/16103783764777.png&quot; alt=&quot;20200602221057991&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;54-过载检测器---overusedetector&quot;&gt;5.4 过载检测器 - OveruseDetector&lt;/h4&gt;
+&lt;p&gt;OveruseDetector根据OveruseEstimator输出的链路延迟变化的情况，与特点的阈值比较，来检测链路是否处于过载状态，并反馈给OveruseEstimator&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;BandwidthUsage OveruseDetector::Detect(double offset,		// 链路延迟变化(到达时间间隔增量)
+                                       double ts_delta,		// 两个包簇发送时间差
+                                       int num_of_deltas,	// 估算使用的采样数
+                                       int64_t now_ms) {	// 当前时间
+  if (num_of_deltas &amp;lt; 2) {
+    return BandwidthUsage::kBwNormal;
+  }
+  // 最多kMaxNumDeltas = 60个采样，计算总的网络拥塞值 = 采样数 * 单个采样的到达时间间隔增量
+  const double T = std::min(num_of_deltas, kMaxNumDeltas) * offset;
+  BWE_TEST_LOGGING_PLOT(1, &quot;T&quot;, now_ms, T);
+  BWE_TEST_LOGGING_PLOT(1, &quot;threshold&quot;, now_ms, threshold_);
+  // 如果网络拥塞值超过阈值，拥塞在加剧
+  if (T &amp;gt; threshold_) {
+    if (time_over_using_ == -1) {
+      // Initialize the timer. Assume that we've been
+      // over-using half of the time since the previous
+      // sample.
+      // 刚开始过载，过载时间设置为两个包簇的发送时间差/2
+      time_over_using_ = ts_delta / 2;
+    } else {
+      // Increment timer
+      // 持续过载，增加过载时间
+      time_over_using_ += ts_delta;
+    }
+    //  过载计数++
+    overuse_counter_++;
+    // 如果过载时间超过100ms，并且发生了持续的过载
+    if (time_over_using_ &amp;gt; overusing_time_threshold_ &amp;amp;&amp;amp; overuse_counter_ &amp;gt; 1) {
+      // 如果到达间隔变大了，也就是数据来的越来越慢
+      if (offset &amp;gt;= prev_offset_) {
+        time_over_using_ = 0;
+        overuse_counter_ = 0;
+        // 设置为过载状态
+        hypothesis_ = BandwidthUsage::kBwOverusing;
+      }
+    }
+  } else if (T &amp;lt; -threshold_) {  // 如果拥塞值 &amp;lt; 负的阈值，网络处于欠载状态，数据来的越来越快
+    time_over_using_ = -1;
+    overuse_counter_ = 0;
+    // 设置为欠载状态
+    hypothesis_ = BandwidthUsage::kBwUnderusing;
+  } else {
+    time_over_using_ = -1;
+    overuse_counter_ = 0;
+    // 设置为正常状态
+    hypothesis_ = BandwidthUsage::kBwNormal;
+  }
+  // 保存当前的到达间隔增量
+  prev_offset_ = offset;
+
+  // 更新阈值
+  UpdateThreshold(T, now_ms);
+
+  return hypothesis_;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+</description>
+        <pubDate>Mon, 11 Jan 2021 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2021/01/WebRTC-GCC%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E8%AF%A6%E8%A7%A3/</link>
+        <guid isPermaLink="true">http://localhost:4000/2021/01/WebRTC-GCC%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E8%AF%A6%E8%A7%A3/</guid>
+        
+        <category>webRTC</category>
+        
+        
+      </item>
     
       <item>
         <title>WebRTC基于GCC的拥塞控制(下)-实现分析</title>
@@ -744,7 +1130,7 @@ iOS11开始原生支持HEVC   H.265&lt;/p&gt;
 &lt;p&gt;Sequence Parameter Set ，序列参数集，保存了一组编码视频序列的全局参数，一般SPS 和PPS在整个码流的起始位置，特殊情况下也可能在中间出现，例如中间需要重新解码，或者参数信息发生编发例如屏幕宽高比变化。&lt;/p&gt;
 
 &lt;h3 id=&quot;pps&quot;&gt;PPS:&lt;/h3&gt;
-&lt;p&gt;Picture Parameter Set  图形参数集，类似于SPS， 在马六周年单独保存在一个NAL Unit中，保存在视频文件的文件头中。&lt;/p&gt;
+&lt;p&gt;Picture Parameter Set  图形参数集，类似于SPS， 在码流里单独保存在一个NAL Unit中，保存在视频文件的文件头中。&lt;/p&gt;
 
 &lt;h3 id=&quot;dts&quot;&gt;DTS&lt;/h3&gt;
 &lt;p&gt;Decoding Time Stamp 解码时间戳，表示送入解码器的顺序&lt;/p&gt;
@@ -938,97 +1324,6 @@ Triggered by Thread: 0
         <pubDate>Fri, 11 Dec 2020 00:00:00 +0800</pubDate>
         <link>http://localhost:4000/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/</link>
         <guid isPermaLink="true">http://localhost:4000/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>视频秒开优化方案</title>
-        <description>&lt;h3 id=&quot;前置metadata&quot;&gt;前置metadata：&lt;/h3&gt;
-&lt;p&gt;需要获取文件的metadata，解析出文件的编码，帧率等信息后才能开始边下边播，所以尽量让metadata或 MOOV box在靠近文件头部的位置，保证播放器尽快播放&lt;/p&gt;
-
-&lt;h3 id=&quot;选择合适的缓冲策略&quot;&gt;选择合适的缓冲策略：&lt;/h3&gt;
-&lt;p&gt;AVPlayer的 automaticallyWaitsToMinimizeStalling属性就是尽量多缓存一段时间，保证播放过程中减少卡顿&lt;/p&gt;
-
-&lt;h3 id=&quot;使用httpdns加快建连&quot;&gt;使用HTTPDNS加快建连：&lt;/h3&gt;
-&lt;p&gt;获取最优的CDN节点地址，并每隔一段时间获取一次最佳CDN节点，准实时的保证使用最佳节点。&lt;/p&gt;
-
-&lt;h3 id=&quot;提升cdn命中率&quot;&gt;提升CDN命中率：&lt;/h3&gt;
-&lt;p&gt;减少CDN的资源部命中，减少回源，比如URL中减少随机性的值，增加匹配命中概率。&lt;/p&gt;
-
-&lt;h3 id=&quot;域名解析&quot;&gt;域名解析：&lt;/h3&gt;
-&lt;p&gt;使用HTTPDNS快速获取最佳CDN节点信息。&lt;/p&gt;
-
-&lt;h3 id=&quot;socket-cache&quot;&gt;Socket cache:&lt;/h3&gt;
-&lt;p&gt;TCP的数据收发都是在缓冲区中完成拼装，通过调整缓冲区的大小。设置太小，影响效率，设置太大， 会短时间吃掉带宽(根据带宽探测原理可知),通过ffmpeg提供的api可修改。&lt;/p&gt;
-
-&lt;h3 id=&quot;探测buffer&quot;&gt;探测buffer:&lt;/h3&gt;
-&lt;p&gt;一开始需要先读一段数据，再对数据进行探测，得到封装格式、分辨率等信息。这个buffer可以设置。&lt;/p&gt;
-
-&lt;h3 id=&quot;格式探测&quot;&gt;格式探测：&lt;/h3&gt;
-&lt;p&gt;播放端开始时会探测数据格式，根据自己支持的格式探测出一个分数，得到相应的格式，如果短视频格式确定，就可以减少不必要的探测类型。&lt;/p&gt;
-
-&lt;h3 id=&quot;播放-buffer&quot;&gt;播放 buffer:&lt;/h3&gt;
-&lt;p&gt;减少播放的缓冲，一般缓冲buffer会按照帧数设置，但是短视频可以减小这个数字，达到尽快解码播放。&lt;/p&gt;
-
-&lt;h3 id=&quot;分辨率视频格式&quot;&gt;分辨率、视频格式：&lt;/h3&gt;
-&lt;p&gt;一定程度降低分辨率，减小文件大小。使用HEVC格式。&lt;/p&gt;
-
-</description>
-        <pubDate>Thu, 10 Dec 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/12/%E8%A7%86%E9%A2%91%E7%A7%92%E5%BC%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/12/%E8%A7%86%E9%A2%91%E7%A7%92%E5%BC%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88/</guid>
-        
-        <category>iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>网络优化策略</title>
-        <description>&lt;h3 id=&quot;网络优化策略&quot;&gt;网络优化策略&lt;/h3&gt;
-&lt;ol&gt;
-  &lt;li&gt;NSCache缓存，Last-Modified, ETag&lt;/li&gt;
-  &lt;li&gt;DNS解析&lt;/li&gt;
-  &lt;li&gt;数据压缩，protobuf, WebP&lt;/li&gt;
-  &lt;li&gt;失败重发，缓存请求有网发送&lt;/li&gt;
-  &lt;li&gt;弱网下设置不同超时时间&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h4 id=&quot;nscache缓存&quot;&gt;NSCache缓存&lt;/h4&gt;
-&lt;p&gt;Get类似SQL查找，所以默认会缓存，Post是提交数据，类似UPDATE，所以不会缓存。
-Last-Modified：资源最后修改时间，来判断是否过期
-请求response中会包含该字段和时间，下次请求时加上if-Modified-since : xxxx， 如果资源无变化返回304 Not Changed。&lt;/p&gt;
-
-&lt;p&gt;ETag:资源文件的hash值，与当前资源文件比对是否一致，不一致则返回新值，一致则不返回。&lt;/p&gt;
-
-&lt;h4 id=&quot;dns解析&quot;&gt;DNS解析&lt;/h4&gt;
-&lt;p&gt;使用HTTPDNS 解析域名，代替从localDNS获取IP。 当HTTPDNS解析失败时再走localDNS.
-或者本地维护IP list，与HTTPDNS的结果做更新&lt;/p&gt;
-
-&lt;h4 id=&quot;数据压缩&quot;&gt;数据压缩&lt;/h4&gt;
-&lt;p&gt;webP图片格式比PNG和jpg 体积小，但是webP图片需要解析才能成为可用的jpg图片， app内解析肯定要花费一定的性能。
-在wifi条件下，较大的图片直接使用png/jpg, 减少解析时间。  4G条件下，建议用webP,对流量比较友好&lt;/p&gt;
-
-&lt;h4 id=&quot;失败重发&quot;&gt;失败重发&lt;/h4&gt;
-&lt;p&gt;超时或失败的请求建立重发机制，待网络通畅后再次发送&lt;/p&gt;
-
-&lt;h4 id=&quot;弱网下设置不同超时时间&quot;&gt;弱网下设置不同超时时间&lt;/h4&gt;
-&lt;p&gt;不同网络状态下超时时间设置不同，例如4G只需要10秒，3G需要20秒，在超时后依然无法与服务端建立连接，可排查网络链路通畅性，例如使用HTTPDNS切换新的服务器站点，尝试连接。&lt;/p&gt;
-
-&lt;h3 id=&quot;http2相比http1x的升级&quot;&gt;HTTP2相比HTTP1.x的升级：&lt;/h3&gt;
-&lt;ol&gt;
-  &lt;li&gt;HTTP/2采用二进制格式传输数据 ，而不是1.x的文本格式。&lt;/li&gt;
-  &lt;li&gt;对消息头进行压缩传输，节省消息头占用的流量。 1.x每次请求携带大量冗余头信息，浪费资源&lt;/li&gt;
-  &lt;li&gt;多路复用，一个域名下的请求可以通过一个TCP连接并发完成，毕竟新开一个TCP连接都需要慢慢提升传输速度。 1.x虽然通过pipeline也能并发请求，但是多个请求之间响应会被阻塞。采用二进制分帧，数据流可以乱序发送，接收后可以重新组装。&lt;/li&gt;
-  &lt;li&gt;server push， 服务端提前把资源推送给客户端&lt;/li&gt;
-&lt;/ol&gt;
-</description>
-        <pubDate>Thu, 10 Dec 2020 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2020/12/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5/</link>
-        <guid isPermaLink="true">http://localhost:4000/2020/12/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5/</guid>
         
         <category>iOS</category>
         
