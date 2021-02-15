@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="http://localhost:4000/page/2/">
-  <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="http://localhost:4000/feed.xml">
+  <link rel="canonical" href="/page/2/">
+  <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
 
@@ -175,6 +175,48 @@
             <div class="main-post-list hidden">
 
   <ol class="post-list">
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(2)-Category%E7%B1%BB%E5%88%AB-&-%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1/" title="访问 iOS底层(2)-Category类别 & 关联对象">iOS底层(2)-Category类别 & 关联对象</a></h2>
+      <p class="excerpt">Category分类在编译的时候变成category_t 结构体，其中包含所有方法，协议，属性等。运行的时候把Category数组合并到Class的大数组中，后面参与编译的在数组的前面，也解释了为什么类别能够覆盖主类的方法，因为在方法查找时先找到类别的方法而已。  +laod()是在app启动时加载类、分类的时候调用。调用原理与普通的category方法不同，是直接按照主类，类别的方法调用专门存取load方法的指针来调用load方法，即调用顺序一定是主类，分类1，分类2。。。而且如果父类还...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-10-10 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-10-10</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/10/iOS%E5%BA%95%E5%B1%82(2)-Category%E7%B1%BB%E5%88%AB-&-%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
+    
+    <li>
+      <h2 class="post-list__post-title post-title"><a href="/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/" title="访问 iOS底层(1)-Class & isa">iOS底层(1)-Class & isa</a></h2>
+      <p class="excerpt">类初始化内存分配NSObject占用内存大小为16个字节，但是NSObjct只有一个属性就是isa只占用8个字节，由于底层设计原因最少需要16个字节。结构体内存对齐，(x+7)&amp; ~x 是将x按照8字节对齐。不满8就补齐8字节malloc 中的内存分配也会有内存对齐规则，mac中是16的倍数，如果传入只需要24字节，alloc后系统会分配32个字节空间即内存对齐。 class_getInstanceSize 返回的是对象需要的内存， NSObjcet中的isa占用8， 加上继承来的...&hellip;</p>
+      <div class="post-list__meta">        
+        <time datetime="2020-10-09 00:00:00 +0800" class="post-list__meta--date date">
+          <img src="/images/calendar.png" width="20px" /> 
+          2020-10-09</time> 
+        <div class = "tag-img-icon">
+          <img src="/images/tag-icon.svg" width="20px" /> 
+        </div>
+        <a href="/tags">
+          <div class = "post-list-icon-mate">
+            <span class="post-list__meta--tags-right">iOS</span>
+          </div>
+          <div class = "post-list-small-mate">
+          <a class="btn-border-small" href=/2020/10/iOS%E5%BA%95%E5%B1%82(1)-Class&isa/>阅读全文 » </a>
+          </div>
+      </div>
+      <hr class="post-list__divider" />
+    </li>
     
     <li>
       <h2 class="post-list__post-title post-title"><a href="/2020/09/JSBridge%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/" title="访问 JSBridge实现原理">JSBridge实现原理</a></h2>

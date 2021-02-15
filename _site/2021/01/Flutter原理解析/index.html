@@ -6,17 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <title>视频秒开优化方案</title>
-  <meta name="description" content="前置metadata：需要获取文件的metadata，解析出文件的编码，帧率等信息后才能开始边下边播，所以尽量让metadata或 MOOV box在靠近文件头部的位置，保证播放器尽快播放">
+  <title>Flutter原理解析</title>
+  <meta name="description" content="Flutter核心原理架构">
   <meta name="author" content="leopardpan">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="视频秒开优化方案">
-  <meta name="twitter:description" content="前置metadata：需要获取文件的metadata，解析出文件的编码，帧率等信息后才能开始边下边播，所以尽量让metadata或 MOOV box在靠近文件头部的位置，保证播放器尽快播放">
+  <meta name="twitter:title" content="Flutter原理解析">
+  <meta name="twitter:description" content="Flutter核心原理架构">
   
   <meta property="og:type" content="article">
-  <meta property="og:title" content="视频秒开优化方案">
-  <meta property="og:description" content="前置metadata：需要获取文件的metadata，解析出文件的编码，帧率等信息后才能开始边下边播，所以尽量让metadata或 MOOV box在靠近文件头部的位置，保证播放器尽快播放">
+  <meta property="og:title" content="Flutter原理解析">
+  <meta property="og:description" content="Flutter核心原理架构">
   
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link href="/images/favicon.png" rel="shortcut icon" type="image/png">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-  <link rel="canonical" href="/2020/12/%E8%A7%86%E9%A2%91%E7%A7%92%E5%BC%80%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88/">
+  <link rel="canonical" href="/2021/01/Flutter%E5%8E%9F%E7%90%86%E8%A7%A3%E6%9E%90/">
   <link rel="alternate" type="application/rss+xml" title="拜伦的博客" href="/feed.xml">
   
   <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
@@ -192,10 +192,10 @@
 
 <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
   <header class="post-header">
-    <h1 class="post-title">视频秒开优化方案</h1>
+    <h1 class="post-title">Flutter原理解析</h1>
     <div class="post-meta">
       <img src="/images/calendar.png" width="20px"/> 
-      <time datetime="2020-12-10 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2020-12-10</time>  
+      <time datetime="2021-01-23 00:00:00 +0800" itemprop="datePublished" class="post-meta__date date">2021-01-23</time>  
 
       <span id="busuanzi_container_page_pv"> | 阅读：<span id="busuanzi_value_page_pv"></span>次</span>
     </p>
@@ -205,51 +205,132 @@
   
     <h2 class="post-title">目录</h2>
     <ul>
-  <li><a href="#前置metadata">前置metadata：</a></li>
-  <li><a href="#选择合适的缓冲策略">选择合适的缓冲策略：</a></li>
-  <li><a href="#使用httpdns加快建连">使用HTTPDNS加快建连：</a></li>
-  <li><a href="#提升cdn命中率">提升CDN命中率：</a></li>
-  <li><a href="#域名解析">域名解析：</a></li>
-  <li><a href="#socket-cache">Socket cache:</a></li>
-  <li><a href="#探测buffer">探测buffer:</a></li>
-  <li><a href="#格式探测">格式探测：</a></li>
-  <li><a href="#播放-buffer">播放 buffer:</a></li>
-  <li><a href="#分辨率视频格式">分辨率、视频格式：</a></li>
+  <li><a href="#flutter核心原理">Flutter核心原理</a>
+    <ul>
+      <li><a href="#架构">架构</a></li>
+      <li><a href="#渲染流水线">渲染流水线</a></li>
+      <li><a href="#渲染过程中的数据结构">渲染过程中的数据结构</a></li>
+      <li><a href="#widget-tree">Widget Tree</a></li>
+      <li><a href="#element-tree">Element Tree</a></li>
+      <li><a href="#renderobject-tree">RenderObject Tree</a></li>
+      <li><a href="#layers">Layers</a></li>
+    </ul>
+  </li>
+  <li><a href="#layout">Layout</a></li>
+  <li><a href="#flutter与native的通信">Flutter与Native的通信</a>
+    <ul>
+      <li><a href="#必要性">必要性</a></li>
+      <li><a href="#通信原理">通信原理</a></li>
+      <li><a href="#性能如何">性能如何</a></li>
+    </ul>
+  </li>
 </ul>
 
   
 
   <section class="post">
-    <h3 id="前置metadata">前置metadata：</h3>
-<p>需要获取文件的metadata，解析出文件的编码，帧率等信息后才能开始边下边播，所以尽量让metadata或 MOOV box在靠近文件头部的位置，保证播放器尽快播放</p>
+    <h3 id="flutter核心原理">Flutter核心原理</h3>
+<h4 id="架构">架构</h4>
 
-<h3 id="选择合适的缓冲策略">选择合适的缓冲策略：</h3>
-<p>AVPlayer的 automaticallyWaitsToMinimizeStalling属性就是尽量多缓存一段时间，保证播放过程中减少卡顿</p>
+<p><img src="http://image.smartjames.cn/mweb/20210123/16113907879588.png" alt="" /></p>
 
-<h3 id="使用httpdns加快建连">使用HTTPDNS加快建连：</h3>
-<p>获取最优的CDN节点地址，并每隔一段时间获取一次最佳CDN节点，准实时的保证使用最佳节点。</p>
+<p>Flutter架构分层设计如上图，从下到上依次为 Embedder、Engine、Framework。</p>
+<ol>
+  <li>Embedder： 操作系统适配层，实现渲染surface设置、线程设置等。</li>
+  <li>Engine: 实现Flutter渲染引擎、文字排版、事件处理、Dart运行时等功能，包括Skia图形绘制库、Dart VM、Text引擎等。其中Skia和Text为上层接口提供了调用底层渲染和排版的能力。Skia是Google开源的二维图形库，用于Chrome OS, Andoird、Firefox OS等。</li>
+  <li>Framework：是一个用Dart实现的一套基础库，用于处理动画、绘制、手势等。
+    <ol>
+      <li>Material和Cupertino分别是安卓和iOS风格的2套UI控件库。</li>
+      <li>Widgets是flutter渲染的基本单元</li>
+      <li>Rendering是渲染层，运行时Rendering会将Widgets构建出Widgets Tree, 经过处理后提供给Skia即Engine层渲染。</li>
+      <li>Animation、Painting、Gestures分别提供动画功能，基础绘制功能，手势功能。</li>
+      <li>Foundation提供Framework基础能力，类似iOS中的UIFoundation</li>
+    </ol>
+  </li>
+</ol>
 
-<h3 id="提升cdn命中率">提升CDN命中率：</h3>
-<p>减少CDN的资源部命中，减少回源，比如URL中减少随机性的值，增加匹配命中概率。</p>
+<h4 id="渲染流水线">渲染流水线</h4>
+<p><img src="http://image.smartjames.cn/mweb/20210124/16114180611048.png" alt="" />
+渲染流水线是由垂直同步信号(VSync)驱动的，当信号到来后，flutter按照流水线执行，最后将渲染的数据传给GPU进行绘制。</p>
 
-<h3 id="域名解析">域名解析：</h3>
-<p>使用HTTPDNS快速获取最佳CDN节点信息。</p>
+<p>Animation阶段： 因为动画会随着每个VSync信号的到来而改变状态，因此动画阶段是第一个阶段。
+Build阶段： 这里包括WidgetTree的build、ElementTree的build和计算重绘的差异diff阶段。 
+Layout阶段： 这里确认每个元素的位置，尺寸。
+Paint阶段： 就是绘制阶段了。
+Composition阶段：和上面2个阶段一起组成了Rendering的核心组成部分。</p>
 
-<h3 id="socket-cache">Socket cache:</h3>
-<p>TCP的数据收发都是在缓冲区中完成拼装，通过调整缓冲区的大小。设置太小，影响效率，设置太大， 会短时间吃掉带宽(根据带宽探测原理可知),通过ffmpeg提供的api可修改。</p>
+<h4 id="渲染过程中的数据结构">渲染过程中的数据结构</h4>
 
-<h3 id="探测buffer">探测buffer:</h3>
-<p>一开始需要先读一段数据，再对数据进行探测，得到封装格式、分辨率等信息。这个buffer可以设置。</p>
+<p>Widget Tree —&gt; Element Tree —&gt; RenderObject Tree —&gt; Layers
+分别通过 createElement 、createRenderObjet和.layer 时间数据结构的变化</p>
 
-<h3 id="格式探测">格式探测：</h3>
-<p>播放端开始时会探测数据格式，根据自己支持的格式探测出一个分数，得到相应的格式，如果短视频格式确定，就可以减少不必要的探测类型。</p>
+<p>三棵树对应的关系如下图：
+<img src="http://image.smartjames.cn/mweb/20210124/16114633031322.png" alt="trees" /></p>
 
-<h3 id="播放-buffer">播放 buffer:</h3>
-<p>减少播放的缓冲，一般缓冲buffer会按照帧数设置，但是短视频可以减小这个数字，达到尽快解码播放。</p>
+<h4 id="widget-tree">Widget Tree</h4>
+<p>第一棵树，是控件实现的基本逻辑单位，是用户对UI界面的描述方式。
+需要注意的是，Widget是不可变的,当试图配置信息发生变化时，Flutter会重建Widget来进行更新，这叫simple is fast 思想，从上到下重新创建Widget Tree来进行刷新，思路简单，也不用额外保存影响到的节点。由于Widget只是配置是数据结构，创建是轻量的，销毁也做过优化，不用担心性能问题。</p>
 
-<h3 id="分辨率视频格式">分辨率、视频格式：</h3>
-<p>一定程度降低分辨率，减小文件大小。使用HEVC格式。</p>
+<h4 id="element-tree">Element Tree</h4>
+<p>第二棵树，是Widget的实例化对象，Widget提供了createElement工程方法来创建Element, 持久存在于运行时的Dart上下文之中，它承载了构建的上下文数据，是连接结构化的配置到最终渲染的桥梁。<br />
+之所以让他持久存在于Dart上下文中而不是像Widget重新构建，因为Element Tree的重新创建和渲染开销会很大所以Element Tree到Renderobject 有一 个diff环节，来计算最小重绘区域。</p>
 
+<h4 id="renderobject-tree">RenderObject Tree</h4>
+<p>第三棵树，渲染对象树，由Element创建并关联到Element.renderObject上，接收Element的信息同步，也是持久地存在于Dart Runtime上下文中，是主要负责实现视图渲染的对象。</p>
+
+<p>RenderObject Tree的显示过程分为3个阶段：</p>
+<ol>
+  <li>布局：layout</li>
+  <li>绘制：paint</li>
+  <li>合成：composition</li>
+</ol>
+
+<p><img src="http://image.smartjames.cn/mweb/20210125/16115434865809.png" alt="constraints-sizes" /></p>
+
+<p>其中，布局和绘制在RenderObject中完成，Flutter采用深度优先机制遍历渲染树，每个对象会在布局过程中接收父对象的Constraints参数，决定自己的大小，然后父对象就能按照自己的逻辑决定各个子对象的位置，并将它们绘制到不同的图层上，绘制完毕后，交给Skia来合成和渲染。
+子对象不存储自己在容器中的位置，位置存储在自己的parentData字段中，该字段由父对象维护，因此当它的位置发生改变时并不需要重新布局或绘制。flutter还可以设置某些节点的布局边界(Relayout boundary)，即当边界内的任何对象发生重新布局时，不会影响边界外的对象。</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20210125/16115438356224.png" alt="" /></p>
+
+<p>布局完成后，渲染树中的每个节点都有了明确的尺寸和位置，Flutter会把所有对象尽量绘制到不同的同层上，取决于绘制深度遍历的顺序和控件尺寸。</p>
+
+<p><img src="http://image.smartjames.cn/mweb/20210125/16115449093431.png" alt="" />
+在上图的例子中，因为是深度遍历，可以看到遍历顺序是1-&gt;2-&gt;3-&gt;4-&gt;6,
+所以1，2，3都在绿色图层中，到4这里是需要独占一个图层的内容，比如视频，因此4单独在黄色图层中。由于某些原因(视图手动合并等)导致5和6处于同一个图层中，此时如果5需要重绘的话，导致与其无关的6节点也要重绘。
+<img src="http://image.smartjames.cn/mweb/20210125/16115538489061.png" alt="" /></p>
+
+<p>为此Flutter提出重绘边界(Repaint boundary)的机制,在重绘边界内，Flutter会强制切换新的图层，这样就避免边界内外的互相影响而引起的不必要重绘。经典场景就是ScrollView滚动时，其中的内容重绘，其他某些内容是不需要重绘的。</p>
+<h4 id="layers">Layers</h4>
+<p>最后是Layer,他是依附于RenderObject，是绘图操作的载体，也可以缓存绘图操作的结果。Flutter分别在不用的图层上绘图，然后将这些缓存了绘图结果的图层按照规则叠加，得到最终的渲染结果。<br />
+Layer有needsAddScene和subtreeNeedsAddToScene属性，分别表示是否需要加入场景。提供了markNeedsAddToScenc()标记是否需要更新，和iOS 中layoutIfNeeded相同，都是设置需要渲染的flag。</p>
+
+<p>statefulWidget控件发生变化的流程如下图：
+<img src="http://image.smartjames.cn/mweb/20210125/16115412635238.png" alt="" /></p>
+
+<h3 id="layout">Layout</h3>
+<p>只有布局类Widget会触发layout 如 container、padding、align等
+每个RenderObject节点需要做两件事：</p>
+<ol>
+  <li>调用自己的performLayout来计算layout</li>
+  <li>调用child的layout，把parent的限制传入</li>
+</ol>
+
+<p>递归下去，每个子节点都受到父节点的约束并计算出自己的size，父节点再按照size决定布局。</p>
+
+<h3 id="flutter与native的通信">Flutter与Native的通信</h3>
+<h4 id="必要性">必要性</h4>
+<p>Flutter封装了很多UI层面的能力，但是其他能力却没有帮开发者封装到flutter.framework中，例如获取电池电量，网络状态，使用相机，麦克风，蓝牙，GPS，通知等等。因为一旦将这些与platform强相关的API封装进去，意味着Flutter就需要跟随iOS、Android、PC等版本更新，容易出现兼容性和碎片化问题是其次，framework包大小比现在就要大的多了。
+因此提供了一套Flutter与Native通信的能力–&gt;Platform Channel</p>
+
+<h4 id="通信原理">通信原理</h4>
+<p>Flutter与platform通信的方式是发送异步的二进制消息，在Flutter端由BinaryMessages来实现，在iOS端是由FlutterViewController遵守的FlutterBinaryMessager协议实现。
+<img src="http://image.smartjames.cn/mweb/20210125/16115595586698.png" alt="platform-channels" /></p>
+
+<p>在flutter端和iOS端分别调用实现BinaryMessages.send()和sendOnChannel:message:binaryReply:方法就能实现向对端发送二进制消息。
+BinaryMessages.setMessageHandler()和setMessageHandlerOnChannel:binaryMessageHandler就能实现接收消息的handler。</p>
+
+<h4 id="性能如何">性能如何</h4>
+<p>我们会不禁担心频繁调用Channel会不会有性能问题，其实channel的性能挺好，在整个调用流程中是机器码的传递，是C++层面，其中相对较耗时的是消息的编解码部分，Flutter定义了4种基本消息的编解码器类型，我们就不需要在代码中对数据进行操作了。但即便如下，Channel还是不适合做大规模的数据传输。</p>
 
   </section>
 
@@ -319,15 +400,10 @@
        <ul class="pager">
         
         <li class="previous">
-            <a href="/2020/12/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5/" data-toggle="tooltip" data-placement="top" title="网络优化策略">上一篇：  <span>网络优化策略</span>
+            <a href="/2021/01/WebRTC-GCC%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E8%AF%A6%E8%A7%A3/" data-toggle="tooltip" data-placement="top" title="WebRTC GCC拥塞控制详解">上一篇：  <span>WebRTC GCC拥塞控制详解</span>
             </a>
         </li>
         
-        
-        <li class="next">
-            <a href="/2020/12/iOS-Crash-%E5%88%86%E6%9E%90/" data-toggle="tooltip" data-placement="top" title="iOS Crash 分析">下一篇：  <span>iOS Crash 分析</span>
-            </a>
-        </li>
         
     </ul>
 </section>
